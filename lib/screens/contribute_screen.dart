@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 
 class ContributeScreen extends StatelessWidget {
   const ContributeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(title: const Text('CONTRIBUTE')),
+      appBar: AppBar(title: Text(l10n.contributeScreenTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -25,13 +27,13 @@ class ContributeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.people_outline, color: Colors.tealAccent, size: 28),
-                      SizedBox(width: 12),
+                      const Icon(Icons.people_outline, color: Colors.tealAccent, size: 28),
+                      const SizedBox(width: 12),
                       Text(
-                        'Built by ATM Engineers',
-                        style: TextStyle(
+                        l10n.contributeHeadline,
+                        style: const TextStyle(
                           color: AppTheme.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -40,19 +42,17 @@ class ContributeScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'ATM Academy is an open educational project for the aviation and ATM '
-                    'community. If you work in ATM, ATC, or aviation — your knowledge '
-                    'can help others learn.',
-                    style: TextStyle(color: AppTheme.textSecondary, height: 1.6),
+                  Text(
+                    l10n.contributeDescription,
+                    style: const TextStyle(color: AppTheme.textSecondary, height: 1.6),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'HOW TO CONTRIBUTE',
-              style: TextStyle(
+            Text(
+              l10n.contributeHowToSection,
+              style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -60,28 +60,25 @@ class ContributeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const _ContributeOption(
+            _ContributeOption(
               icon: Icons.add_box_outlined,
               color: AppTheme.secondary,
-              title: 'Suggest a Lesson',
-              description:
-                  'Propose a new topic, lesson outline, or learning objective.',
+              title: l10n.contributeSuggestLesson,
+              description: l10n.contributeSuggestLessonDesc,
             ),
             const SizedBox(height: 10),
-            const _ContributeOption(
+            _ContributeOption(
               icon: Icons.edit_note,
               color: AppTheme.warning,
-              title: 'Improve a Quiz',
-              description:
-                  'Suggest better questions, correct inaccuracies, or add explanations.',
+              title: l10n.contributeImproveQuiz,
+              description: l10n.contributeImproveQuizDesc,
             ),
             const SizedBox(height: 10),
-            const _ContributeOption(
+            _ContributeOption(
               icon: Icons.radar,
               color: AppTheme.primary,
-              title: 'Add a Simulation Scenario',
-              description:
-                  'Design a radar scenario, conflict situation, or runway exercise.',
+              title: l10n.contributeAddScenario,
+              description: l10n.contributeAddScenarioDesc,
             ),
             const SizedBox(height: 28),
             Container(
@@ -92,41 +89,38 @@ class ContributeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppTheme.borderColor),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'GET STARTED',
-                    style: TextStyle(
+                    l10n.contributeGetStarted,
+                    style: const TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 11,
                       letterSpacing: 1.2,
                     ),
                   ),
-                  SizedBox(height: 12),
-                  // TODO: Replace with actual GitHub repo URL once published
+                  const SizedBox(height: 12),
                   _LinkRow(
                     icon: Icons.code,
-                    label: 'GitHub Repository',
+                    label: l10n.contributeGithub,
                     value: 'github.com/tonybjzhao/atm_academy',
                   ),
-                  SizedBox(height: 8),
-                  // TODO: Replace with team contact email
+                  const SizedBox(height: 8),
                   _LinkRow(
                     icon: Icons.email_outlined,
-                    label: 'Contact',
+                    label: l10n.contributeContact,
                     value: 'in5km.zyt@gmail.com',
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            const Center(
+            Center(
               child: Text(
-                'All contributions must use publicly available, generic ATM knowledge only.\n'
-                'No proprietary, confidential, or restricted information.',
+                l10n.contributeDisclaimer,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 11,
                   height: 1.6,

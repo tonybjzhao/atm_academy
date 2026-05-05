@@ -425,4 +425,257 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lesson10Q1Explanation =>
       'Situational awareness helps controllers make safe decisions.';
+
+  @override
+  String get homeAppBarTitle => 'ATM ACADEMY';
+
+  @override
+  String get systemOnline => 'SYSTEM ONLINE';
+
+  @override
+  String get systemSubtitle => 'Air Traffic Management Learning Platform';
+
+  @override
+  String get modulesSection => 'MODULES';
+
+  @override
+  String get homeCardLearnAtm => 'Learn ATM';
+
+  @override
+  String get homeCardLearnAtmSub => '10 lessons · Beginner to Expert';
+
+  @override
+  String get homeCardRadarSim => 'Radar Sim';
+
+  @override
+  String get homeCardRadarSimSub => 'Live 2D radar · 4 aircraft';
+
+  @override
+  String get homeCardRunwayOps => 'Runway Ops';
+
+  @override
+  String get homeCardRunwayOpsSub => 'Ground movement & sequencing';
+
+  @override
+  String get homeCardQuizSub => 'Test your knowledge';
+
+  @override
+  String get homeContribute => 'Contribute';
+
+  @override
+  String get homeContributeSub => 'Built by ATM engineers — join us';
+
+  @override
+  String get homeAboutSafety => 'About & Safety';
+
+  @override
+  String get homeAboutSafetySub => 'Compliance info';
+
+  @override
+  String get dailyChallengeTitle => 'DAILY CHALLENGE';
+
+  @override
+  String get dailyChallengeSubtitle => 'Complete today\'s training mission';
+
+  @override
+  String get dailyChallengeTaskQuiz => 'Quiz';
+
+  @override
+  String get dailyChallengeTaskRadar => 'Radar Scenario';
+
+  @override
+  String get dailyChallengeScoreLabel => 'TODAY\'S SCORE';
+
+  @override
+  String get dailyChallengeRankLabel => 'RANK';
+
+  @override
+  String get dailyChallengeCompletedToday => 'Completed Today';
+
+  @override
+  String get dailyChallengeStartQuiz => 'Start Quiz';
+
+  @override
+  String get dailyChallengeStartRadar => 'Start Radar Sim';
+
+  @override
+  String get rankCadet => 'Cadet';
+
+  @override
+  String get rankControllerTrainee => 'Controller Trainee';
+
+  @override
+  String get rankTowerReady => 'Tower Ready';
+
+  @override
+  String get rankMissionComplete => 'Mission Complete';
+
+  @override
+  String get radarSimTitle => 'RADAR SIM';
+
+  @override
+  String get radarStatusConflict => '⚠ CONFLICT';
+
+  @override
+  String get radarStatusNormal => '● NORMAL';
+
+  @override
+  String get radarConflictAlert => 'CONFLICT ALERT — AIRCRAFT TOO CLOSE';
+
+  @override
+  String radarTrafficNormal(int count) {
+    return 'TRAFFIC NORMAL — $count TRACKS';
+  }
+
+  @override
+  String get cmdTurnLeft => '◀ Left';
+
+  @override
+  String get cmdTurnRight => 'Right ▶';
+
+  @override
+  String get cmdClimb => '▲ Climb';
+
+  @override
+  String get cmdDescend => '▼ Descend';
+
+  @override
+  String get cmdSlow => 'Slow';
+
+  @override
+  String get cmdFast => 'Fast';
+
+  @override
+  String get radarScenarioCompleted => 'Scenario Completed  +100 pts';
+
+  @override
+  String get radarCompleteScenario => 'Complete Scenario';
+
+  @override
+  String get radarScenarioSnackbar => '✓ Scenario complete  +100 pts added';
+
+  @override
+  String quizQuestionProgress(int current, int total) {
+    return 'Question $current of $total';
+  }
+
+  @override
+  String get quizCorrectLabel => 'Correct!';
+
+  @override
+  String get quizIncorrectLabel => 'Incorrect';
+
+  @override
+  String get quizNextQuestion => 'Next Question';
+
+  @override
+  String get quizSeeResults => 'See Results';
+
+  @override
+  String get quizPerfectScore => 'Perfect Score!';
+
+  @override
+  String get quizGoodWork => 'Good Work!';
+
+  @override
+  String get quizKeepPracticing => 'Keep Practicing!';
+
+  @override
+  String get quizTryAgain => 'Try Again';
+
+  @override
+  String get quizBackToLesson => 'Back to Lesson';
+
+  @override
+  String get quizAppBarSuffix => '— Quiz';
+
+  @override
+  String get lessonsTitle => 'ATM Lessons';
+
+  @override
+  String get lessonsSelectTitle => 'Select Lesson';
+
+  @override
+  String get keyPointsSection => 'KEY POINTS';
+
+  @override
+  String get startQuiz => 'Start Quiz';
+
+  @override
+  String get contributeScreenTitle => 'CONTRIBUTE';
+
+  @override
+  String get contributeHeadline => 'Built by ATM Engineers';
+
+  @override
+  String get contributeDescription =>
+      'ATM Academy is an open educational project for the aviation and ATM community. If you work in ATM, ATC, or aviation — your knowledge can help others learn.';
+
+  @override
+  String get contributeHowToSection => 'HOW TO CONTRIBUTE';
+
+  @override
+  String get contributeSuggestLesson => 'Suggest a Lesson';
+
+  @override
+  String get contributeSuggestLessonDesc =>
+      'Propose a new topic, lesson outline, or learning objective.';
+
+  @override
+  String get contributeImproveQuiz => 'Improve a Quiz';
+
+  @override
+  String get contributeImproveQuizDesc =>
+      'Suggest better questions, correct inaccuracies, or add explanations.';
+
+  @override
+  String get contributeAddScenario => 'Add a Simulation Scenario';
+
+  @override
+  String get contributeAddScenarioDesc =>
+      'Design a radar scenario, conflict situation, or runway exercise.';
+
+  @override
+  String get contributeGetStarted => 'GET STARTED';
+
+  @override
+  String get contributeGithub => 'GitHub Repository';
+
+  @override
+  String get contributeContact => 'Contact';
+
+  @override
+  String get contributeDisclaimer =>
+      'All contributions must use publicly available, generic ATM knowledge only.\nNo proprietary, confidential, or restricted information.';
+
+  @override
+  String get aboutScreenTitle => 'ABOUT & SAFETY';
+
+  @override
+  String get aboutSafetyDisclaimerTitle => 'Safety Disclaimer';
+
+  @override
+  String get aboutSafetyDisclaimerContent =>
+      'This application is designed for general aviation and ATM education only.\n\n• It is NOT an operational ATC system.\n• It must NOT be used for real-world operational decision-making.\n• All simulations are simplified and do not represent real ATM procedures.\n• No real aircraft, airspace, or operational data is used.';
+
+  @override
+  String get aboutContentComplianceTitle => 'Content Compliance';
+
+  @override
+  String get aboutContentComplianceContent =>
+      'ATM Academy uses only publicly available, generic ATM/ATC knowledge.\n\n• No proprietary, confidential, or restricted information is included.\n• No information from any commercial ATM system vendor is used.\n• Content is based on publicly available ICAO, EUROCONTROL, and FAA materials.';
+
+  @override
+  String get aboutAppSectionTitle => 'About ATM Academy';
+
+  @override
+  String get aboutAppSectionContent =>
+      'ATM Academy is an open educational project created by ATM engineers for the aviation and ATM learning community.\n\nVersion: 1.0.0\nPlatform: iOS & Android\n\nFor feedback and contributions, visit the project page.';
+
+  @override
+  String get aboutNoCertificationTitle => 'No Official Certification';
+
+  @override
+  String get aboutNoCertificationContent =>
+      'This app does not provide, imply, or replace any form of official ATC training, licensing, or certification.\n\nFor official ATC training, consult your national aviation authority or an approved ATC training organisation.';
 }

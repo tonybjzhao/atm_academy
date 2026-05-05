@@ -439,4 +439,260 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get lesson10Q1Explanation =>
       'La conscience situationnelle aide les contrôleurs à prendre des décisions sûres.';
+
+  @override
+  String get homeAppBarTitle => 'ATM ACADÉMIE';
+
+  @override
+  String get systemOnline => 'SYSTÈME EN LIGNE';
+
+  @override
+  String get systemSubtitle =>
+      'Plateforme d\'apprentissage de la gestion du trafic aérien';
+
+  @override
+  String get modulesSection => 'MODULES';
+
+  @override
+  String get homeCardLearnAtm => 'Apprendre la GTA';
+
+  @override
+  String get homeCardLearnAtmSub => '10 leçons · Débutant à Expert';
+
+  @override
+  String get homeCardRadarSim => 'Sim Radar';
+
+  @override
+  String get homeCardRadarSimSub => 'Radar 2D en direct · 4 aéronefs';
+
+  @override
+  String get homeCardRunwayOps => 'Ops Piste';
+
+  @override
+  String get homeCardRunwayOpsSub => 'Mouvements sol & séquencement';
+
+  @override
+  String get homeCardQuizSub => 'Testez vos connaissances';
+
+  @override
+  String get homeContribute => 'Contribuer';
+
+  @override
+  String get homeContributeSub =>
+      'Construit par des ingénieurs GTA — rejoignez-nous';
+
+  @override
+  String get homeAboutSafety => 'À propos & Sécurité';
+
+  @override
+  String get homeAboutSafetySub => 'Informations de conformité';
+
+  @override
+  String get dailyChallengeTitle => 'DÉFI QUOTIDIEN';
+
+  @override
+  String get dailyChallengeSubtitle =>
+      'Complétez la mission d\'entraînement du jour';
+
+  @override
+  String get dailyChallengeTaskQuiz => 'Quiz';
+
+  @override
+  String get dailyChallengeTaskRadar => 'Scénario radar';
+
+  @override
+  String get dailyChallengeScoreLabel => 'SCORE DU JOUR';
+
+  @override
+  String get dailyChallengeRankLabel => 'RANG';
+
+  @override
+  String get dailyChallengeCompletedToday => 'Complété aujourd\'hui';
+
+  @override
+  String get dailyChallengeStartQuiz => 'Commencer le quiz';
+
+  @override
+  String get dailyChallengeStartRadar => 'Démarrer sim radar';
+
+  @override
+  String get rankCadet => 'Cadet';
+
+  @override
+  String get rankControllerTrainee => 'Stagiaire contrôleur';
+
+  @override
+  String get rankTowerReady => 'Prêt tour';
+
+  @override
+  String get rankMissionComplete => 'Mission accomplie';
+
+  @override
+  String get radarSimTitle => 'SIM RADAR';
+
+  @override
+  String get radarStatusConflict => '⚠ CONFLIT';
+
+  @override
+  String get radarStatusNormal => '● NORMAL';
+
+  @override
+  String get radarConflictAlert => 'ALERTE CONFLIT — AÉRONEFS TROP PROCHES';
+
+  @override
+  String radarTrafficNormal(int count) {
+    return 'TRAFIC NORMAL — $count PISTES';
+  }
+
+  @override
+  String get cmdTurnLeft => '◀ Gauche';
+
+  @override
+  String get cmdTurnRight => 'Droite ▶';
+
+  @override
+  String get cmdClimb => '▲ Monter';
+
+  @override
+  String get cmdDescend => '▼ Descendre';
+
+  @override
+  String get cmdSlow => 'Ralentir';
+
+  @override
+  String get cmdFast => 'Accélérer';
+
+  @override
+  String get radarScenarioCompleted => 'Scénario terminé  +100 pts';
+
+  @override
+  String get radarCompleteScenario => 'Terminer le scénario';
+
+  @override
+  String get radarScenarioSnackbar => '✓ Scénario terminé  +100 pts ajoutés';
+
+  @override
+  String quizQuestionProgress(int current, int total) {
+    return 'Question $current sur $total';
+  }
+
+  @override
+  String get quizCorrectLabel => 'Correct !';
+
+  @override
+  String get quizIncorrectLabel => 'Incorrect';
+
+  @override
+  String get quizNextQuestion => 'Question suivante';
+
+  @override
+  String get quizSeeResults => 'Voir les résultats';
+
+  @override
+  String get quizPerfectScore => 'Score parfait !';
+
+  @override
+  String get quizGoodWork => 'Bon travail !';
+
+  @override
+  String get quizKeepPracticing => 'Continuez à pratiquer !';
+
+  @override
+  String get quizTryAgain => 'Réessayer';
+
+  @override
+  String get quizBackToLesson => 'Retour à la leçon';
+
+  @override
+  String get quizAppBarSuffix => '— Quiz';
+
+  @override
+  String get lessonsTitle => 'Leçons GTA';
+
+  @override
+  String get lessonsSelectTitle => 'Sélectionner une leçon';
+
+  @override
+  String get keyPointsSection => 'POINTS CLÉS';
+
+  @override
+  String get startQuiz => 'Commencer le quiz';
+
+  @override
+  String get contributeScreenTitle => 'CONTRIBUER';
+
+  @override
+  String get contributeHeadline => 'Construit par des ingénieurs GTA';
+
+  @override
+  String get contributeDescription =>
+      'ATM Académie est un projet éducatif ouvert pour la communauté aéronautique et GTA. Si vous travaillez dans la GTA, l\'ATC ou l\'aviation — vos connaissances peuvent aider d\'autres à apprendre.';
+
+  @override
+  String get contributeHowToSection => 'COMMENT CONTRIBUER';
+
+  @override
+  String get contributeSuggestLesson => 'Suggérer une leçon';
+
+  @override
+  String get contributeSuggestLessonDesc =>
+      'Proposez un nouveau sujet, un plan de leçon ou un objectif d\'apprentissage.';
+
+  @override
+  String get contributeImproveQuiz => 'Améliorer un quiz';
+
+  @override
+  String get contributeImproveQuizDesc =>
+      'Suggérez de meilleures questions, corrigez des inexactitudes ou ajoutez des explications.';
+
+  @override
+  String get contributeAddScenario => 'Ajouter un scénario de simulation';
+
+  @override
+  String get contributeAddScenarioDesc =>
+      'Concevez un scénario radar, une situation de conflit ou un exercice de piste.';
+
+  @override
+  String get contributeGetStarted => 'COMMENCER';
+
+  @override
+  String get contributeGithub => 'Dépôt GitHub';
+
+  @override
+  String get contributeContact => 'Contact';
+
+  @override
+  String get contributeDisclaimer =>
+      'Toutes les contributions doivent utiliser uniquement des connaissances GTA génériques et disponibles publiquement.\nAucune information propriétaire, confidentielle ou restreinte.';
+
+  @override
+  String get aboutScreenTitle => 'À PROPOS & SÉCURITÉ';
+
+  @override
+  String get aboutSafetyDisclaimerTitle => 'Avis de sécurité';
+
+  @override
+  String get aboutSafetyDisclaimerContent =>
+      'Cette application est conçue uniquement pour l\'éducation générale en aviation et GTA.\n\n• Ce n\'est PAS un système ATC opérationnel.\n• Elle ne doit PAS être utilisée pour des décisions opérationnelles réelles.\n• Toutes les simulations sont simplifiées et ne représentent pas de vraies procédures GTA.\n• Aucune donnée réelle d\'aéronef, d\'espace aérien ou opérationnelle n\'est utilisée.';
+
+  @override
+  String get aboutContentComplianceTitle => 'Conformité du contenu';
+
+  @override
+  String get aboutContentComplianceContent =>
+      'ATM Académie utilise uniquement des connaissances GTA/ATC génériques et disponibles publiquement.\n\n• Aucune information propriétaire, confidentielle ou restreinte n\'est incluse.\n• Aucune information d\'un fournisseur de systèmes GTA commercial n\'est utilisée.\n• Le contenu est basé sur des documents publics de l\'OACI, d\'EUROCONTROL et de la FAA.';
+
+  @override
+  String get aboutAppSectionTitle => 'À propos d\'ATM Académie';
+
+  @override
+  String get aboutAppSectionContent =>
+      'ATM Académie est un projet éducatif ouvert créé par des ingénieurs GTA pour la communauté d\'apprentissage de l\'aviation et de la GTA.\n\nVersion : 1.0.0\nPlateforme : iOS & Android\n\nPour les retours et contributions, visitez la page du projet.';
+
+  @override
+  String get aboutNoCertificationTitle => 'Pas de certification officielle';
+
+  @override
+  String get aboutNoCertificationContent =>
+      'Cette application ne fournit pas, n\'implique pas et ne remplace pas toute forme de formation ATC officielle, de licence ou de certification.\n\nPour une formation ATC officielle, consultez votre autorité nationale de l\'aviation ou un organisme de formation ATC agréé.';
 }

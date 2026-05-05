@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 
 class AboutSafetyScreen extends StatelessWidget {
   const AboutSafetyScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(title: const Text('ABOUT & SAFETY')),
+      appBar: AppBar(title: Text(l10n.aboutScreenTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -17,48 +19,29 @@ class AboutSafetyScreen extends StatelessWidget {
             _section(
               icon: Icons.shield_outlined,
               color: AppTheme.warning,
-              title: 'Safety Disclaimer',
-              content:
-                  'This application is designed for general aviation and ATM education only.\n\n'
-                  '• It is NOT an operational ATC system.\n'
-                  '• It must NOT be used for real-world operational decision-making.\n'
-                  '• All simulations are simplified and do not represent real ATM procedures.\n'
-                  '• No real aircraft, airspace, or operational data is used.',
+              title: l10n.aboutSafetyDisclaimerTitle,
+              content: l10n.aboutSafetyDisclaimerContent,
             ),
             const SizedBox(height: 16),
             _section(
               icon: Icons.lock_outline,
               color: AppTheme.primary,
-              title: 'Content Compliance',
-              content:
-                  'ATM Academy uses only publicly available, generic ATM/ATC knowledge.\n\n'
-                  '• No proprietary, confidential, or restricted information is included.\n'
-                  '• No information from any commercial ATM system vendor is used.\n'
-                  '• Content is based on publicly available ICAO, EUROCONTROL, and FAA materials.',
+              title: l10n.aboutContentComplianceTitle,
+              content: l10n.aboutContentComplianceContent,
             ),
             const SizedBox(height: 16),
             _section(
               icon: Icons.info_outline,
               color: AppTheme.secondary,
-              title: 'About ATM Academy',
-              content:
-                  'ATM Academy is an open educational project created by ATM engineers '
-                  'for the aviation and ATM learning community.\n\n'
-                  'Version: 1.0.0\n'
-                  'Platform: iOS & Android\n\n'
-                  // TODO: Add organisation name and website when published
-                  'For feedback and contributions, visit the project page.',
+              title: l10n.aboutAppSectionTitle,
+              content: l10n.aboutAppSectionContent,
             ),
             const SizedBox(height: 16),
             _section(
               icon: Icons.gavel_outlined,
               color: Colors.purpleAccent,
-              title: 'No Official Certification',
-              content:
-                  'This app does not provide, imply, or replace any form of official ATC '
-                  'training, licensing, or certification.\n\n'
-                  'For official ATC training, consult your national aviation authority or '
-                  'an approved ATC training organisation.',
+              title: l10n.aboutNoCertificationTitle,
+              content: l10n.aboutNoCertificationContent,
             ),
             const SizedBox(height: 24),
           ],

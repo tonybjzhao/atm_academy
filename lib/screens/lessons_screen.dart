@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/models/lesson.dart';
 import '../core/theme/app_theme.dart';
 import '../data/lessons_data.dart';
+import '../l10n/app_localizations.dart';
 import 'lesson_detail_screen.dart';
 import 'quiz_screen.dart';
 
@@ -28,16 +29,16 @@ class LessonsScreen extends StatelessWidget {
     }
   }
 
-  String _levelLabel(LessonLevel level) {
+  String _levelLabel(LessonLevel level, AppLocalizations l10n) {
     switch (level) {
       case LessonLevel.beginner:
-        return 'BEGINNER';
+        return l10n.levelBeginner.toUpperCase();
       case LessonLevel.intermediate:
-        return 'INTERMEDIATE';
+        return l10n.levelIntermediate.toUpperCase();
       case LessonLevel.advanced:
-        return 'ADVANCED';
+        return l10n.levelAdvanced.toUpperCase();
       case LessonLevel.expert:
-        return 'EXPERT';
+        return l10n.levelExpert.toUpperCase();
     }
   }
 
@@ -61,7 +62,7 @@ class LessonsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text(quizMode ? 'Select Lesson for Quiz' : 'ATM Lessons'),
+        title: Text(quizMode ? AppLocalizations.of(context)!.lessonsSelectTitle : AppLocalizations.of(context)!.lessonsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -83,7 +84,7 @@ class LessonsScreen extends StatelessWidget {
                       border: Border.all(color: color.withValues(alpha: 0.4)),
                     ),
                     child: Text(
-                      _levelLabel(level),
+                      _levelLabel(level, AppLocalizations.of(context)!),
                       style: TextStyle(
                         color: color,
                         fontSize: 11,

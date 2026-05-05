@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/models/lesson.dart';
 import '../core/models/quiz_question.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import '../services/daily_challenge_service.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _QuizScreenState extends State<QuizScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text('${widget.lesson.title.of(widget.languageCode)} — Quiz'),
+        title: Text('${widget.lesson.title.of(widget.languageCode)} ${AppLocalizations.of(context)!.quizAppBarSuffix}'),
       ),
       body: _finished ? _buildResults() : _buildQuestion(),
     );
@@ -86,7 +87,7 @@ class _QuizScreenState extends State<QuizScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Question ${_currentIndex + 1} of ${_quiz.length}',
+                  AppLocalizations.of(context)!.quizQuestionProgress(_currentIndex + 1, _quiz.length),
                   style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 12,
@@ -146,7 +147,7 @@ class _QuizScreenState extends State<QuizScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              isCorrect ? 'Correct!' : 'Incorrect',
+                              isCorrect ? AppLocalizations.of(context)!.quizCorrectLabel : AppLocalizations.of(context)!.quizIncorrectLabel,
                               style: TextStyle(
                                 color: isCorrect ? Colors.greenAccent : Colors.redAccent,
                                 fontWeight: FontWeight.w700,
@@ -174,8 +175,8 @@ class _QuizScreenState extends State<QuizScreen> {
                       onPressed: _advance,
                       child: Text(
                         _currentIndex < _quiz.length - 1
-                            ? 'Next Question'
-                            : 'See Results',
+                            ? AppLocalizations.of(context)!.quizNextQuestion
+                            : AppLocalizations.of(context)!.quizSeeResults,
                       ),
                     ),
                   ),
@@ -293,10 +294,10 @@ class _QuizScreenState extends State<QuizScreen> {
             const SizedBox(height: 8),
             Text(
               isPerfect
-                  ? 'Perfect Score!'
+                  ? AppLocalizations.of(context)!.quizPerfectScore
                   : isGood
-                      ? 'Good Work!'
-                      : 'Keep Practicing!',
+                      ? AppLocalizations.of(context)!.quizGoodWork
+                      : AppLocalizations.of(context)!.quizKeepPracticing,
               style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 18,
@@ -308,7 +309,7 @@ class _QuizScreenState extends State<QuizScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _reset,
-                child: const Text('Try Again'),
+                child: Text(AppLocalizations.of(context)!.quizTryAgain),
               ),
             ),
             const SizedBox(height: 12),
@@ -317,7 +318,7 @@ class _QuizScreenState extends State<QuizScreen> {
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
                 style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-                child: const Text('Back to Lesson'),
+                child: Text(AppLocalizations.of(context)!.quizBackToLesson),
               ),
             ),
           ],

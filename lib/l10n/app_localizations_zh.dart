@@ -383,4 +383,254 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lesson10Q1Explanation => '情景意识帮助管制员做出安全决策。';
+
+  @override
+  String get homeAppBarTitle => 'ATM学院';
+
+  @override
+  String get systemOnline => '系统在线';
+
+  @override
+  String get systemSubtitle => '空中交通管理学习平台';
+
+  @override
+  String get modulesSection => '模块';
+
+  @override
+  String get homeCardLearnAtm => '学习ATM';
+
+  @override
+  String get homeCardLearnAtmSub => '10节课 · 初级到专家';
+
+  @override
+  String get homeCardRadarSim => '雷达模拟';
+
+  @override
+  String get homeCardRadarSimSub => '实时2D雷达 · 4架航空器';
+
+  @override
+  String get homeCardRunwayOps => '跑道运行';
+
+  @override
+  String get homeCardRunwayOpsSub => '地面运动与排序';
+
+  @override
+  String get homeCardQuizSub => '测试你的知识';
+
+  @override
+  String get homeContribute => '贡献';
+
+  @override
+  String get homeContributeSub => '由ATM工程师构建——加入我们';
+
+  @override
+  String get homeAboutSafety => '关于与安全';
+
+  @override
+  String get homeAboutSafetySub => '合规信息';
+
+  @override
+  String get dailyChallengeTitle => '每日挑战';
+
+  @override
+  String get dailyChallengeSubtitle => '完成今天的训练任务';
+
+  @override
+  String get dailyChallengeTaskQuiz => '测验';
+
+  @override
+  String get dailyChallengeTaskRadar => '雷达场景';
+
+  @override
+  String get dailyChallengeScoreLabel => '今日得分';
+
+  @override
+  String get dailyChallengeRankLabel => '等级';
+
+  @override
+  String get dailyChallengeCompletedToday => '今日已完成';
+
+  @override
+  String get dailyChallengeStartQuiz => '开始测验';
+
+  @override
+  String get dailyChallengeStartRadar => '开始雷达模拟';
+
+  @override
+  String get rankCadet => '学员';
+
+  @override
+  String get rankControllerTrainee => '管制学员';
+
+  @override
+  String get rankTowerReady => '塔台就绪';
+
+  @override
+  String get rankMissionComplete => '任务完成';
+
+  @override
+  String get radarSimTitle => '雷达模拟';
+
+  @override
+  String get radarStatusConflict => '⚠ 冲突';
+
+  @override
+  String get radarStatusNormal => '● 正常';
+
+  @override
+  String get radarConflictAlert => '冲突警告——航空器过近';
+
+  @override
+  String radarTrafficNormal(int count) {
+    return '交通正常——$count架航迹';
+  }
+
+  @override
+  String get cmdTurnLeft => '◀ 左转';
+
+  @override
+  String get cmdTurnRight => '右转 ▶';
+
+  @override
+  String get cmdClimb => '▲ 爬升';
+
+  @override
+  String get cmdDescend => '▼ 下降';
+
+  @override
+  String get cmdSlow => '减速';
+
+  @override
+  String get cmdFast => '加速';
+
+  @override
+  String get radarScenarioCompleted => '场景已完成 +100分';
+
+  @override
+  String get radarCompleteScenario => '完成场景';
+
+  @override
+  String get radarScenarioSnackbar => '✓ 场景完成 +100分已添加';
+
+  @override
+  String quizQuestionProgress(int current, int total) {
+    return '第$current题，共$total题';
+  }
+
+  @override
+  String get quizCorrectLabel => '正确！';
+
+  @override
+  String get quizIncorrectLabel => '错误';
+
+  @override
+  String get quizNextQuestion => '下一题';
+
+  @override
+  String get quizSeeResults => '查看结果';
+
+  @override
+  String get quizPerfectScore => '满分！';
+
+  @override
+  String get quizGoodWork => '做得好！';
+
+  @override
+  String get quizKeepPracticing => '继续练习！';
+
+  @override
+  String get quizTryAgain => '再试一次';
+
+  @override
+  String get quizBackToLesson => '返回课程';
+
+  @override
+  String get quizAppBarSuffix => '— 测验';
+
+  @override
+  String get lessonsTitle => 'ATM课程';
+
+  @override
+  String get lessonsSelectTitle => '选择课程';
+
+  @override
+  String get keyPointsSection => '关键点';
+
+  @override
+  String get startQuiz => '开始测验';
+
+  @override
+  String get contributeScreenTitle => '贡献';
+
+  @override
+  String get contributeHeadline => '由ATM工程师构建';
+
+  @override
+  String get contributeDescription =>
+      'ATM学院是面向航空和ATM社区的开放教育项目。如果您从事ATM、ATC或航空工作——您的知识可以帮助他人学习。';
+
+  @override
+  String get contributeHowToSection => '如何贡献';
+
+  @override
+  String get contributeSuggestLesson => '建议一节课';
+
+  @override
+  String get contributeSuggestLessonDesc => '提出新主题、课程大纲或学习目标。';
+
+  @override
+  String get contributeImproveQuiz => '改进测验';
+
+  @override
+  String get contributeImproveQuizDesc => '建议更好的问题，纠正错误，或添加解析。';
+
+  @override
+  String get contributeAddScenario => '添加模拟场景';
+
+  @override
+  String get contributeAddScenarioDesc => '设计雷达场景、冲突情况或跑道练习。';
+
+  @override
+  String get contributeGetStarted => '开始';
+
+  @override
+  String get contributeGithub => 'GitHub仓库';
+
+  @override
+  String get contributeContact => '联系';
+
+  @override
+  String get contributeDisclaimer =>
+      '所有贡献必须仅使用公开可用的通用ATM知识。\n不得使用任何专有、保密或受限信息。';
+
+  @override
+  String get aboutScreenTitle => '关于与安全';
+
+  @override
+  String get aboutSafetyDisclaimerTitle => '安全免责声明';
+
+  @override
+  String get aboutSafetyDisclaimerContent =>
+      '本应用程序专为通用航空和ATM教育而设计。\n\n• 它不是运营中的ATC系统。\n• 不得用于现实世界的运营决策。\n• 所有模拟均已简化，不代表真实ATM程序。\n• 不使用真实的航空器、空域或运营数据。';
+
+  @override
+  String get aboutContentComplianceTitle => '内容合规';
+
+  @override
+  String get aboutContentComplianceContent =>
+      'ATM学院仅使用公开可用的通用ATM/ATC知识。\n\n• 不包含任何专有、保密或受限信息。\n• 不使用任何商业ATM系统供应商的信息。\n• 内容基于ICAO、欧控和FAA的公开资料。';
+
+  @override
+  String get aboutAppSectionTitle => '关于ATM学院';
+
+  @override
+  String get aboutAppSectionContent =>
+      'ATM学院是由ATM工程师为航空和ATM学习社区创建的开放教育项目。\n\n版本：1.0.0\n平台：iOS和Android\n\n如需反馈和贡献，请访问项目页面。';
+
+  @override
+  String get aboutNoCertificationTitle => '无官方认证';
+
+  @override
+  String get aboutNoCertificationContent =>
+      '本应用不提供、暗示或取代任何形式的官方ATC培训、执照或认证。\n\n如需官方ATC培训，请咨询您所在国家的航空主管机构或经批准的ATC培训机构。';
 }

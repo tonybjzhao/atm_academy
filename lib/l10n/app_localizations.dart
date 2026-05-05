@@ -849,6 +849,486 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Situational awareness helps controllers make safe decisions.'**
   String get lesson10Q1Explanation;
+
+  /// No description provided for @homeAppBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ATM ACADEMY'**
+  String get homeAppBarTitle;
+
+  /// No description provided for @systemOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'SYSTEM ONLINE'**
+  String get systemOnline;
+
+  /// No description provided for @systemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Air Traffic Management Learning Platform'**
+  String get systemSubtitle;
+
+  /// No description provided for @modulesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'MODULES'**
+  String get modulesSection;
+
+  /// No description provided for @homeCardLearnAtm.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn ATM'**
+  String get homeCardLearnAtm;
+
+  /// No description provided for @homeCardLearnAtmSub.
+  ///
+  /// In en, this message translates to:
+  /// **'10 lessons · Beginner to Expert'**
+  String get homeCardLearnAtmSub;
+
+  /// No description provided for @homeCardRadarSim.
+  ///
+  /// In en, this message translates to:
+  /// **'Radar Sim'**
+  String get homeCardRadarSim;
+
+  /// No description provided for @homeCardRadarSimSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Live 2D radar · 4 aircraft'**
+  String get homeCardRadarSimSub;
+
+  /// No description provided for @homeCardRunwayOps.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway Ops'**
+  String get homeCardRunwayOps;
+
+  /// No description provided for @homeCardRunwayOpsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground movement & sequencing'**
+  String get homeCardRunwayOpsSub;
+
+  /// No description provided for @homeCardQuizSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Test your knowledge'**
+  String get homeCardQuizSub;
+
+  /// No description provided for @homeContribute.
+  ///
+  /// In en, this message translates to:
+  /// **'Contribute'**
+  String get homeContribute;
+
+  /// No description provided for @homeContributeSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Built by ATM engineers — join us'**
+  String get homeContributeSub;
+
+  /// No description provided for @homeAboutSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'About & Safety'**
+  String get homeAboutSafety;
+
+  /// No description provided for @homeAboutSafetySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance info'**
+  String get homeAboutSafetySub;
+
+  /// No description provided for @dailyChallengeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'DAILY CHALLENGE'**
+  String get dailyChallengeTitle;
+
+  /// No description provided for @dailyChallengeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete today\'s training mission'**
+  String get dailyChallengeSubtitle;
+
+  /// No description provided for @dailyChallengeTaskQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz'**
+  String get dailyChallengeTaskQuiz;
+
+  /// No description provided for @dailyChallengeTaskRadar.
+  ///
+  /// In en, this message translates to:
+  /// **'Radar Scenario'**
+  String get dailyChallengeTaskRadar;
+
+  /// No description provided for @dailyChallengeScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY\'S SCORE'**
+  String get dailyChallengeScoreLabel;
+
+  /// No description provided for @dailyChallengeRankLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'RANK'**
+  String get dailyChallengeRankLabel;
+
+  /// No description provided for @dailyChallengeCompletedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Today'**
+  String get dailyChallengeCompletedToday;
+
+  /// No description provided for @dailyChallengeStartQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Quiz'**
+  String get dailyChallengeStartQuiz;
+
+  /// No description provided for @dailyChallengeStartRadar.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Radar Sim'**
+  String get dailyChallengeStartRadar;
+
+  /// No description provided for @rankCadet.
+  ///
+  /// In en, this message translates to:
+  /// **'Cadet'**
+  String get rankCadet;
+
+  /// No description provided for @rankControllerTrainee.
+  ///
+  /// In en, this message translates to:
+  /// **'Controller Trainee'**
+  String get rankControllerTrainee;
+
+  /// No description provided for @rankTowerReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower Ready'**
+  String get rankTowerReady;
+
+  /// No description provided for @rankMissionComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mission Complete'**
+  String get rankMissionComplete;
+
+  /// No description provided for @radarSimTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'RADAR SIM'**
+  String get radarSimTitle;
+
+  /// No description provided for @radarStatusConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'⚠ CONFLICT'**
+  String get radarStatusConflict;
+
+  /// No description provided for @radarStatusNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'● NORMAL'**
+  String get radarStatusNormal;
+
+  /// No description provided for @radarConflictAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'CONFLICT ALERT — AIRCRAFT TOO CLOSE'**
+  String get radarConflictAlert;
+
+  /// No description provided for @radarTrafficNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'TRAFFIC NORMAL — {count} TRACKS'**
+  String radarTrafficNormal(int count);
+
+  /// No description provided for @cmdTurnLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'◀ Left'**
+  String get cmdTurnLeft;
+
+  /// No description provided for @cmdTurnRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right ▶'**
+  String get cmdTurnRight;
+
+  /// No description provided for @cmdClimb.
+  ///
+  /// In en, this message translates to:
+  /// **'▲ Climb'**
+  String get cmdClimb;
+
+  /// No description provided for @cmdDescend.
+  ///
+  /// In en, this message translates to:
+  /// **'▼ Descend'**
+  String get cmdDescend;
+
+  /// No description provided for @cmdSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow'**
+  String get cmdSlow;
+
+  /// No description provided for @cmdFast.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get cmdFast;
+
+  /// No description provided for @radarScenarioCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario Completed  +100 pts'**
+  String get radarScenarioCompleted;
+
+  /// No description provided for @radarCompleteScenario.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Scenario'**
+  String get radarCompleteScenario;
+
+  /// No description provided for @radarScenarioSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Scenario complete  +100 pts added'**
+  String get radarScenarioSnackbar;
+
+  /// No description provided for @quizQuestionProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {current} of {total}'**
+  String quizQuestionProgress(int current, int total);
+
+  /// No description provided for @quizCorrectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct!'**
+  String get quizCorrectLabel;
+
+  /// No description provided for @quizIncorrectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect'**
+  String get quizIncorrectLabel;
+
+  /// No description provided for @quizNextQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Question'**
+  String get quizNextQuestion;
+
+  /// No description provided for @quizSeeResults.
+  ///
+  /// In en, this message translates to:
+  /// **'See Results'**
+  String get quizSeeResults;
+
+  /// No description provided for @quizPerfectScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect Score!'**
+  String get quizPerfectScore;
+
+  /// No description provided for @quizGoodWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Good Work!'**
+  String get quizGoodWork;
+
+  /// No description provided for @quizKeepPracticing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Practicing!'**
+  String get quizKeepPracticing;
+
+  /// No description provided for @quizTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get quizTryAgain;
+
+  /// No description provided for @quizBackToLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Lesson'**
+  String get quizBackToLesson;
+
+  /// No description provided for @quizAppBarSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'— Quiz'**
+  String get quizAppBarSuffix;
+
+  /// No description provided for @lessonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ATM Lessons'**
+  String get lessonsTitle;
+
+  /// No description provided for @lessonsSelectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Lesson'**
+  String get lessonsSelectTitle;
+
+  /// No description provided for @keyPointsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'KEY POINTS'**
+  String get keyPointsSection;
+
+  /// No description provided for @startQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Quiz'**
+  String get startQuiz;
+
+  /// No description provided for @contributeScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'CONTRIBUTE'**
+  String get contributeScreenTitle;
+
+  /// No description provided for @contributeHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Built by ATM Engineers'**
+  String get contributeHeadline;
+
+  /// No description provided for @contributeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'ATM Academy is an open educational project for the aviation and ATM community. If you work in ATM, ATC, or aviation — your knowledge can help others learn.'**
+  String get contributeDescription;
+
+  /// No description provided for @contributeHowToSection.
+  ///
+  /// In en, this message translates to:
+  /// **'HOW TO CONTRIBUTE'**
+  String get contributeHowToSection;
+
+  /// No description provided for @contributeSuggestLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a Lesson'**
+  String get contributeSuggestLesson;
+
+  /// No description provided for @contributeSuggestLessonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose a new topic, lesson outline, or learning objective.'**
+  String get contributeSuggestLessonDesc;
+
+  /// No description provided for @contributeImproveQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve a Quiz'**
+  String get contributeImproveQuiz;
+
+  /// No description provided for @contributeImproveQuizDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest better questions, correct inaccuracies, or add explanations.'**
+  String get contributeImproveQuizDesc;
+
+  /// No description provided for @contributeAddScenario.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a Simulation Scenario'**
+  String get contributeAddScenario;
+
+  /// No description provided for @contributeAddScenarioDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Design a radar scenario, conflict situation, or runway exercise.'**
+  String get contributeAddScenarioDesc;
+
+  /// No description provided for @contributeGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'GET STARTED'**
+  String get contributeGetStarted;
+
+  /// No description provided for @contributeGithub.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub Repository'**
+  String get contributeGithub;
+
+  /// No description provided for @contributeContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contributeContact;
+
+  /// No description provided for @contributeDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'All contributions must use publicly available, generic ATM knowledge only.\nNo proprietary, confidential, or restricted information.'**
+  String get contributeDisclaimer;
+
+  /// No description provided for @aboutScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ABOUT & SAFETY'**
+  String get aboutScreenTitle;
+
+  /// No description provided for @aboutSafetyDisclaimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Disclaimer'**
+  String get aboutSafetyDisclaimerTitle;
+
+  /// No description provided for @aboutSafetyDisclaimerContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This application is designed for general aviation and ATM education only.\n\n• It is NOT an operational ATC system.\n• It must NOT be used for real-world operational decision-making.\n• All simulations are simplified and do not represent real ATM procedures.\n• No real aircraft, airspace, or operational data is used.'**
+  String get aboutSafetyDisclaimerContent;
+
+  /// No description provided for @aboutContentComplianceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Compliance'**
+  String get aboutContentComplianceTitle;
+
+  /// No description provided for @aboutContentComplianceContent.
+  ///
+  /// In en, this message translates to:
+  /// **'ATM Academy uses only publicly available, generic ATM/ATC knowledge.\n\n• No proprietary, confidential, or restricted information is included.\n• No information from any commercial ATM system vendor is used.\n• Content is based on publicly available ICAO, EUROCONTROL, and FAA materials.'**
+  String get aboutContentComplianceContent;
+
+  /// No description provided for @aboutAppSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About ATM Academy'**
+  String get aboutAppSectionTitle;
+
+  /// No description provided for @aboutAppSectionContent.
+  ///
+  /// In en, this message translates to:
+  /// **'ATM Academy is an open educational project created by ATM engineers for the aviation and ATM learning community.\n\nVersion: 1.0.0\nPlatform: iOS & Android\n\nFor feedback and contributions, visit the project page.'**
+  String get aboutAppSectionContent;
+
+  /// No description provided for @aboutNoCertificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Official Certification'**
+  String get aboutNoCertificationTitle;
+
+  /// No description provided for @aboutNoCertificationContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This app does not provide, imply, or replace any form of official ATC training, licensing, or certification.\n\nFor official ATC training, consult your national aviation authority or an approved ATC training organisation.'**
+  String get aboutNoCertificationContent;
 }
 
 class _AppLocalizationsDelegate

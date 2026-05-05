@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../core/models/aircraft.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import '../services/daily_challenge_service.dart';
 import '../widgets/radar_painter.dart';
 
@@ -94,13 +95,15 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('RADAR SIM'),
+        title: Text(AppLocalizations.of(context)!.radarSimTitle),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(
               child: Text(
-                conflict ? '⚠ CONFLICT' : '● NORMAL',
+                conflict
+                    ? AppLocalizations.of(context)!.radarStatusConflict
+                    : AppLocalizations.of(context)!.radarStatusNormal,
                 style: TextStyle(
                   color: conflict ? AppTheme.danger : AppTheme.primary,
                   fontWeight: FontWeight.bold,
@@ -137,8 +140,8 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                 const SizedBox(width: 8),
                 Text(
                   conflict
-                      ? 'CONFLICT ALERT — AIRCRAFT TOO CLOSE'
-                      : 'TRAFFIC NORMAL — ${_aircraft.length} TRACKS',
+                      ? AppLocalizations.of(context)!.radarConflictAlert
+                      : AppLocalizations.of(context)!.radarTrafficNormal(_aircraft.length),
                   style: TextStyle(
                     color: conflict ? AppTheme.danger : AppTheme.primary,
                     fontWeight: FontWeight.w600,
@@ -210,12 +213,12 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: [
-                _cmdBtn('◀ Left', () => _command('left')),
-                _cmdBtn('Right ▶', () => _command('right')),
-                _cmdBtn('▲ Climb', () => _command('climb')),
-                _cmdBtn('▼ Descend', () => _command('descend')),
-                _cmdBtn('Slow', () => _command('slow')),
-                _cmdBtn('Fast', () => _command('fast')),
+                _cmdBtn(AppLocalizations.of(context)!.cmdTurnLeft, () => _command('left')),
+                _cmdBtn(AppLocalizations.of(context)!.cmdTurnRight, () => _command('right')),
+                _cmdBtn(AppLocalizations.of(context)!.cmdClimb, () => _command('climb')),
+                _cmdBtn(AppLocalizations.of(context)!.cmdDescend, () => _command('descend')),
+                _cmdBtn(AppLocalizations.of(context)!.cmdSlow, () => _command('slow')),
+                _cmdBtn(AppLocalizations.of(context)!.cmdFast, () => _command('fast')),
               ],
             ),
           ),
@@ -228,7 +231,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                   ? OutlinedButton.icon(
                       onPressed: null,
                       icon: const Icon(Icons.check_circle, size: 15),
-                      label: const Text('Scenario Completed  +100 pts'),
+                      label: Text(AppLocalizations.of(context)!.radarScenarioCompleted),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.primary,
                         side: BorderSide(
@@ -237,15 +240,15 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                     )
                   : ElevatedButton.icon(
                       icon: const Icon(Icons.flag_outlined, size: 15),
-                      label: const Text('Complete Scenario'),
+                      label: Text(AppLocalizations.of(context)!.radarCompleteScenario),
                       onPressed: () async {
+                        final snackMsg = AppLocalizations.of(context)!.radarScenarioSnackbar;
                         await DailyChallengeService.instance.markRadarDone();
                         if (!mounted) return;
                         setState(() => _scenarioCompleted = true);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text(
-                                '✓ Scenario complete  +100 pts added'),
+                            content: Text(snackMsg),
                             backgroundColor: AppTheme.primary,
                             behavior: SnackBarBehavior.floating,
                             duration: const Duration(seconds: 2),

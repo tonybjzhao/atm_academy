@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/models/lesson.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/comms_pulse_animation.dart';
 import '../widgets/radar_sweep_animation.dart';
 import '../widgets/runway_flow_animation.dart';
@@ -30,16 +31,16 @@ class LessonDetailScreen extends StatelessWidget {
     }
   }
 
-  String _levelLabel(LessonLevel level) {
+  String _levelLabel(LessonLevel level, AppLocalizations l10n) {
     switch (level) {
       case LessonLevel.beginner:
-        return 'BEGINNER';
+        return l10n.levelBeginner.toUpperCase();
       case LessonLevel.intermediate:
-        return 'INTERMEDIATE';
+        return l10n.levelIntermediate.toUpperCase();
       case LessonLevel.advanced:
-        return 'ADVANCED';
+        return l10n.levelAdvanced.toUpperCase();
       case LessonLevel.expert:
-        return 'EXPERT';
+        return l10n.levelExpert.toUpperCase();
     }
   }
 
@@ -84,7 +85,7 @@ class LessonDetailScreen extends StatelessWidget {
                     border: Border.all(color: levelColor.withValues(alpha: 0.4)),
                   ),
                   child: Text(
-                    _levelLabel(lesson.level),
+                    _levelLabel(lesson.level, AppLocalizations.of(context)!),
                     style: TextStyle(
                       color: levelColor,
                       fontSize: 11,
@@ -101,9 +102,9 @@ class LessonDetailScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 20),
-            const Text(
-              'KEY POINTS',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.keyPointsSection,
+              style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -147,7 +148,7 @@ class LessonDetailScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.quiz_outlined),
-                label: const Text('Start Quiz'),
+                label: Text(AppLocalizations.of(context)!.startQuiz),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
