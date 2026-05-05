@@ -162,7 +162,7 @@ Built by ATM engineers. Contributions from the aviation and ATM community are we
 **Repo:** https://github.com/tonybjzhao/atm_academy
 
 <!-- TODO: Replace with team contact email -->
-**Contact:** atm.academy@in5km.com
+**Contact:** in5km.zyt@gmail.com
 
 All contributions must use publicly available, generic ATM/ATC knowledge only. No proprietary, confidential, or restricted information.
 

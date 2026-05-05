@@ -108,14 +108,14 @@ class ContributeScreen extends StatelessWidget {
                   _LinkRow(
                     icon: Icons.code,
                     label: 'GitHub Repository',
-                    value: 'github.com/in5km/atm_academy',
+                    value: 'github.com/tonybjzhao/atm_academy',
                   ),
                   SizedBox(height: 8),
                   // TODO: Replace with team contact email
                   _LinkRow(
                     icon: Icons.email_outlined,
                     label: 'Contact',
-                    value: 'atm.academy@in5km.com',
+                    value: 'in5km.zyt@gmail.com',
                   ),
                 ],
               ),
