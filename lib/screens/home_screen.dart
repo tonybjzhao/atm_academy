@@ -164,7 +164,7 @@ class HomeScreen extends StatelessWidget {
                 AtmCard(
                   icon: Icons.quiz_outlined,
                   iconColor: Colors.purpleAccent,
-                  title: AppLocalizations.of(context)!.navCourses,
+                  title: AppLocalizations.of(context)!.quizTitle,
                   subtitle: AppLocalizations.of(context)!.homeCardQuizSub,
                   onTap: () => Navigator.push(
                     context,

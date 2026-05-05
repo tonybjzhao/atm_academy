@@ -1329,6 +1329,1206 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This app does not provide, imply, or replace any form of official ATC training, licensing, or certification.\n\nFor official ATC training, consult your national aviation authority or an approved ATC training organisation.'**
   String get aboutNoCertificationContent;
+
+  /// No description provided for @whatIsAtmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What is ATM?'**
+  String get whatIsAtmTitle;
+
+  /// No description provided for @whatIsAtmSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Air Traffic Management keeps aircraft moving safely and efficiently across the world.'**
+  String get whatIsAtmSummary;
+
+  /// No description provided for @whatIsAtmPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'ATM = Air Traffic Management: the dynamic, integrated management of air traffic.'**
+  String get whatIsAtmPoint1;
+
+  /// No description provided for @whatIsAtmPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Three pillars: Air Traffic Control (ATC), Airspace Management (ASM), Air Traffic Flow Management (ATFM).'**
+  String get whatIsAtmPoint2;
+
+  /// No description provided for @whatIsAtmPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'Core goals: Safety, Efficiency, Order, and Capacity.'**
+  String get whatIsAtmPoint3;
+
+  /// No description provided for @whatIsAtmQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What does ATM stand for?'**
+  String get whatIsAtmQ1Question;
+
+  /// No description provided for @whatIsAtmQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Automated Teller Machine'**
+  String get whatIsAtmQ1O0;
+
+  /// No description provided for @whatIsAtmQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Air Traffic Management'**
+  String get whatIsAtmQ1O1;
+
+  /// No description provided for @whatIsAtmQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft Terminal Monitor'**
+  String get whatIsAtmQ1O2;
+
+  /// No description provided for @whatIsAtmQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'ATM stands for Air Traffic Management — the system that keeps all aircraft safe and efficient.'**
+  String get whatIsAtmQ1Explanation;
+
+  /// No description provided for @whatIsAtmQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Which of these is NOT one of the three pillars of ATM?'**
+  String get whatIsAtmQ2Question;
+
+  /// No description provided for @whatIsAtmQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Air Traffic Control'**
+  String get whatIsAtmQ2O0;
+
+  /// No description provided for @whatIsAtmQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Airline ticketing'**
+  String get whatIsAtmQ2O1;
+
+  /// No description provided for @whatIsAtmQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Airspace Management'**
+  String get whatIsAtmQ2O2;
+
+  /// No description provided for @whatIsAtmQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Airline ticketing is a commercial function, not part of ATM. The three pillars are ATC, ASM, and ATFM.'**
+  String get whatIsAtmQ2Explanation;
+
+  /// No description provided for @whatIsAtmQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the primary goal of ATM?'**
+  String get whatIsAtmQ3Question;
+
+  /// No description provided for @whatIsAtmQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize airline profit'**
+  String get whatIsAtmQ3O0;
+
+  /// No description provided for @whatIsAtmQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety and efficient movement of aircraft'**
+  String get whatIsAtmQ3O1;
+
+  /// No description provided for @whatIsAtmQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduce fuel prices'**
+  String get whatIsAtmQ3O2;
+
+  /// No description provided for @whatIsAtmQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety is always the first priority in ATM, followed by efficiency and order.'**
+  String get whatIsAtmQ3Explanation;
+
+  /// No description provided for @airspaceBasicsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Airspace Basics'**
+  String get airspaceBasicsTitle;
+
+  /// No description provided for @airspaceBasicsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Airspace is divided into classes and regions to manage traffic safely.'**
+  String get airspaceBasicsSummary;
+
+  /// No description provided for @airspaceBasicsPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Airspace classes A–G define rules for who can fly there and what services they receive.'**
+  String get airspaceBasicsPoint1;
+
+  /// No description provided for @airspaceBasicsPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Controlled airspace requires ATC clearance. Uncontrolled airspace (Class G) does not.'**
+  String get airspaceBasicsPoint2;
+
+  /// No description provided for @airspaceBasicsPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'A Flight Information Region (FIR) is a large volume of airspace managed by one centre.'**
+  String get airspaceBasicsPoint3;
+
+  /// No description provided for @airspaceBasicsQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Class A airspace is:'**
+  String get airspaceBasicsQ1Question;
+
+  /// No description provided for @airspaceBasicsQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Fully controlled, IFR only'**
+  String get airspaceBasicsQ1O0;
+
+  /// No description provided for @airspaceBasicsQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncontrolled, VFR only'**
+  String get airspaceBasicsQ1O1;
+
+  /// No description provided for @airspaceBasicsQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Open to all without clearance'**
+  String get airspaceBasicsQ1O2;
+
+  /// No description provided for @airspaceBasicsQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Class A is the most restrictive: only IFR flights with ATC clearance are allowed.'**
+  String get airspaceBasicsQ1Explanation;
+
+  /// No description provided for @airspaceBasicsQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What is a FIR?'**
+  String get airspaceBasicsQ2Question;
+
+  /// No description provided for @airspaceBasicsQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'A type of aircraft radar'**
+  String get airspaceBasicsQ2O0;
+
+  /// No description provided for @airspaceBasicsQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight Information Region'**
+  String get airspaceBasicsQ2O1;
+
+  /// No description provided for @airspaceBasicsQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'A runway marking system'**
+  String get airspaceBasicsQ2O2;
+
+  /// No description provided for @airspaceBasicsQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'A FIR (Flight Information Region) is a defined volume of airspace managed by an air traffic services provider.'**
+  String get airspaceBasicsQ2Explanation;
+
+  /// No description provided for @airspaceBasicsQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Which class requires no ATC clearance?'**
+  String get airspaceBasicsQ3Question;
+
+  /// No description provided for @airspaceBasicsQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Class A'**
+  String get airspaceBasicsQ3O0;
+
+  /// No description provided for @airspaceBasicsQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Class C'**
+  String get airspaceBasicsQ3O1;
+
+  /// No description provided for @airspaceBasicsQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Class G'**
+  String get airspaceBasicsQ3O2;
+
+  /// No description provided for @airspaceBasicsQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Class G is uncontrolled airspace — flights operate without ATC clearance, though information services may exist.'**
+  String get airspaceBasicsQ3Explanation;
+
+  /// No description provided for @radarBasicsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Radar Basics'**
+  String get radarBasicsTitle;
+
+  /// No description provided for @radarBasicsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Radar is the primary tool controllers use to see aircraft position and movement.'**
+  String get radarBasicsSummary;
+
+  /// No description provided for @radarBasicsPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Surveillance Radar (PSR) detects reflections of radio waves off aircraft.'**
+  String get radarBasicsPoint1;
+
+  /// No description provided for @radarBasicsPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary Surveillance Radar (SSR) interrogates transponders — giving callsign, altitude, and speed.'**
+  String get radarBasicsPoint2;
+
+  /// No description provided for @radarBasicsPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft appear as \"blips\" on the display, updated each radar rotation (typically 4–12 seconds).'**
+  String get radarBasicsPoint3;
+
+  /// No description provided for @radarBasicsQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What does SSR stand for?'**
+  String get radarBasicsQ1Question;
+
+  /// No description provided for @radarBasicsQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary Surveillance Radar'**
+  String get radarBasicsQ1O0;
+
+  /// No description provided for @radarBasicsQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed and Separation Record'**
+  String get radarBasicsQ1O1;
+
+  /// No description provided for @radarBasicsQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Separation Rule'**
+  String get radarBasicsQ1O2;
+
+  /// No description provided for @radarBasicsQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'SSR (Secondary Surveillance Radar) interrogates aircraft transponders to provide identification and altitude data.'**
+  String get radarBasicsQ1Explanation;
+
+  /// No description provided for @radarBasicsQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What is an aircraft \"blip\" on radar?'**
+  String get radarBasicsQ2Question;
+
+  /// No description provided for @radarBasicsQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'A sound the controller hears'**
+  String get radarBasicsQ2O0;
+
+  /// No description provided for @radarBasicsQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'A visual indicator of the aircraft position'**
+  String get radarBasicsQ2O1;
+
+  /// No description provided for @radarBasicsQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'An error in the radar system'**
+  String get radarBasicsQ2O2;
+
+  /// No description provided for @radarBasicsQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'A blip is the return shown on the radar display representing the aircraft\'s detected position.'**
+  String get radarBasicsQ2Explanation;
+
+  /// No description provided for @radarBasicsQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary radar works by:'**
+  String get radarBasicsQ3Question;
+
+  /// No description provided for @radarBasicsQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking aircraft to send their position'**
+  String get radarBasicsQ3O0;
+
+  /// No description provided for @radarBasicsQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting reflected radio waves off the aircraft'**
+  String get radarBasicsQ3O1;
+
+  /// No description provided for @radarBasicsQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Using GPS satellite data'**
+  String get radarBasicsQ3O2;
+
+  /// No description provided for @radarBasicsQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary radar emits radio pulses and detects the echo reflected back from aircraft.'**
+  String get radarBasicsQ3Explanation;
+
+  /// No description provided for @separationBasicsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation Basics'**
+  String get separationBasicsTitle;
+
+  /// No description provided for @separationBasicsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintaining separation between aircraft is the core safety task of ATC.'**
+  String get separationBasicsSummary;
+
+  /// No description provided for @separationBasicsPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical separation: aircraft at different altitudes (e.g., 1000 ft minimum below FL290).'**
+  String get separationBasicsPoint1;
+
+  /// No description provided for @separationBasicsPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Horizontal separation: lateral (side-by-side) and longitudinal (one behind another).'**
+  String get separationBasicsPoint2;
+
+  /// No description provided for @separationBasicsPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'A Loss of Separation (LOS) is a serious incident and must be reported and investigated.'**
+  String get separationBasicsPoint3;
+
+  /// No description provided for @separationBasicsQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What is vertical separation?'**
+  String get separationBasicsQ1Question;
+
+  /// No description provided for @separationBasicsQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft side by side at same altitude'**
+  String get separationBasicsQ1O0;
+
+  /// No description provided for @separationBasicsQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft at different altitudes'**
+  String get separationBasicsQ1O1;
+
+  /// No description provided for @separationBasicsQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft separated by time only'**
+  String get separationBasicsQ1O2;
+
+  /// No description provided for @separationBasicsQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical separation keeps aircraft at different flight levels to prevent collision.'**
+  String get separationBasicsQ1Explanation;
+
+  /// No description provided for @separationBasicsQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'A Loss of Separation means:'**
+  String get separationBasicsQ2Question;
+
+  /// No description provided for @separationBasicsQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'An aircraft changed frequency'**
+  String get separationBasicsQ2O0;
+
+  /// No description provided for @separationBasicsQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'The minimum required distance was not maintained'**
+  String get separationBasicsQ2O1;
+
+  /// No description provided for @separationBasicsQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'A pilot requested descent'**
+  String get separationBasicsQ2O2;
+
+  /// No description provided for @separationBasicsQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Loss of separation occurs when aircraft come closer than the prescribed minimum, which is a serious safety event.'**
+  String get separationBasicsQ2Explanation;
+
+  /// No description provided for @separationBasicsQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitudinal separation refers to:'**
+  String get separationBasicsQ3Question;
+
+  /// No description provided for @separationBasicsQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft at different altitudes'**
+  String get separationBasicsQ3O0;
+
+  /// No description provided for @separationBasicsQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft separated in the direction of flight'**
+  String get separationBasicsQ3O1;
+
+  /// No description provided for @separationBasicsQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft at different airports'**
+  String get separationBasicsQ3O2;
+
+  /// No description provided for @separationBasicsQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitudinal separation maintains distance between aircraft flying one behind the other on the same route.'**
+  String get separationBasicsQ3Explanation;
+
+  /// No description provided for @runwayOperationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway Operations'**
+  String get runwayOperationsTitle;
+
+  /// No description provided for @runwayOperationsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway safety is the highest priority in airport operations.'**
+  String get runwayOperationsSummary;
+
+  /// No description provided for @runwayOperationsPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Runways are designated by magnetic heading (e.g., Runway 27L means 270° heading, left of parallel).'**
+  String get runwayOperationsPoint1;
+
+  /// No description provided for @runwayOperationsPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway incursion: an unauthorised presence on the runway — a top safety concern.'**
+  String get runwayOperationsPoint2;
+
+  /// No description provided for @runwayOperationsPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower sequencing: controllers manage arrivals and departures to maximise runway throughput safely.'**
+  String get runwayOperationsPoint3;
+
+  /// No description provided for @runwayOperationsQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway 09 points towards which direction?'**
+  String get runwayOperationsQ1Question;
+
+  /// No description provided for @runwayOperationsQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'West (270°)'**
+  String get runwayOperationsQ1O0;
+
+  /// No description provided for @runwayOperationsQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'East (090°)'**
+  String get runwayOperationsQ1O1;
+
+  /// No description provided for @runwayOperationsQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'North (360°)'**
+  String get runwayOperationsQ1O2;
+
+  /// No description provided for @runwayOperationsQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway numbers indicate the magnetic heading in tens of degrees. Runway 09 = 090° = East.'**
+  String get runwayOperationsQ1Explanation;
+
+  /// No description provided for @runwayOperationsQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What is a runway incursion?'**
+  String get runwayOperationsQ2Question;
+
+  /// No description provided for @runwayOperationsQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'A normal landing procedure'**
+  String get runwayOperationsQ2O0;
+
+  /// No description provided for @runwayOperationsQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Any unauthorised presence on an active runway'**
+  String get runwayOperationsQ2O1;
+
+  /// No description provided for @runwayOperationsQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'A runway lighting failure'**
+  String get runwayOperationsQ2O2;
+
+  /// No description provided for @runwayOperationsQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'A runway incursion is any occurrence where an aircraft, vehicle, or person is on a runway without clearance.'**
+  String get runwayOperationsQ2Explanation;
+
+  /// No description provided for @runwayOperationsQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Who is responsible for runway sequencing at an airport?'**
+  String get runwayOperationsQ3Question;
+
+  /// No description provided for @runwayOperationsQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'The airline operations centre'**
+  String get runwayOperationsQ3O0;
+
+  /// No description provided for @runwayOperationsQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'The Tower controller'**
+  String get runwayOperationsQ3O1;
+
+  /// No description provided for @runwayOperationsQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'The ground handling agent'**
+  String get runwayOperationsQ3O2;
+
+  /// No description provided for @runwayOperationsQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'The Tower controller manages all runway movements — takeoffs, landings, and crossing traffic.'**
+  String get runwayOperationsQ3Explanation;
+
+  /// No description provided for @atcPhraseologyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ATC Phraseology'**
+  String get atcPhraseologyTitle;
+
+  /// No description provided for @atcPhraseologySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard phrases prevent misunderstandings and ensure clear, efficient communication.'**
+  String get atcPhraseologySummary;
+
+  /// No description provided for @atcPhraseologyPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Cleared\" means ATC authorises an action. Never act without a clearance.'**
+  String get atcPhraseologyPoint1;
+
+  /// No description provided for @atcPhraseologyPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-back required: pilots must repeat key instructions to confirm correct receipt.'**
+  String get atcPhraseologyPoint2;
+
+  /// No description provided for @atcPhraseologyPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'ICAO standard phraseology is used globally to minimise language barrier errors.'**
+  String get atcPhraseologyPoint3;
+
+  /// No description provided for @atcPhraseologyQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'If a pilot does not read back a clearance, what should the controller do?'**
+  String get atcPhraseologyQ1Question;
+
+  /// No description provided for @atcPhraseologyQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Assume the pilot understood'**
+  String get atcPhraseologyQ1O0;
+
+  /// No description provided for @atcPhraseologyQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-issue the clearance and request read-back'**
+  String get atcPhraseologyQ1O1;
+
+  /// No description provided for @atcPhraseologyQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer to another frequency'**
+  String get atcPhraseologyQ1O2;
+
+  /// No description provided for @atcPhraseologyQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-back is essential for safety. The controller must ensure the clearance is correctly acknowledged.'**
+  String get atcPhraseologyQ1Explanation;
+
+  /// No description provided for @atcPhraseologyQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'The word \"CLEARED\" in ATC means:'**
+  String get atcPhraseologyQ2Question;
+
+  /// No description provided for @atcPhraseologyQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility is good'**
+  String get atcPhraseologyQ2O0;
+
+  /// No description provided for @atcPhraseologyQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorised to proceed as specified'**
+  String get atcPhraseologyQ2O1;
+
+  /// No description provided for @atcPhraseologyQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'The aircraft is clean (no flaps)'**
+  String get atcPhraseologyQ2O2;
+
+  /// No description provided for @atcPhraseologyQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Cleared\" is an ATC authorisation for a specific action, such as takeoff, landing, or a route.'**
+  String get atcPhraseologyQ2Explanation;
+
+  /// No description provided for @atcPhraseologyQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is ICAO standard phraseology important?'**
+  String get atcPhraseologyQ3Question;
+
+  /// No description provided for @atcPhraseologyQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'It makes flights faster'**
+  String get atcPhraseologyQ3O0;
+
+  /// No description provided for @atcPhraseologyQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'It reduces misunderstandings across language barriers'**
+  String get atcPhraseologyQ3O1;
+
+  /// No description provided for @atcPhraseologyQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'It is only used in Europe'**
+  String get atcPhraseologyQ3O2;
+
+  /// No description provided for @atcPhraseologyQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard phraseology gives controllers and pilots a shared language, reducing the risk of miscommunication.'**
+  String get atcPhraseologyQ3Explanation;
+
+  /// No description provided for @flightPhasesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight Phases'**
+  String get flightPhasesTitle;
+
+  /// No description provided for @flightPhasesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Each phase of flight involves different controllers and procedures.'**
+  String get flightPhasesSummary;
+
+  /// No description provided for @flightPhasesPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-departure → Clearance Delivery → Ground → Tower → Departure → En-route → Approach → Tower → Parking.'**
+  String get flightPhasesPoint1;
+
+  /// No description provided for @flightPhasesPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Each handoff between controllers must include position, altitude, and clearance information.'**
+  String get flightPhasesPoint2;
+
+  /// No description provided for @flightPhasesPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'The en-route phase (cruise) covers the longest segment and is managed by Area Control Centres (ACC).'**
+  String get flightPhasesPoint3;
+
+  /// No description provided for @flightPhasesQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Which controller handles an aircraft during cruise between airports?'**
+  String get flightPhasesQ1Question;
+
+  /// No description provided for @flightPhasesQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower controller'**
+  String get flightPhasesQ1O0;
+
+  /// No description provided for @flightPhasesQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'En-route (ACC) controller'**
+  String get flightPhasesQ1O1;
+
+  /// No description provided for @flightPhasesQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground controller'**
+  String get flightPhasesQ1O2;
+
+  /// No description provided for @flightPhasesQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'The en-route controller at an Area Control Centre (ACC) manages aircraft during the cruise phase.'**
+  String get flightPhasesQ1Explanation;
+
+  /// No description provided for @flightPhasesQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What must be included in a controller handoff?'**
+  String get flightPhasesQ2Question;
+
+  /// No description provided for @flightPhasesQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger count only'**
+  String get flightPhasesQ2O0;
+
+  /// No description provided for @flightPhasesQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Position, altitude, and clearance information'**
+  String get flightPhasesQ2O1;
+
+  /// No description provided for @flightPhasesQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft colour and type only'**
+  String get flightPhasesQ2O2;
+
+  /// No description provided for @flightPhasesQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'A proper handoff ensures the receiving controller has all information needed to maintain safe separation.'**
+  String get flightPhasesQ2Explanation;
+
+  /// No description provided for @flightPhasesQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearance Delivery is used to:'**
+  String get flightPhasesQ3Question;
+
+  /// No description provided for @flightPhasesQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the aircraft\'s route and flight plan before taxi'**
+  String get flightPhasesQ3O0;
+
+  /// No description provided for @flightPhasesQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Load bags into the aircraft'**
+  String get flightPhasesQ3O1;
+
+  /// No description provided for @flightPhasesQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Refuel the aircraft'**
+  String get flightPhasesQ3O2;
+
+  /// No description provided for @flightPhasesQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearance Delivery is the first ATC contact for departing flights, issuing the route, squawk code, and departure instructions.'**
+  String get flightPhasesQ3Explanation;
+
+  /// No description provided for @conflictAwarenessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict Awareness'**
+  String get conflictAwarenessTitle;
+
+  /// No description provided for @conflictAwarenessSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognising and resolving conflicts early is a key controller skill.'**
+  String get conflictAwarenessSummary;
+
+  /// No description provided for @conflictAwarenessPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'STCA (Short-Term Conflict Alert) warns controllers when aircraft are projected to come too close.'**
+  String get conflictAwarenessPoint1;
+
+  /// No description provided for @conflictAwarenessPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution options: change heading, speed, or altitude of one or both aircraft.'**
+  String get conflictAwarenessPoint2;
+
+  /// No description provided for @conflictAwarenessPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'Proactive planning — anticipating conflicts before they develop — reduces workload and risk.'**
+  String get conflictAwarenessPoint3;
+
+  /// No description provided for @conflictAwarenessQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What does STCA stand for?'**
+  String get conflictAwarenessQ1Question;
+
+  /// No description provided for @conflictAwarenessQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Short-Term Conflict Alert'**
+  String get conflictAwarenessQ1O0;
+
+  /// No description provided for @conflictAwarenessQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Traffic Control Announcement'**
+  String get conflictAwarenessQ1O1;
+
+  /// No description provided for @conflictAwarenessQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed and Track Control Aid'**
+  String get conflictAwarenessQ1O2;
+
+  /// No description provided for @conflictAwarenessQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'STCA is a safety net tool that alerts controllers when aircraft are predicted to lose separation.'**
+  String get conflictAwarenessQ1Explanation;
+
+  /// No description provided for @conflictAwarenessQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Which of these resolves a conflict between two aircraft at the same altitude and converging?'**
+  String get conflictAwarenessQ2Question;
+
+  /// No description provided for @conflictAwarenessQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking both pilots to speed up'**
+  String get conflictAwarenessQ2O0;
+
+  /// No description provided for @conflictAwarenessQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuing a climb to one aircraft'**
+  String get conflictAwarenessQ2O1;
+
+  /// No description provided for @conflictAwarenessQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing the callsign of one aircraft'**
+  String get conflictAwarenessQ2O2;
+
+  /// No description provided for @conflictAwarenessQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigning a different altitude provides immediate vertical separation between conflicting aircraft.'**
+  String get conflictAwarenessQ2Explanation;
+
+  /// No description provided for @conflictAwarenessQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Proactive conflict management means:'**
+  String get conflictAwarenessQ3Question;
+
+  /// No description provided for @conflictAwarenessQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting until STCA triggers before acting'**
+  String get conflictAwarenessQ3O0;
+
+  /// No description provided for @conflictAwarenessQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Anticipating conflicts and resolving them early'**
+  String get conflictAwarenessQ3O1;
+
+  /// No description provided for @conflictAwarenessQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Relying on pilots to avoid each other'**
+  String get conflictAwarenessQ3O2;
+
+  /// No description provided for @conflictAwarenessQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Good controllers anticipate conflicts from the traffic picture and resolve them before they become critical.'**
+  String get conflictAwarenessQ3Explanation;
+
+  /// No description provided for @towerApproachEnrouteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower, Approach, and En-route'**
+  String get towerApproachEnrouteTitle;
+
+  /// No description provided for @towerApproachEnrouteSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Three main ATC units each control a distinct phase and volume of airspace.'**
+  String get towerApproachEnrouteSummary;
+
+  /// No description provided for @towerApproachEnroutePoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower (TWR): controls the manoeuvring area — runways, taxiways, and the airport circuit.'**
+  String get towerApproachEnroutePoint1;
+
+  /// No description provided for @towerApproachEnroutePoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Approach (APP): manages arrivals and departures in the Terminal Manoeuvring Area (TMA), typically up to FL100–FL245.'**
+  String get towerApproachEnroutePoint2;
+
+  /// No description provided for @towerApproachEnroutePoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'En-route (ACC): controls cruise traffic in upper airspace, often from FL245 and above.'**
+  String get towerApproachEnroutePoint3;
+
+  /// No description provided for @towerApproachEnrouteQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Which unit controls aircraft on the taxiway?'**
+  String get towerApproachEnrouteQ1Question;
+
+  /// No description provided for @towerApproachEnrouteQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Area Control Centre (ACC)'**
+  String get towerApproachEnrouteQ1O0;
+
+  /// No description provided for @towerApproachEnrouteQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower (TWR)'**
+  String get towerApproachEnrouteQ1O1;
+
+  /// No description provided for @towerApproachEnrouteQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Approach (APP)'**
+  String get towerApproachEnrouteQ1O2;
+
+  /// No description provided for @towerApproachEnrouteQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower (TWR) controls ground movement including taxiways, holding points, and the active runway.'**
+  String get towerApproachEnrouteQ1Explanation;
+
+  /// No description provided for @towerApproachEnrouteQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'TMA stands for:'**
+  String get towerApproachEnrouteQ2Question;
+
+  /// No description provided for @towerApproachEnrouteQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal Manoeuvring Area'**
+  String get towerApproachEnrouteQ2O0;
+
+  /// No description provided for @towerApproachEnrouteQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic Management Authority'**
+  String get towerApproachEnrouteQ2O1;
+
+  /// No description provided for @towerApproachEnrouteQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower Monitoring Area'**
+  String get towerApproachEnrouteQ2O2;
+
+  /// No description provided for @towerApproachEnrouteQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'TMA (Terminal Manoeuvring Area) is the controlled airspace around busy airports, managed by Approach control.'**
+  String get towerApproachEnrouteQ2Explanation;
+
+  /// No description provided for @towerApproachEnrouteQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'At what level does en-route control typically begin?'**
+  String get towerApproachEnrouteQ3Question;
+
+  /// No description provided for @towerApproachEnrouteQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground level'**
+  String get towerApproachEnrouteQ3O0;
+
+  /// No description provided for @towerApproachEnrouteQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Around FL245 and above'**
+  String get towerApproachEnrouteQ3O1;
+
+  /// No description provided for @towerApproachEnrouteQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'At exactly FL100'**
+  String get towerApproachEnrouteQ3O2;
+
+  /// No description provided for @towerApproachEnrouteQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'En-route (ACC) control typically begins around FL245, though this varies by country and airspace design.'**
+  String get towerApproachEnrouteQ3Explanation;
+
+  /// No description provided for @futureAtmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Future ATM & Automation'**
+  String get futureAtmTitle;
+
+  /// No description provided for @futureAtmSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'The future of ATM is digital, connected, and increasingly automated — but humans remain central.'**
+  String get futureAtmSummary;
+
+  /// No description provided for @futureAtmPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'SESAR (Europe) and NextGen (USA) are programmes modernising ATM with digital data links and 4D trajectories.'**
+  String get futureAtmPoint1;
+
+  /// No description provided for @futureAtmPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote towers allow controllers to manage smaller airports from centralised facilities.'**
+  String get futureAtmPoint2;
+
+  /// No description provided for @futureAtmPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tools can assist with conflict detection, flow optimisation, and workload balancing — but require careful validation.'**
+  String get futureAtmPoint3;
+
+  /// No description provided for @futureAtmQ1Question.
+  ///
+  /// In en, this message translates to:
+  /// **'What is SESAR?'**
+  String get futureAtmQ1Question;
+
+  /// No description provided for @futureAtmQ1O0.
+  ///
+  /// In en, this message translates to:
+  /// **'A European ATM modernisation programme'**
+  String get futureAtmQ1O0;
+
+  /// No description provided for @futureAtmQ1O1.
+  ///
+  /// In en, this message translates to:
+  /// **'A type of radar sensor'**
+  String get futureAtmQ1O1;
+
+  /// No description provided for @futureAtmQ1O2.
+  ///
+  /// In en, this message translates to:
+  /// **'A pilot training standard'**
+  String get futureAtmQ1O2;
+
+  /// No description provided for @futureAtmQ1Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'SESAR (Single European Sky ATM Research) is the European programme to modernise and harmonise ATM across Europe.'**
+  String get futureAtmQ1Explanation;
+
+  /// No description provided for @futureAtmQ2Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote towers allow:'**
+  String get futureAtmQ2Question;
+
+  /// No description provided for @futureAtmQ2O0.
+  ///
+  /// In en, this message translates to:
+  /// **'Controlling airports without any human oversight'**
+  String get futureAtmQ2O0;
+
+  /// No description provided for @futureAtmQ2O1.
+  ///
+  /// In en, this message translates to:
+  /// **'Managing smaller airports from a centralised facility'**
+  String get futureAtmQ2O1;
+
+  /// No description provided for @futureAtmQ2O2.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing the need for radar entirely'**
+  String get futureAtmQ2O2;
+
+  /// No description provided for @futureAtmQ2Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote towers use cameras and digital feeds to give controllers a full view of small airports from a remote location.'**
+  String get futureAtmQ2Explanation;
+
+  /// No description provided for @futureAtmQ3Question.
+  ///
+  /// In en, this message translates to:
+  /// **'Regarding AI in ATM, which statement is most accurate?'**
+  String get futureAtmQ3Question;
+
+  /// No description provided for @futureAtmQ3O0.
+  ///
+  /// In en, this message translates to:
+  /// **'AI will replace all controllers by 2030'**
+  String get futureAtmQ3O0;
+
+  /// No description provided for @futureAtmQ3O1.
+  ///
+  /// In en, this message translates to:
+  /// **'AI can assist controllers but requires careful validation before operational use'**
+  String get futureAtmQ3O1;
+
+  /// No description provided for @futureAtmQ3O2.
+  ///
+  /// In en, this message translates to:
+  /// **'AI is currently banned in ATM'**
+  String get futureAtmQ3O2;
+
+  /// No description provided for @futureAtmQ3Explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tools show great promise for assisting controllers, but aviation safety standards require rigorous testing before deployment.'**
+  String get futureAtmQ3Explanation;
 }
 
 class _AppLocalizationsDelegate

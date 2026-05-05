@@ -3,6 +3,7 @@ import '../core/models/lesson.dart';
 import '../core/models/quiz_question.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
+import '../l10n/lesson_l10n.dart';
 import '../services/daily_challenge_service.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -62,7 +63,7 @@ class _QuizScreenState extends State<QuizScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text('${widget.lesson.title.of(widget.languageCode)} ${AppLocalizations.of(context)!.quizAppBarSuffix}'),
+        title: Text('${widget.lesson.localizedTitle(context)} ${AppLocalizations.of(context)!.quizAppBarSuffix}'),
       ),
       body: _finished ? _buildResults() : _buildQuestion(),
     );
@@ -104,7 +105,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     border: Border.all(color: AppTheme.borderColor),
                   ),
                   child: Text(
-                    _current.question.of(widget.languageCode),
+                    localizedQuizQuestion(context, widget.lesson.id, _currentIndex),
                     style: const TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 16,
@@ -114,10 +115,16 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ...List.generate(
-                  _current.options.length,
-                  (i) => _buildOption(i, _current.options[i].of(widget.languageCode)),
-                ),
+                ...() {
+                  final options = localizedQuizOptions(context, widget.lesson.id, _currentIndex);
+                  if (options.isNotEmpty) {
+                    return List.generate(options.length, (i) => _buildOption(i, options[i]));
+                  }
+                  return List.generate(
+                    _current.options.length,
+                    (i) => _buildOption(i, _current.options[i].en),
+                  );
+                }(),
                 if (answered) ...[
                   const SizedBox(height: 12),
                   AnimatedContainer(
@@ -158,7 +165,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _current.explanation.of(widget.languageCode),
+                          localizedQuizExplanation(context, widget.lesson.id, _currentIndex),
                           style: const TextStyle(
                             color: AppTheme.textSecondary,
                             fontSize: 13,

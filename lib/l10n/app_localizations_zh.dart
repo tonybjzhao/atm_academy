@@ -633,4 +633,613 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get aboutNoCertificationContent =>
       '本应用不提供、暗示或取代任何形式的官方ATC培训、执照或认证。\n\n如需官方ATC培训，请咨询您所在国家的航空主管机构或经批准的ATC培训机构。';
+
+  @override
+  String get whatIsAtmTitle => '什么是空中交通管理？';
+
+  @override
+  String get whatIsAtmSummary => '空中交通管理确保全球航空器安全高效地运行。';
+
+  @override
+  String get whatIsAtmPoint1 => 'ATM即空中交通管理：对空中交通进行动态综合管理。';
+
+  @override
+  String get whatIsAtmPoint2 => '三大支柱：空中交通管制（ATC）、空域管理（ASM）、空中交通流量管理（ATFM）。';
+
+  @override
+  String get whatIsAtmPoint3 => '核心目标：安全、效率、秩序和容量。';
+
+  @override
+  String get whatIsAtmQ1Question => 'ATM代表什么？';
+
+  @override
+  String get whatIsAtmQ1O0 => '自动取款机';
+
+  @override
+  String get whatIsAtmQ1O1 => '空中交通管理';
+
+  @override
+  String get whatIsAtmQ1O2 => '航空终端监控';
+
+  @override
+  String get whatIsAtmQ1Explanation => 'ATM代表空中交通管理——保障所有航空器安全高效运行的系统。';
+
+  @override
+  String get whatIsAtmQ2Question => '以下哪项不是ATM的三大支柱之一？';
+
+  @override
+  String get whatIsAtmQ2O0 => '空中交通管制';
+
+  @override
+  String get whatIsAtmQ2O1 => '航空售票';
+
+  @override
+  String get whatIsAtmQ2O2 => '空域管理';
+
+  @override
+  String get whatIsAtmQ2Explanation => '航空售票是商业功能，不属于ATM。三大支柱是ATC、ASM和ATFM。';
+
+  @override
+  String get whatIsAtmQ3Question => 'ATM的首要目标是什么？';
+
+  @override
+  String get whatIsAtmQ3O0 => '最大化航空公司利润';
+
+  @override
+  String get whatIsAtmQ3O1 => '航空器的安全高效运行';
+
+  @override
+  String get whatIsAtmQ3O2 => '降低燃油价格';
+
+  @override
+  String get whatIsAtmQ3Explanation => '安全始终是ATM的首要优先级，其次是效率和秩序。';
+
+  @override
+  String get airspaceBasicsTitle => '空域基础';
+
+  @override
+  String get airspaceBasicsSummary => '空域被划分为不同类别和区域，以安全管理交通。';
+
+  @override
+  String get airspaceBasicsPoint1 => 'A至G类空域规定了谁可以在其中飞行以及可获得哪些服务。';
+
+  @override
+  String get airspaceBasicsPoint2 => '管制空域需要ATC许可。非管制空域（G类）则不需要。';
+
+  @override
+  String get airspaceBasicsPoint3 => '飞行情报区（FIR）是由一个中心管理的大块空域。';
+
+  @override
+  String get airspaceBasicsQ1Question => 'A类空域是：';
+
+  @override
+  String get airspaceBasicsQ1O0 => '全管制，仅IFR';
+
+  @override
+  String get airspaceBasicsQ1O1 => '非管制，仅VFR';
+
+  @override
+  String get airspaceBasicsQ1O2 => '无需许可对所有人开放';
+
+  @override
+  String get airspaceBasicsQ1Explanation => 'A类是限制最严格的：只允许持有ATC许可的IFR飞行。';
+
+  @override
+  String get airspaceBasicsQ2Question => '什么是FIR？';
+
+  @override
+  String get airspaceBasicsQ2O0 => '一种飞机雷达';
+
+  @override
+  String get airspaceBasicsQ2O1 => '飞行情报区';
+
+  @override
+  String get airspaceBasicsQ2O2 => '跑道标志系统';
+
+  @override
+  String get airspaceBasicsQ2Explanation => 'FIR（飞行情报区）是由空中交通服务提供者管理的定义空域。';
+
+  @override
+  String get airspaceBasicsQ3Question => '哪类空域不需要ATC许可？';
+
+  @override
+  String get airspaceBasicsQ3O0 => 'A类';
+
+  @override
+  String get airspaceBasicsQ3O1 => 'C类';
+
+  @override
+  String get airspaceBasicsQ3O2 => 'G类';
+
+  @override
+  String get airspaceBasicsQ3Explanation => 'G类是非管制空域——飞行无需ATC许可，但可能存在信息服务。';
+
+  @override
+  String get radarBasicsTitle => '雷达基础';
+
+  @override
+  String get radarBasicsSummary => '雷达是管制员用来查看航空器位置和运动的主要工具。';
+
+  @override
+  String get radarBasicsPoint1 => '一次监视雷达（PSR）探测无线电波在航空器上的反射。';
+
+  @override
+  String get radarBasicsPoint2 => '二次监视雷达（SSR）询问应答机——提供呼号、高度和速度。';
+
+  @override
+  String get radarBasicsPoint3 => '航空器在显示屏上显示为\"光点\"，每次雷达旋转（通常4-12秒）更新一次。';
+
+  @override
+  String get radarBasicsQ1Question => 'SSR代表什么？';
+
+  @override
+  String get radarBasicsQ1O0 => '二次监视雷达';
+
+  @override
+  String get radarBasicsQ1O1 => '速度与间隔记录';
+
+  @override
+  String get radarBasicsQ1O2 => '标准间隔规则';
+
+  @override
+  String get radarBasicsQ1Explanation => 'SSR（二次监视雷达）询问航空器应答机以提供识别和高度数据。';
+
+  @override
+  String get radarBasicsQ2Question => '雷达上航空器的\"光点\"是什么？';
+
+  @override
+  String get radarBasicsQ2O0 => '管制员听到的声音';
+
+  @override
+  String get radarBasicsQ2O1 => '航空器位置的视觉指示';
+
+  @override
+  String get radarBasicsQ2O2 => '雷达系统的错误';
+
+  @override
+  String get radarBasicsQ2Explanation => '光点是雷达显示屏上显示的代表航空器探测位置的回波。';
+
+  @override
+  String get radarBasicsQ3Question => '一次雷达的工作原理是：';
+
+  @override
+  String get radarBasicsQ3O0 => '要求航空器发送位置';
+
+  @override
+  String get radarBasicsQ3O1 => '探测无线电波在航空器上的反射';
+
+  @override
+  String get radarBasicsQ3O2 => '使用GPS卫星数据';
+
+  @override
+  String get radarBasicsQ3Explanation => '一次雷达发射无线电脉冲并探测从航空器反射回来的回波。';
+
+  @override
+  String get separationBasicsTitle => '间隔基础';
+
+  @override
+  String get separationBasicsSummary => '保持航空器之间的间隔是ATC的核心安全任务。';
+
+  @override
+  String get separationBasicsPoint1 => '垂直间隔：航空器位于不同高度（如FL290以下最低1000英尺）。';
+
+  @override
+  String get separationBasicsPoint2 => '水平间隔：侧向（并排）和纵向（前后）。';
+
+  @override
+  String get separationBasicsPoint3 => '间隔丢失（LOS）是严重事件，必须报告和调查。';
+
+  @override
+  String get separationBasicsQ1Question => '什么是垂直间隔？';
+
+  @override
+  String get separationBasicsQ1O0 => '航空器在同一高度并排';
+
+  @override
+  String get separationBasicsQ1O1 => '航空器位于不同高度';
+
+  @override
+  String get separationBasicsQ1O2 => '仅靠时间分开的航空器';
+
+  @override
+  String get separationBasicsQ1Explanation => '垂直间隔使航空器保持在不同飞行高度层以防止碰撞。';
+
+  @override
+  String get separationBasicsQ2Question => '间隔丢失意味着：';
+
+  @override
+  String get separationBasicsQ2O0 => '航空器更改了频率';
+
+  @override
+  String get separationBasicsQ2O1 => '未保持最低要求距离';
+
+  @override
+  String get separationBasicsQ2O2 => '飞行员请求下降';
+
+  @override
+  String get separationBasicsQ2Explanation =>
+      '当航空器距离小于规定最低限度时发生间隔丢失，这是严重的安全事件。';
+
+  @override
+  String get separationBasicsQ3Question => '纵向间隔是指：';
+
+  @override
+  String get separationBasicsQ3O0 => '航空器在不同高度';
+
+  @override
+  String get separationBasicsQ3O1 => '沿飞行方向分开的航空器';
+
+  @override
+  String get separationBasicsQ3O2 => '航空器在不同机场';
+
+  @override
+  String get separationBasicsQ3Explanation => '纵向间隔保持在同一航路上前后飞行的航空器之间的距离。';
+
+  @override
+  String get runwayOperationsTitle => '跑道运行';
+
+  @override
+  String get runwayOperationsSummary => '跑道安全是机场运行的最高优先级。';
+
+  @override
+  String get runwayOperationsPoint1 => '跑道以磁航向命名（如跑道27L表示270°方向，平行跑道中的左侧）。';
+
+  @override
+  String get runwayOperationsPoint2 => '跑道侵入：未经授权进入跑道——最重要的安全关注点。';
+
+  @override
+  String get runwayOperationsPoint3 => '塔台排序：管制员管理进出港以安全最大化跑道吞吐量。';
+
+  @override
+  String get runwayOperationsQ1Question => '09号跑道指向哪个方向？';
+
+  @override
+  String get runwayOperationsQ1O0 => '西（270°）';
+
+  @override
+  String get runwayOperationsQ1O1 => '东（090°）';
+
+  @override
+  String get runwayOperationsQ1O2 => '北（360°）';
+
+  @override
+  String get runwayOperationsQ1Explanation => '跑道编号表示磁航向的十位数。09号跑道 = 090° = 东。';
+
+  @override
+  String get runwayOperationsQ2Question => '什么是跑道侵入？';
+
+  @override
+  String get runwayOperationsQ2O0 => '正常降落程序';
+
+  @override
+  String get runwayOperationsQ2O1 => '在使用中跑道上的任何未授权存在';
+
+  @override
+  String get runwayOperationsQ2O2 => '跑道灯光故障';
+
+  @override
+  String get runwayOperationsQ2Explanation => '跑道侵入是指任何航空器、车辆或人员未经许可进入跑道的情况。';
+
+  @override
+  String get runwayOperationsQ3Question => '谁负责机场的跑道排序？';
+
+  @override
+  String get runwayOperationsQ3O0 => '航空公司运营中心';
+
+  @override
+  String get runwayOperationsQ3O1 => '塔台管制员';
+
+  @override
+  String get runwayOperationsQ3O2 => '地面代理';
+
+  @override
+  String get runwayOperationsQ3Explanation => '塔台管制员管理所有跑道运动——起飞、降落和穿越交通。';
+
+  @override
+  String get atcPhraseologyTitle => 'ATC通话用语';
+
+  @override
+  String get atcPhraseologySummary => '标准用语防止误解，确保清晰高效的通信。';
+
+  @override
+  String get atcPhraseologyPoint1 => '\"Cleared\"表示ATC授权某项操作。未获许可不得行动。';
+
+  @override
+  String get atcPhraseologyPoint2 => '需要复诵：飞行员必须重复关键指令以确认正确收到。';
+
+  @override
+  String get atcPhraseologyPoint3 => 'ICAO标准用语在全球使用，以最小化语言障碍错误。';
+
+  @override
+  String get atcPhraseologyQ1Question => '如果飞行员没有复诵许可，管制员应该怎么做？';
+
+  @override
+  String get atcPhraseologyQ1O0 => '假设飞行员已理解';
+
+  @override
+  String get atcPhraseologyQ1O1 => '重新发出许可并要求复诵';
+
+  @override
+  String get atcPhraseologyQ1O2 => '转换到另一频率';
+
+  @override
+  String get atcPhraseologyQ1Explanation => '复诵对安全至关重要。管制员必须确保许可被正确确认。';
+
+  @override
+  String get atcPhraseologyQ2Question => 'ATC中\"CLEARED\"的含义是：';
+
+  @override
+  String get atcPhraseologyQ2O0 => '能见度良好';
+
+  @override
+  String get atcPhraseologyQ2O1 => '获授权按指定方式进行';
+
+  @override
+  String get atcPhraseologyQ2O2 => '航空器处于干净形态（无襟翼）';
+
+  @override
+  String get atcPhraseologyQ2Explanation =>
+      '\"Cleared\"是ATC对特定操作（如起飞、降落或航路）的授权。';
+
+  @override
+  String get atcPhraseologyQ3Question => '为什么ICAO标准用语很重要？';
+
+  @override
+  String get atcPhraseologyQ3O0 => '它使飞行更快';
+
+  @override
+  String get atcPhraseologyQ3O1 => '它减少语言障碍造成的误解';
+
+  @override
+  String get atcPhraseologyQ3O2 => '它仅在欧洲使用';
+
+  @override
+  String get atcPhraseologyQ3Explanation => '标准用语给管制员和飞行员提供共同语言，降低通信错误风险。';
+
+  @override
+  String get flightPhasesTitle => '飞行阶段';
+
+  @override
+  String get flightPhasesSummary => '每个飞行阶段涉及不同的管制员和程序。';
+
+  @override
+  String get flightPhasesPoint1 => '起飞前→放行→地面→塔台→离场→航路→进近→塔台→停机。';
+
+  @override
+  String get flightPhasesPoint2 => '管制员之间的每次移交必须包括位置、高度和许可信息。';
+
+  @override
+  String get flightPhasesPoint3 => '航路阶段（巡航）覆盖最长段，由区域管制中心（ACC）管理。';
+
+  @override
+  String get flightPhasesQ1Question => '哪个管制员在机场之间巡航时处理航空器？';
+
+  @override
+  String get flightPhasesQ1O0 => '塔台管制员';
+
+  @override
+  String get flightPhasesQ1O1 => '航路（ACC）管制员';
+
+  @override
+  String get flightPhasesQ1O2 => '地面管制员';
+
+  @override
+  String get flightPhasesQ1Explanation => '区域管制中心（ACC）的航路管制员管理巡航阶段的航空器。';
+
+  @override
+  String get flightPhasesQ2Question => '管制员移交中必须包含什么？';
+
+  @override
+  String get flightPhasesQ2O0 => '仅乘客数量';
+
+  @override
+  String get flightPhasesQ2O1 => '位置、高度和许可信息';
+
+  @override
+  String get flightPhasesQ2O2 => '仅航空器颜色和类型';
+
+  @override
+  String get flightPhasesQ2Explanation => '正确的移交确保接收管制员拥有维持安全间隔所需的所有信息。';
+
+  @override
+  String get flightPhasesQ3Question => '放行许可用于：';
+
+  @override
+  String get flightPhasesQ3O0 => '在滑行前批准航空器的航路和飞行计划';
+
+  @override
+  String get flightPhasesQ3O1 => '将行李装入航空器';
+
+  @override
+  String get flightPhasesQ3O2 => '为航空器加油';
+
+  @override
+  String get flightPhasesQ3Explanation => '放行许可是离港航班的第一个ATC联系，发出航路、应答机代码和离场指令。';
+
+  @override
+  String get conflictAwarenessTitle => '冲突意识';
+
+  @override
+  String get conflictAwarenessSummary => '及早识别和解决冲突是管制员的关键技能。';
+
+  @override
+  String get conflictAwarenessPoint1 => 'STCA（短期冲突预警）在航空器预计过近时警告管制员。';
+
+  @override
+  String get conflictAwarenessPoint2 => '解决方案：改变一架或两架航空器的航向、速度或高度。';
+
+  @override
+  String get conflictAwarenessPoint3 => '主动规划——在冲突发展前预测——减少工作负荷和风险。';
+
+  @override
+  String get conflictAwarenessQ1Question => 'STCA代表什么？';
+
+  @override
+  String get conflictAwarenessQ1O0 => '短期冲突预警';
+
+  @override
+  String get conflictAwarenessQ1O1 => '标准交通管制通知';
+
+  @override
+  String get conflictAwarenessQ1O2 => '速度和航迹控制辅助';
+
+  @override
+  String get conflictAwarenessQ1Explanation => 'STCA是一个安全网工具，当航空器预计失去间隔时警告管制员。';
+
+  @override
+  String get conflictAwarenessQ2Question => '以下哪项可解决两架同高度汇聚飞行的航空器之间的冲突？';
+
+  @override
+  String get conflictAwarenessQ2O0 => '要求两名飞行员加速';
+
+  @override
+  String get conflictAwarenessQ2O1 => '指示一架航空器爬升';
+
+  @override
+  String get conflictAwarenessQ2O2 => '更改一架航空器的呼号';
+
+  @override
+  String get conflictAwarenessQ2Explanation => '分配不同高度可立即为冲突航空器提供垂直间隔。';
+
+  @override
+  String get conflictAwarenessQ3Question => '主动冲突管理意味着：';
+
+  @override
+  String get conflictAwarenessQ3O0 => '等到STCA触发后再行动';
+
+  @override
+  String get conflictAwarenessQ3O1 => '预测冲突并及早解决';
+
+  @override
+  String get conflictAwarenessQ3O2 => '依赖飞行员相互回避';
+
+  @override
+  String get conflictAwarenessQ3Explanation => '优秀的管制员从交通态势预测冲突，并在其变得关键之前解决。';
+
+  @override
+  String get towerApproachEnrouteTitle => '塔台、进近与航路管制';
+
+  @override
+  String get towerApproachEnrouteSummary => '三个主要ATC单元各自控制不同的飞行阶段和空域范围。';
+
+  @override
+  String get towerApproachEnroutePoint1 => '塔台（TWR）：控制机动区——跑道、滑行道和机场起落航线。';
+
+  @override
+  String get towerApproachEnroutePoint2 =>
+      '进近（APP）：管理终端管制区（TMA）内的进出港，通常至FL100-FL245。';
+
+  @override
+  String get towerApproachEnroutePoint3 => '航路（ACC）：控制高空中的巡航交通，通常从FL245及以上。';
+
+  @override
+  String get towerApproachEnrouteQ1Question => '哪个单位控制滑行道上的航空器？';
+
+  @override
+  String get towerApproachEnrouteQ1O0 => '区域管制中心（ACC）';
+
+  @override
+  String get towerApproachEnrouteQ1O1 => '塔台（TWR）';
+
+  @override
+  String get towerApproachEnrouteQ1O2 => '进近（APP）';
+
+  @override
+  String get towerApproachEnrouteQ1Explanation =>
+      '塔台（TWR）控制地面运动，包括滑行道、等待点和使用中跑道。';
+
+  @override
+  String get towerApproachEnrouteQ2Question => 'TMA代表：';
+
+  @override
+  String get towerApproachEnrouteQ2O0 => '终端管制区';
+
+  @override
+  String get towerApproachEnrouteQ2O1 => '交通管理机构';
+
+  @override
+  String get towerApproachEnrouteQ2O2 => '塔台监控区';
+
+  @override
+  String get towerApproachEnrouteQ2Explanation =>
+      'TMA（终端管制区）是繁忙机场周围的管制空域，由进近管制管理。';
+
+  @override
+  String get towerApproachEnrouteQ3Question => '航路管制通常从哪个高度层开始？';
+
+  @override
+  String get towerApproachEnrouteQ3O0 => '地面';
+
+  @override
+  String get towerApproachEnrouteQ3O1 => '约FL245及以上';
+
+  @override
+  String get towerApproachEnrouteQ3O2 => '恰好在FL100';
+
+  @override
+  String get towerApproachEnrouteQ3Explanation =>
+      '航路（ACC）管制通常从FL245开始，但因国家和空域设计而异。';
+
+  @override
+  String get futureAtmTitle => 'ATM的未来与自动化';
+
+  @override
+  String get futureAtmSummary => 'ATM的未来是数字化、互联和日益自动化的——但人类仍居核心。';
+
+  @override
+  String get futureAtmPoint1 =>
+      'SESAR（欧洲）和NextGen（美国）是通过数字数据链和4D轨迹实现ATM现代化的计划。';
+
+  @override
+  String get futureAtmPoint2 => '远程塔台允许管制员从集中设施管理较小的机场。';
+
+  @override
+  String get futureAtmPoint3 => 'AI工具可以协助冲突检测、流量优化和工作负荷平衡——但需要谨慎验证。';
+
+  @override
+  String get futureAtmQ1Question => 'SESAR是什么？';
+
+  @override
+  String get futureAtmQ1O0 => '欧洲ATM现代化计划';
+
+  @override
+  String get futureAtmQ1O1 => '一种雷达传感器';
+
+  @override
+  String get futureAtmQ1O2 => '飞行员培训标准';
+
+  @override
+  String get futureAtmQ1Explanation =>
+      'SESAR（单一欧洲天空ATM研究）是在欧洲实现ATM现代化和统一的欧洲计划。';
+
+  @override
+  String get futureAtmQ2Question => '远程塔台允许：';
+
+  @override
+  String get futureAtmQ2O0 => '无任何人工监督控制机场';
+
+  @override
+  String get futureAtmQ2O1 => '从集中设施管理较小机场';
+
+  @override
+  String get futureAtmQ2O2 => '完全取消雷达需求';
+
+  @override
+  String get futureAtmQ2Explanation => '远程塔台使用摄像头和数字信号，让管制员从远程位置全面查看小型机场。';
+
+  @override
+  String get futureAtmQ3Question => '关于ATM中的AI，哪项陈述最准确？';
+
+  @override
+  String get futureAtmQ3O0 => 'AI将在2030年前取代所有管制员';
+
+  @override
+  String get futureAtmQ3O1 => 'AI可以协助管制员，但在投入使用前需要谨慎验证';
+
+  @override
+  String get futureAtmQ3O2 => 'AI目前在ATM中被禁止';
+
+  @override
+  String get futureAtmQ3Explanation =>
+      'AI工具在协助管制员方面显示出巨大潜力，但航空安全标准要求在部署前进行严格测试。';
 }

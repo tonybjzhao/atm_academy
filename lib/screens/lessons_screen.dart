@@ -3,6 +3,7 @@ import '../core/models/lesson.dart';
 import '../core/theme/app_theme.dart';
 import '../data/lessons_data.dart';
 import '../l10n/app_localizations.dart';
+import '../l10n/lesson_l10n.dart';
 import 'lesson_detail_screen.dart';
 import 'quiz_screen.dart';
 
@@ -119,7 +120,7 @@ class LessonsScreen extends StatelessWidget {
                       ),
                     ),
                     title: Text(
-                      lesson.title.of(languageCode),
+                      lesson.localizedTitle(context),
                       style: const TextStyle(
                         color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -127,7 +128,7 @@ class LessonsScreen extends StatelessWidget {
                       ),
                     ),
                     subtitle: Text(
-                      lesson.summary.of(languageCode),
+                      lesson.localizedSummary(context),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/models/lesson.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
+import '../l10n/lesson_l10n.dart';
 import '../widgets/comms_pulse_animation.dart';
 import '../widgets/radar_sweep_animation.dart';
 import '../widgets/runway_flow_animation.dart';
@@ -51,7 +52,7 @@ class LessonDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text(lesson.title.of(languageCode)),
+        title: Text(lesson.localizedTitle(context)),
         backgroundColor: AppTheme.background,
       ),
       body: SingleChildScrollView(
@@ -98,7 +99,7 @@ class LessonDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              lesson.summary.of(languageCode),
+              lesson.localizedSummary(context),
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 20),
@@ -112,7 +113,7 @@ class LessonDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ...lesson.keyPoints.map((keyPoint) => Padding(
+            ...lesson.localizedKeyPoints(context).map((keyPointText) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Card(
                     color: AppTheme.surface,
@@ -130,7 +131,7 @@ class LessonDetailScreen extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              keyPoint.of(languageCode),
+                              keyPointText,
                               style: const TextStyle(
                                 color: AppTheme.textPrimary,
                                 fontSize: 13,

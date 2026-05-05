@@ -695,4 +695,711 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get aboutNoCertificationContent =>
       'Cette application ne fournit pas, n\'implique pas et ne remplace pas toute forme de formation ATC officielle, de licence ou de certification.\n\nPour une formation ATC officielle, consultez votre autorité nationale de l\'aviation ou un organisme de formation ATC agréé.';
+
+  @override
+  String get whatIsAtmTitle => 'Qu\'est-ce que la GTA ?';
+
+  @override
+  String get whatIsAtmSummary =>
+      'La gestion du trafic aérien assure un mouvement sûr et efficace des aéronefs dans le monde.';
+
+  @override
+  String get whatIsAtmPoint1 =>
+      'GTA = Gestion du Trafic Aérien : gestion intégrée et dynamique du trafic aérien.';
+
+  @override
+  String get whatIsAtmPoint2 =>
+      'Trois piliers : Contrôle du trafic aérien (ATC), Gestion de l\'espace aérien (ASM), Gestion des flux (ATFM).';
+
+  @override
+  String get whatIsAtmPoint3 =>
+      'Objectifs fondamentaux : Sécurité, Efficacité, Ordre et Capacité.';
+
+  @override
+  String get whatIsAtmQ1Question => 'Que signifie GTA ?';
+
+  @override
+  String get whatIsAtmQ1O0 => 'Distributeur automatique';
+
+  @override
+  String get whatIsAtmQ1O1 => 'Gestion du Trafic Aérien';
+
+  @override
+  String get whatIsAtmQ1O2 => 'Moniteur terminal d\'aéronef';
+
+  @override
+  String get whatIsAtmQ1Explanation =>
+      'GTA signifie Gestion du Trafic Aérien — le système qui assure la sécurité et l\'efficacité de tous les aéronefs.';
+
+  @override
+  String get whatIsAtmQ2Question =>
+      'Lequel de ces éléments n\'est PAS l\'un des trois piliers de la GTA ?';
+
+  @override
+  String get whatIsAtmQ2O0 => 'Contrôle du trafic aérien';
+
+  @override
+  String get whatIsAtmQ2O1 => 'Vente de billets';
+
+  @override
+  String get whatIsAtmQ2O2 => 'Gestion de l\'espace aérien';
+
+  @override
+  String get whatIsAtmQ2Explanation =>
+      'La vente de billets est une fonction commerciale, pas une partie de la GTA. Les trois piliers sont ATC, ASM et ATFM.';
+
+  @override
+  String get whatIsAtmQ3Question =>
+      'Quel est l\'objectif principal de la GTA ?';
+
+  @override
+  String get whatIsAtmQ3O0 => 'Maximiser les profits des compagnies aériennes';
+
+  @override
+  String get whatIsAtmQ3O1 => 'Sécurité et mouvement efficace des aéronefs';
+
+  @override
+  String get whatIsAtmQ3O2 => 'Réduire les prix du carburant';
+
+  @override
+  String get whatIsAtmQ3Explanation =>
+      'La sécurité est toujours la première priorité en GTA, suivie de l\'efficacité et de l\'ordre.';
+
+  @override
+  String get airspaceBasicsTitle => 'Bases de l\'espace aérien';
+
+  @override
+  String get airspaceBasicsSummary =>
+      'L\'espace aérien est divisé en classes et régions pour gérer le trafic en toute sécurité.';
+
+  @override
+  String get airspaceBasicsPoint1 =>
+      'Les classes d\'espace aérien A–G définissent les règles pour qui peut y voler et les services disponibles.';
+
+  @override
+  String get airspaceBasicsPoint2 =>
+      'L\'espace aérien contrôlé nécessite une autorisation ATC. L\'espace non contrôlé (Classe G) non.';
+
+  @override
+  String get airspaceBasicsPoint3 =>
+      'Une Région d\'Information de Vol (FIR) est un grand volume d\'espace aérien géré par un seul centre.';
+
+  @override
+  String get airspaceBasicsQ1Question => 'L\'espace aérien de classe A est :';
+
+  @override
+  String get airspaceBasicsQ1O0 => 'Entièrement contrôlé, IFR uniquement';
+
+  @override
+  String get airspaceBasicsQ1O1 => 'Non contrôlé, VFR uniquement';
+
+  @override
+  String get airspaceBasicsQ1O2 => 'Ouvert à tous sans autorisation';
+
+  @override
+  String get airspaceBasicsQ1Explanation =>
+      'La classe A est la plus restrictive : seuls les vols IFR avec autorisation ATC sont autorisés.';
+
+  @override
+  String get airspaceBasicsQ2Question => 'Qu\'est-ce qu\'une FIR ?';
+
+  @override
+  String get airspaceBasicsQ2O0 => 'Un type de radar d\'aéronef';
+
+  @override
+  String get airspaceBasicsQ2O1 => 'Région d\'Information de Vol';
+
+  @override
+  String get airspaceBasicsQ2O2 => 'Un système de marquage de piste';
+
+  @override
+  String get airspaceBasicsQ2Explanation =>
+      'Une FIR est un volume défini d\'espace aérien géré par un prestataire de services de navigation aérienne.';
+
+  @override
+  String get airspaceBasicsQ3Question =>
+      'Quelle classe ne nécessite pas d\'autorisation ATC ?';
+
+  @override
+  String get airspaceBasicsQ3O0 => 'Classe A';
+
+  @override
+  String get airspaceBasicsQ3O1 => 'Classe C';
+
+  @override
+  String get airspaceBasicsQ3O2 => 'Classe G';
+
+  @override
+  String get airspaceBasicsQ3Explanation =>
+      'La classe G est un espace aérien non contrôlé — les vols opèrent sans autorisation ATC.';
+
+  @override
+  String get radarBasicsTitle => 'Bases du radar';
+
+  @override
+  String get radarBasicsSummary =>
+      'Le radar est l\'outil principal que les contrôleurs utilisent pour voir la position et le mouvement des aéronefs.';
+
+  @override
+  String get radarBasicsPoint1 =>
+      'Le Radar de Surveillance Primaire (PSR) détecte les réflexions des ondes radio sur les aéronefs.';
+
+  @override
+  String get radarBasicsPoint2 =>
+      'Le Radar de Surveillance Secondaire (SSR) interroge les transpondeurs — donnant l\'indicatif, l\'altitude et la vitesse.';
+
+  @override
+  String get radarBasicsPoint3 =>
+      'Les aéronefs apparaissent comme des \"blips\" sur l\'écran, mis à jour à chaque rotation radar (typiquement 4–12 secondes).';
+
+  @override
+  String get radarBasicsQ1Question => 'Que signifie SSR ?';
+
+  @override
+  String get radarBasicsQ1O0 => 'Radar de Surveillance Secondaire';
+
+  @override
+  String get radarBasicsQ1O1 => 'Enregistrement de vitesse et séparation';
+
+  @override
+  String get radarBasicsQ1O2 => 'Règle de séparation standard';
+
+  @override
+  String get radarBasicsQ1Explanation =>
+      'SSR interroge les transpondeurs des aéronefs pour fournir des données d\'identification et d\'altitude.';
+
+  @override
+  String get radarBasicsQ2Question =>
+      'Qu\'est-ce qu\'un \"blip\" d\'aéronef sur le radar ?';
+
+  @override
+  String get radarBasicsQ2O0 => 'Un son que le contrôleur entend';
+
+  @override
+  String get radarBasicsQ2O1 =>
+      'Un indicateur visuel de la position de l\'aéronef';
+
+  @override
+  String get radarBasicsQ2O2 => 'Une erreur dans le système radar';
+
+  @override
+  String get radarBasicsQ2Explanation =>
+      'Un blip est le retour affiché sur l\'écran radar représentant la position détectée de l\'aéronef.';
+
+  @override
+  String get radarBasicsQ3Question => 'Le radar primaire fonctionne en :';
+
+  @override
+  String get radarBasicsQ3O0 =>
+      'Demandant aux aéronefs d\'envoyer leur position';
+
+  @override
+  String get radarBasicsQ3O1 =>
+      'Détectant les ondes radio réfléchies par l\'aéronef';
+
+  @override
+  String get radarBasicsQ3O2 => 'Utilisant des données satellites GPS';
+
+  @override
+  String get radarBasicsQ3Explanation =>
+      'Le radar primaire émet des impulsions radio et détecte l\'écho réfléchi par les aéronefs.';
+
+  @override
+  String get separationBasicsTitle => 'Bases de la séparation';
+
+  @override
+  String get separationBasicsSummary =>
+      'Maintenir la séparation entre aéronefs est la tâche de sécurité centrale de l\'ATC.';
+
+  @override
+  String get separationBasicsPoint1 =>
+      'Séparation verticale : aéronefs à des altitudes différentes (ex. 1000 ft minimum sous FL290).';
+
+  @override
+  String get separationBasicsPoint2 =>
+      'Séparation horizontale : latérale (côte à côte) et longitudinale (l\'un derrière l\'autre).';
+
+  @override
+  String get separationBasicsPoint3 =>
+      'Une perte de séparation (LOS) est un incident grave qui doit être signalé et investigué.';
+
+  @override
+  String get separationBasicsQ1Question =>
+      'Qu\'est-ce que la séparation verticale ?';
+
+  @override
+  String get separationBasicsQ1O0 => 'Aéronefs côte à côte à la même altitude';
+
+  @override
+  String get separationBasicsQ1O1 => 'Aéronefs à des altitudes différentes';
+
+  @override
+  String get separationBasicsQ1O2 => 'Aéronefs séparés uniquement par le temps';
+
+  @override
+  String get separationBasicsQ1Explanation =>
+      'La séparation verticale maintient les aéronefs à des niveaux de vol différents pour éviter les collisions.';
+
+  @override
+  String get separationBasicsQ2Question => 'Une perte de séparation signifie :';
+
+  @override
+  String get separationBasicsQ2O0 => 'Un aéronef a changé de fréquence';
+
+  @override
+  String get separationBasicsQ2O1 =>
+      'La distance minimale requise n\'a pas été maintenue';
+
+  @override
+  String get separationBasicsQ2O2 => 'Un pilote a demandé une descente';
+
+  @override
+  String get separationBasicsQ2Explanation =>
+      'La perte de séparation se produit quand des aéronefs se rapprochent plus que le minimum prescrit.';
+
+  @override
+  String get separationBasicsQ3Question =>
+      'La séparation longitudinale fait référence à :';
+
+  @override
+  String get separationBasicsQ3O0 => 'Aéronefs à des altitudes différentes';
+
+  @override
+  String get separationBasicsQ3O1 =>
+      'Aéronefs séparés dans la direction du vol';
+
+  @override
+  String get separationBasicsQ3O2 => 'Aéronefs dans des aéroports différents';
+
+  @override
+  String get separationBasicsQ3Explanation =>
+      'La séparation longitudinale maintient la distance entre aéronefs volant l\'un derrière l\'autre sur la même route.';
+
+  @override
+  String get runwayOperationsTitle => 'Opérations de piste';
+
+  @override
+  String get runwayOperationsSummary =>
+      'La sécurité des pistes est la priorité absolue dans les opérations aéroportuaires.';
+
+  @override
+  String get runwayOperationsPoint1 =>
+      'Les pistes sont désignées par le cap magnétique (ex. Piste 27L = cap 270°, gauche des parallèles).';
+
+  @override
+  String get runwayOperationsPoint2 =>
+      'Incursion de piste : présence non autorisée sur la piste — principale préoccupation de sécurité.';
+
+  @override
+  String get runwayOperationsPoint3 =>
+      'Séquencement tour : les contrôleurs gèrent les arrivées et départs pour maximiser le débit de piste en toute sécurité.';
+
+  @override
+  String get runwayOperationsQ1Question =>
+      'La piste 09 pointe vers quelle direction ?';
+
+  @override
+  String get runwayOperationsQ1O0 => 'Ouest (270°)';
+
+  @override
+  String get runwayOperationsQ1O1 => 'Est (090°)';
+
+  @override
+  String get runwayOperationsQ1O2 => 'Nord (360°)';
+
+  @override
+  String get runwayOperationsQ1Explanation =>
+      'Les numéros de piste indiquent le cap magnétique en dizaines de degrés. Piste 09 = 090° = Est.';
+
+  @override
+  String get runwayOperationsQ2Question =>
+      'Qu\'est-ce qu\'une incursion de piste ?';
+
+  @override
+  String get runwayOperationsQ2O0 => 'Une procédure d\'atterrissage normale';
+
+  @override
+  String get runwayOperationsQ2O1 =>
+      'Toute présence non autorisée sur une piste active';
+
+  @override
+  String get runwayOperationsQ2O2 => 'Une panne des feux de piste';
+
+  @override
+  String get runwayOperationsQ2Explanation =>
+      'Une incursion de piste est tout événement où un aéronef, véhicule ou personne se trouve sur une piste sans autorisation.';
+
+  @override
+  String get runwayOperationsQ3Question =>
+      'Qui est responsable du séquencement de piste dans un aéroport ?';
+
+  @override
+  String get runwayOperationsQ3O0 =>
+      'Le centre d\'opérations de la compagnie aérienne';
+
+  @override
+  String get runwayOperationsQ3O1 => 'Le contrôleur de la Tour';
+
+  @override
+  String get runwayOperationsQ3O2 => 'L\'agent de handling';
+
+  @override
+  String get runwayOperationsQ3Explanation =>
+      'Le contrôleur de la Tour gère tous les mouvements sur piste — décollages, atterrissages et trafic traversant.';
+
+  @override
+  String get atcPhraseologyTitle => 'Phraséologie ATC';
+
+  @override
+  String get atcPhraseologySummary =>
+      'Les phrases standard préviennent les malentendus et assurent une communication claire et efficace.';
+
+  @override
+  String get atcPhraseologyPoint1 =>
+      '\"Cleared\" signifie que l\'ATC autorise une action. N\'agissez jamais sans autorisation.';
+
+  @override
+  String get atcPhraseologyPoint2 =>
+      'Accusé de réception obligatoire : les pilotes doivent répéter les instructions clés pour confirmer leur bonne réception.';
+
+  @override
+  String get atcPhraseologyPoint3 =>
+      'La phraséologie standard de l\'OACI est utilisée mondialement pour minimiser les erreurs dues aux barrières linguistiques.';
+
+  @override
+  String get atcPhraseologyQ1Question =>
+      'Si un pilote ne répète pas une autorisation, que doit faire le contrôleur ?';
+
+  @override
+  String get atcPhraseologyQ1O0 => 'Supposer que le pilote a compris';
+
+  @override
+  String get atcPhraseologyQ1O1 =>
+      'Réémettre l\'autorisation et demander un accusé de réception';
+
+  @override
+  String get atcPhraseologyQ1O2 => 'Transférer sur une autre fréquence';
+
+  @override
+  String get atcPhraseologyQ1Explanation =>
+      'L\'accusé de réception est essentiel pour la sécurité. Le contrôleur doit s\'assurer que l\'autorisation est correctement confirmée.';
+
+  @override
+  String get atcPhraseologyQ2Question => 'Le mot \"CLEARED\" en ATC signifie :';
+
+  @override
+  String get atcPhraseologyQ2O0 => 'La visibilité est bonne';
+
+  @override
+  String get atcPhraseologyQ2O1 => 'Autorisé à procéder comme indiqué';
+
+  @override
+  String get atcPhraseologyQ2O2 => 'L\'aéronef est propre (sans volets)';
+
+  @override
+  String get atcPhraseologyQ2Explanation =>
+      '\"Cleared\" est une autorisation ATC pour une action spécifique, comme le décollage, l\'atterrissage ou une route.';
+
+  @override
+  String get atcPhraseologyQ3Question =>
+      'Pourquoi la phraséologie standard de l\'OACI est-elle importante ?';
+
+  @override
+  String get atcPhraseologyQ3O0 => 'Elle accélère les vols';
+
+  @override
+  String get atcPhraseologyQ3O1 =>
+      'Elle réduit les malentendus dus aux barrières linguistiques';
+
+  @override
+  String get atcPhraseologyQ3O2 => 'Elle n\'est utilisée qu\'en Europe';
+
+  @override
+  String get atcPhraseologyQ3Explanation =>
+      'La phraséologie standard donne aux contrôleurs et pilotes un langage commun, réduisant le risque de malentendus.';
+
+  @override
+  String get flightPhasesTitle => 'Phases de vol';
+
+  @override
+  String get flightPhasesSummary =>
+      'Chaque phase de vol implique des contrôleurs et des procédures différents.';
+
+  @override
+  String get flightPhasesPoint1 =>
+      'Pré-départ → Délivrance → Sol → Tour → Départ → En-route → Approche → Tour → Parking.';
+
+  @override
+  String get flightPhasesPoint2 =>
+      'Chaque transfert entre contrôleurs doit inclure la position, l\'altitude et les informations d\'autorisation.';
+
+  @override
+  String get flightPhasesPoint3 =>
+      'La phase en route (croisière) couvre le plus long segment et est gérée par les Centres de Contrôle de Zone (ACC).';
+
+  @override
+  String get flightPhasesQ1Question =>
+      'Quel contrôleur s\'occupe d\'un aéronef en croisière entre aéroports ?';
+
+  @override
+  String get flightPhasesQ1O0 => 'Contrôleur de tour';
+
+  @override
+  String get flightPhasesQ1O1 => 'Contrôleur en route (ACC)';
+
+  @override
+  String get flightPhasesQ1O2 => 'Contrôleur sol';
+
+  @override
+  String get flightPhasesQ1Explanation =>
+      'Le contrôleur en route dans un Centre de Contrôle de Zone (ACC) gère les aéronefs pendant la phase de croisière.';
+
+  @override
+  String get flightPhasesQ2Question =>
+      'Que doit inclure un transfert de contrôleur ?';
+
+  @override
+  String get flightPhasesQ2O0 => 'Uniquement le nombre de passagers';
+
+  @override
+  String get flightPhasesQ2O1 =>
+      'Position, altitude et informations d\'autorisation';
+
+  @override
+  String get flightPhasesQ2O2 => 'Uniquement la couleur et le type d\'aéronef';
+
+  @override
+  String get flightPhasesQ2Explanation =>
+      'Un transfert approprié assure que le contrôleur recevant dispose de toutes les informations pour maintenir une séparation sûre.';
+
+  @override
+  String get flightPhasesQ3Question =>
+      'La délivrance d\'autorisation est utilisée pour :';
+
+  @override
+  String get flightPhasesQ3O0 =>
+      'Approuver la route et le plan de vol de l\'aéronef avant le roulage';
+
+  @override
+  String get flightPhasesQ3O1 => 'Charger les bagages dans l\'aéronef';
+
+  @override
+  String get flightPhasesQ3O2 => 'Ravitailler l\'aéronef en carburant';
+
+  @override
+  String get flightPhasesQ3Explanation =>
+      'La délivrance est le premier contact ATC pour les vols au départ, émettant la route, le code transpondeur et les instructions de départ.';
+
+  @override
+  String get conflictAwarenessTitle => 'Conscience des conflits';
+
+  @override
+  String get conflictAwarenessSummary =>
+      'Reconnaître et résoudre les conflits tôt est une compétence clé du contrôleur.';
+
+  @override
+  String get conflictAwarenessPoint1 =>
+      'STCA (Short-Term Conflict Alert) avertit les contrôleurs quand des aéronefs sont prévus trop proches.';
+
+  @override
+  String get conflictAwarenessPoint2 =>
+      'Options de résolution : changer le cap, la vitesse ou l\'altitude d\'un ou des deux aéronefs.';
+
+  @override
+  String get conflictAwarenessPoint3 =>
+      'La planification proactive — anticiper les conflits avant qu\'ils se développent — réduit la charge de travail et le risque.';
+
+  @override
+  String get conflictAwarenessQ1Question => 'Que signifie STCA ?';
+
+  @override
+  String get conflictAwarenessQ1O0 => 'Short-Term Conflict Alert';
+
+  @override
+  String get conflictAwarenessQ1O1 => 'Standard Traffic Control Announcement';
+
+  @override
+  String get conflictAwarenessQ1O2 => 'Speed and Track Control Aid';
+
+  @override
+  String get conflictAwarenessQ1Explanation =>
+      'STCA est un outil de filet de sécurité qui alerte les contrôleurs quand des aéronefs sont prévus perdre leur séparation.';
+
+  @override
+  String get conflictAwarenessQ2Question =>
+      'Lequel résout un conflit entre deux aéronefs à la même altitude et convergeants ?';
+
+  @override
+  String get conflictAwarenessQ2O0 => 'Demander aux deux pilotes d\'accélérer';
+
+  @override
+  String get conflictAwarenessQ2O1 => 'Ordonner une montée à un aéronef';
+
+  @override
+  String get conflictAwarenessQ2O2 => 'Changer l\'indicatif d\'un aéronef';
+
+  @override
+  String get conflictAwarenessQ2Explanation =>
+      'Assigner une altitude différente fournit une séparation verticale immédiate entre les aéronefs en conflit.';
+
+  @override
+  String get conflictAwarenessQ3Question =>
+      'La gestion proactive des conflits signifie :';
+
+  @override
+  String get conflictAwarenessQ3O0 =>
+      'Attendre que STCA se déclenche avant d\'agir';
+
+  @override
+  String get conflictAwarenessQ3O1 =>
+      'Anticiper les conflits et les résoudre tôt';
+
+  @override
+  String get conflictAwarenessQ3O2 => 'Compter sur les pilotes pour s\'éviter';
+
+  @override
+  String get conflictAwarenessQ3Explanation =>
+      'Les bons contrôleurs anticipent les conflits depuis le tableau de trafic et les résolvent avant qu\'ils deviennent critiques.';
+
+  @override
+  String get towerApproachEnrouteTitle => 'Tour, Approche et En-route';
+
+  @override
+  String get towerApproachEnrouteSummary =>
+      'Trois grandes unités ATC contrôlent chacune une phase et un volume d\'espace aérien distincts.';
+
+  @override
+  String get towerApproachEnroutePoint1 =>
+      'Tour (TWR) : contrôle la zone de manœuvre — pistes, voies de circulation et circuit aérodrome.';
+
+  @override
+  String get towerApproachEnroutePoint2 =>
+      'Approche (APP) : gère les arrivées et départs dans la Zone de Manœuvre Terminale (TMA), typiquement jusqu\'à FL100–FL245.';
+
+  @override
+  String get towerApproachEnroutePoint3 =>
+      'En route (ACC) : contrôle le trafic en croisière dans l\'espace aérien supérieur, souvent de FL245 et au-dessus.';
+
+  @override
+  String get towerApproachEnrouteQ1Question =>
+      'Quelle unité contrôle les aéronefs sur la voie de circulation ?';
+
+  @override
+  String get towerApproachEnrouteQ1O0 => 'Centre de Contrôle de Zone (ACC)';
+
+  @override
+  String get towerApproachEnrouteQ1O1 => 'Tour (TWR)';
+
+  @override
+  String get towerApproachEnrouteQ1O2 => 'Approche (APP)';
+
+  @override
+  String get towerApproachEnrouteQ1Explanation =>
+      'La Tour (TWR) contrôle les mouvements au sol incluant les voies de circulation, points d\'attente et piste active.';
+
+  @override
+  String get towerApproachEnrouteQ2Question => 'TMA signifie :';
+
+  @override
+  String get towerApproachEnrouteQ2O0 => 'Zone de Manœuvre Terminale';
+
+  @override
+  String get towerApproachEnrouteQ2O1 => 'Autorité de Gestion du Trafic';
+
+  @override
+  String get towerApproachEnrouteQ2O2 => 'Zone de Surveillance de la Tour';
+
+  @override
+  String get towerApproachEnrouteQ2Explanation =>
+      'La TMA est l\'espace aérien contrôlé autour des aéroports chargés, géré par le contrôle d\'approche.';
+
+  @override
+  String get towerApproachEnrouteQ3Question =>
+      'À quel niveau le contrôle en route commence-t-il typiquement ?';
+
+  @override
+  String get towerApproachEnrouteQ3O0 => 'Au sol';
+
+  @override
+  String get towerApproachEnrouteQ3O1 => 'Environ FL245 et au-dessus';
+
+  @override
+  String get towerApproachEnrouteQ3O2 => 'Exactement à FL100';
+
+  @override
+  String get towerApproachEnrouteQ3Explanation =>
+      'Le contrôle en route (ACC) commence typiquement vers FL245, bien que cela varie selon les pays et la conception de l\'espace aérien.';
+
+  @override
+  String get futureAtmTitle => 'GTA futur et automatisation';
+
+  @override
+  String get futureAtmSummary =>
+      'L\'avenir de la GTA est numérique, connecté et de plus en plus automatisé — mais l\'humain reste central.';
+
+  @override
+  String get futureAtmPoint1 =>
+      'SESAR (Europe) et NextGen (USA) sont des programmes modernisant la GTA avec des liaisons de données numériques et des trajectoires 4D.';
+
+  @override
+  String get futureAtmPoint2 =>
+      'Les tours distantes permettent aux contrôleurs de gérer des aéroports plus petits depuis des installations centralisées.';
+
+  @override
+  String get futureAtmPoint3 =>
+      'Les outils IA peuvent aider à la détection de conflits, l\'optimisation des flux et l\'équilibrage de la charge de travail — mais nécessitent une validation soigneuse.';
+
+  @override
+  String get futureAtmQ1Question => 'Qu\'est-ce que SESAR ?';
+
+  @override
+  String get futureAtmQ1O0 =>
+      'Un programme européen de modernisation de la GTA';
+
+  @override
+  String get futureAtmQ1O1 => 'Un type de capteur radar';
+
+  @override
+  String get futureAtmQ1O2 => 'Une norme de formation des pilotes';
+
+  @override
+  String get futureAtmQ1Explanation =>
+      'SESAR (Recherche ATM pour le Ciel Unique Européen) est le programme européen de modernisation et d\'harmonisation de la GTA.';
+
+  @override
+  String get futureAtmQ2Question => 'Les tours distantes permettent :';
+
+  @override
+  String get futureAtmQ2O0 =>
+      'Contrôler des aéroports sans surveillance humaine';
+
+  @override
+  String get futureAtmQ2O1 =>
+      'Gérer des aéroports plus petits depuis une installation centralisée';
+
+  @override
+  String get futureAtmQ2O2 => 'Éliminer entièrement le besoin de radar';
+
+  @override
+  String get futureAtmQ2Explanation =>
+      'Les tours distantes utilisent des caméras et flux numériques pour donner aux contrôleurs une vue complète des petits aéroports à distance.';
+
+  @override
+  String get futureAtmQ3Question =>
+      'Concernant l\'IA en GTA, quelle affirmation est la plus précise ?';
+
+  @override
+  String get futureAtmQ3O0 =>
+      'L\'IA remplacera tous les contrôleurs d\'ici 2030';
+
+  @override
+  String get futureAtmQ3O1 =>
+      'L\'IA peut aider les contrôleurs mais nécessite une validation soigneuse avant usage opérationnel';
+
+  @override
+  String get futureAtmQ3O2 => 'L\'IA est actuellement interdite en GTA';
+
+  @override
+  String get futureAtmQ3Explanation =>
+      'Les outils IA montrent de grandes promesses pour aider les contrôleurs, mais les normes de sécurité aéronautique exigent des tests rigoureux avant déploiement.';
 }
