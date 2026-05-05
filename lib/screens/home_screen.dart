@@ -178,50 +178,94 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Contribute full-width card
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ContributeScreen()),
-              ),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.borderColor),
+            Row(
+              children: [
+                Expanded(
+                  child: _BottomCard(
+                    icon: Icons.people_outline,
+                    color: Colors.tealAccent,
+                    title: 'Contribute',
+                    subtitle: 'Join us',
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const ContributeScreen())),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.people_outline, color: Colors.tealAccent, size: 24),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Contribute',
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Built by ATM engineers — join us',
-                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                          ),
-                        ],
-                      ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _BottomCard(
+                    icon: Icons.shield_outlined,
+                    color: AppTheme.warning,
+                    title: 'About & Safety',
+                    subtitle: 'Compliance info',
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const AboutSafetyScreen())),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Bottom row cards ────────────────────────────────────────────────────────
+
+class _BottomCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _BottomCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
-                  ],
-                ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const Icon(Icons.chevron_right, color: AppTheme.borderColor, size: 16),
           ],
         ),
       ),
