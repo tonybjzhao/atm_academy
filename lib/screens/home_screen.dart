@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../data/lessons_data.dart';
+import '../models/daily_challenge_state.dart';
+import '../services/daily_challenge_service.dart';
 import '../services/language_service.dart';
 import '../widgets/control_panel_light.dart';
 import 'about_safety_screen.dart';
@@ -89,7 +91,15 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            ValueListenableBuilder<DailyChallengeState>(
+              valueListenable: DailyChallengeService.instance.stateNotifier,
+              builder: (context, state, _) => _DailyChallengeCard(
+                state: state,
+                languageCode: languageCode,
+              ),
+            ),
+            const SizedBox(height: 20),
             const Text(
               'MODULES',
               style: TextStyle(
@@ -218,6 +228,262 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+// ─── Daily Challenge card ──────────────────────────────────────────────────
+
+class _DailyChallengeCard extends StatelessWidget {
+  final DailyChallengeState state;
+  final String languageCode;
+
+  const _DailyChallengeCard({required this.state, required this.languageCode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: state.isComplete
+              ? AppTheme.primary.withValues(alpha: 0.6)
+              : AppTheme.warning.withValues(alpha: 0.5),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  ControlPanelLight(
+                    status: state.isComplete ? LightStatus.on : LightStatus.blink,
+                    color: state.isComplete ? AppTheme.primary : AppTheme.warning,
+                    size: 9,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'DAILY CHALLENGE',
+                    style: TextStyle(
+                      color: state.isComplete ? AppTheme.primary : AppTheme.warning,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.borderColor),
+                ),
+                child: Text(
+                  '${state.progress}/2',
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Complete today\'s training mission',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          // Task rows
+          _TaskRow(
+            label: 'Quiz',
+            points: '+50 pts',
+            done: state.quizDone,
+          ),
+          const SizedBox(height: 8),
+          _TaskRow(
+            label: 'Radar Scenario',
+            points: '+100 pts',
+            done: state.radarDone,
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(color: AppTheme.borderColor, height: 1),
+          ),
+          // Score + rank row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'TODAY\'S SCORE',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${state.score}',
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const TextSpan(
+                          text: ' / 200',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'RANK',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    state.rank,
+                    style: TextStyle(
+                      color: state.isComplete ? AppTheme.primary : AppTheme.warning,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // CTA button
+          SizedBox(
+            width: double.infinity,
+            child: state.isComplete
+                ? OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.check_circle, size: 16),
+                    label: const Text('Completed Today'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.4)),
+                    ),
+                  )
+                : !state.quizDone
+                    ? ElevatedButton.icon(
+                        icon: const Icon(Icons.quiz_outlined, size: 16),
+                        label: const Text('Start Quiz'),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LessonsScreen(
+                              languageCode: languageCode,
+                              quizMode: true,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        icon: const Icon(Icons.radar, size: 16),
+                        label: const Text('Start Radar Sim'),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RadarSimulationScreen(),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.secondary,
+                          foregroundColor: AppTheme.background,
+                        ),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskRow extends StatelessWidget {
+  final String label;
+  final String points;
+  final bool done;
+
+  const _TaskRow({required this.label, required this.points, required this.done});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: done
+                ? AppTheme.primary.withValues(alpha: 0.15)
+                : Colors.transparent,
+            border: Border.all(
+              color: done ? AppTheme.primary : AppTheme.borderColor,
+              width: 1.5,
+            ),
+          ),
+          child: done
+              ? const Icon(Icons.check, size: 11, color: AppTheme.primary)
+              : null,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: done ? AppTheme.textSecondary : AppTheme.textPrimary,
+              fontSize: 13,
+              decoration: done ? TextDecoration.lineThrough : null,
+              decorationColor: AppTheme.textSecondary,
+            ),
+          ),
+        ),
+        Text(
+          points,
+          style: TextStyle(
+            color: done ? AppTheme.textSecondary : AppTheme.primary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Module card ────────────────────────────────────────────────────────────
 
 // Local AtmCard widget re-used inline (same visual as widgets/atm_card.dart)
 class AtmCard extends StatelessWidget {

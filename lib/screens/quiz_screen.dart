@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/models/lesson.dart';
 import '../core/models/quiz_question.dart';
 import '../core/theme/app_theme.dart';
+import '../services/daily_challenge_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final Lesson lesson;
@@ -41,6 +42,7 @@ class _QuizScreenState extends State<QuizScreen> {
         _selectedOption = null;
       });
     } else {
+      DailyChallengeService.instance.markQuizDone();
       setState(() => _finished = true);
     }
   }

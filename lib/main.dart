@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
+import 'services/daily_challenge_service.dart';
 import 'services/language_service.dart';
 
 final _languageService = LanguageService();
@@ -10,6 +11,7 @@ final _languageService = LanguageService();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await _languageService.load();
+  await DailyChallengeService.instance.load();
   runApp(const AtmAcademyApp());
 }
 

@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../core/models/aircraft.dart';
 import '../core/theme/app_theme.dart';
+import '../services/daily_challenge_service.dart';
 import '../widgets/radar_painter.dart';
 
 class RadarSimulationScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
   double _sweepAngle = 0;
   Aircraft? _selected;
   bool _running = true;
+  bool _scenarioCompleted = false;
 
   final _aircraft = <Aircraft>[
     Aircraft(callsign: 'QFA123', x: 90, y: 120, heading: 25, speed: 0.7, altitude: 320),
@@ -202,7 +204,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
             ),
           // Command buttons
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -215,6 +217,46 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                 _cmdBtn('Slow', () => _command('slow')),
                 _cmdBtn('Fast', () => _command('fast')),
               ],
+            ),
+          ),
+          // Daily challenge: complete scenario button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: _scenarioCompleted
+                  ? OutlinedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.check_circle, size: 15),
+                      label: const Text('Scenario Completed  +100 pts'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primary,
+                        side: BorderSide(
+                            color: AppTheme.primary.withValues(alpha: 0.4)),
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      icon: const Icon(Icons.flag_outlined, size: 15),
+                      label: const Text('Complete Scenario'),
+                      onPressed: () async {
+                        await DailyChallengeService.instance.markRadarDone();
+                        if (!mounted) return;
+                        setState(() => _scenarioCompleted = true);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text(
+                                '✓ Scenario complete  +100 pts added'),
+                            backgroundColor: AppTheme.primary,
+                            behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.warning,
+                        foregroundColor: AppTheme.background,
+                      ),
+                    ),
             ),
           ),
         ],
