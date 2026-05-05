@@ -1242,4 +1242,28 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get futureAtmQ3Explanation =>
       'AI工具在协助管制员方面显示出巨大潜力，但航空安全标准要求在部署前进行严格测试。';
+
+  @override
+  String get radarV2ScenarioTitle => '交叉冲突';
+
+  @override
+  String get radarV2ScenarioDesc => '两架航空器在同一高度汇聚。请在失去间隔前解决冲突。';
+
+  @override
+  String get radarV2SelectHint => '点击雷达上的航空器进行选择';
+
+  @override
+  String get radarV2ScenarioSuccess => '冲突已解决';
+
+  @override
+  String get radarV2ScenarioFailed => '场景失败';
+
+  @override
+  String get radarV2FinalScore => '最终得分';
+
+  @override
+  String get radarV2TryAgain => '再试一次';
+
+  @override
+  String get radarV2Resolving => '解除中';
 }

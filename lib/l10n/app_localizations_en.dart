@@ -1374,4 +1374,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get futureAtmQ3Explanation =>
       'AI tools show great promise for assisting controllers, but aviation safety standards require rigorous testing before deployment.';
+
+  @override
+  String get radarV2ScenarioTitle => 'Crossing Conflict';
+
+  @override
+  String get radarV2ScenarioDesc =>
+      'Two aircraft are converging at the same altitude. Resolve the conflict before separation is lost.';
+
+  @override
+  String get radarV2SelectHint => 'Tap an aircraft on the radar to select it';
+
+  @override
+  String get radarV2ScenarioSuccess => 'Conflict Resolved';
+
+  @override
+  String get radarV2ScenarioFailed => 'Scenario Failed';
+
+  @override
+  String get radarV2FinalScore => 'Final Score';
+
+  @override
+  String get radarV2TryAgain => 'Try Again';
+
+  @override
+  String get radarV2Resolving => 'RESOLVING';
 }

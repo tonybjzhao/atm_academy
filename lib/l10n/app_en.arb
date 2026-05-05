@@ -833,5 +833,22 @@
   "futureAtmQ3O2": "AI is currently banned in ATM",
   "@futureAtmQ3O2": {},
   "futureAtmQ3Explanation": "AI tools show great promise for assisting controllers, but aviation safety standards require rigorous testing before deployment.",
-  "@futureAtmQ3Explanation": {}
+  "@futureAtmQ3Explanation": {},
+
+  "radarV2ScenarioTitle": "Crossing Conflict",
+  "@radarV2ScenarioTitle": {},
+  "radarV2ScenarioDesc": "Two aircraft are converging at the same altitude. Resolve the conflict before separation is lost.",
+  "@radarV2ScenarioDesc": {},
+  "radarV2SelectHint": "Tap an aircraft on the radar to select it",
+  "@radarV2SelectHint": {},
+  "radarV2ScenarioSuccess": "Conflict Resolved",
+  "@radarV2ScenarioSuccess": {},
+  "radarV2ScenarioFailed": "Scenario Failed",
+  "@radarV2ScenarioFailed": {},
+  "radarV2FinalScore": "Final Score",
+  "@radarV2FinalScore": {},
+  "radarV2TryAgain": "Try Again",
+  "@radarV2TryAgain": {},
+  "radarV2Resolving": "RESOLVING",
+  "@radarV2Resolving": {}
 }

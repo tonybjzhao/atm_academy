@@ -1402,4 +1402,29 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get futureAtmQ3Explanation =>
       'Les outils IA montrent de grandes promesses pour aider les contrôleurs, mais les normes de sécurité aéronautique exigent des tests rigoureux avant déploiement.';
+
+  @override
+  String get radarV2ScenarioTitle => 'Conflit croisé';
+
+  @override
+  String get radarV2ScenarioDesc =>
+      'Deux aéronefs convergent à la même altitude. Résolvez le conflit avant la perte de séparation.';
+
+  @override
+  String get radarV2SelectHint => 'Appuyez sur un aéronef pour le sélectionner';
+
+  @override
+  String get radarV2ScenarioSuccess => 'Conflit résolu';
+
+  @override
+  String get radarV2ScenarioFailed => 'Scénario échoué';
+
+  @override
+  String get radarV2FinalScore => 'Score final';
+
+  @override
+  String get radarV2TryAgain => 'Réessayer';
+
+  @override
+  String get radarV2Resolving => 'EN COURS';
 }

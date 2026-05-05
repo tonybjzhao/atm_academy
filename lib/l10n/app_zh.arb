@@ -415,5 +415,14 @@
   "futureAtmQ3O0": "AI将在2030年前取代所有管制员",
   "futureAtmQ3O1": "AI可以协助管制员，但在投入使用前需要谨慎验证",
   "futureAtmQ3O2": "AI目前在ATM中被禁止",
-  "futureAtmQ3Explanation": "AI工具在协助管制员方面显示出巨大潜力，但航空安全标准要求在部署前进行严格测试。"
+  "futureAtmQ3Explanation": "AI工具在协助管制员方面显示出巨大潜力，但航空安全标准要求在部署前进行严格测试。",
+
+  "radarV2ScenarioTitle": "交叉冲突",
+  "radarV2ScenarioDesc": "两架航空器在同一高度汇聚。请在失去间隔前解决冲突。",
+  "radarV2SelectHint": "点击雷达上的航空器进行选择",
+  "radarV2ScenarioSuccess": "冲突已解决",
+  "radarV2ScenarioFailed": "场景失败",
+  "radarV2FinalScore": "最终得分",
+  "radarV2TryAgain": "再试一次",
+  "radarV2Resolving": "解除中"
 }

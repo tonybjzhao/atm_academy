@@ -2529,6 +2529,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI tools show great promise for assisting controllers, but aviation safety standards require rigorous testing before deployment.'**
   String get futureAtmQ3Explanation;
+
+  /// No description provided for @radarV2ScenarioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Crossing Conflict'**
+  String get radarV2ScenarioTitle;
+
+  /// No description provided for @radarV2ScenarioDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Two aircraft are converging at the same altitude. Resolve the conflict before separation is lost.'**
+  String get radarV2ScenarioDesc;
+
+  /// No description provided for @radarV2SelectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an aircraft on the radar to select it'**
+  String get radarV2SelectHint;
+
+  /// No description provided for @radarV2ScenarioSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict Resolved'**
+  String get radarV2ScenarioSuccess;
+
+  /// No description provided for @radarV2ScenarioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario Failed'**
+  String get radarV2ScenarioFailed;
+
+  /// No description provided for @radarV2FinalScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Final Score'**
+  String get radarV2FinalScore;
+
+  /// No description provided for @radarV2TryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get radarV2TryAgain;
+
+  /// No description provided for @radarV2Resolving.
+  ///
+  /// In en, this message translates to:
+  /// **'RESOLVING'**
+  String get radarV2Resolving;
 }
 
 class _AppLocalizationsDelegate

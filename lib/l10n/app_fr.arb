@@ -415,5 +415,14 @@
   "futureAtmQ3O0": "L'IA remplacera tous les contrôleurs d'ici 2030",
   "futureAtmQ3O1": "L'IA peut aider les contrôleurs mais nécessite une validation soigneuse avant usage opérationnel",
   "futureAtmQ3O2": "L'IA est actuellement interdite en GTA",
-  "futureAtmQ3Explanation": "Les outils IA montrent de grandes promesses pour aider les contrôleurs, mais les normes de sécurité aéronautique exigent des tests rigoureux avant déploiement."
+  "futureAtmQ3Explanation": "Les outils IA montrent de grandes promesses pour aider les contrôleurs, mais les normes de sécurité aéronautique exigent des tests rigoureux avant déploiement.",
+
+  "radarV2ScenarioTitle": "Conflit croisé",
+  "radarV2ScenarioDesc": "Deux aéronefs convergent à la même altitude. Résolvez le conflit avant la perte de séparation.",
+  "radarV2SelectHint": "Appuyez sur un aéronef pour le sélectionner",
+  "radarV2ScenarioSuccess": "Conflit résolu",
+  "radarV2ScenarioFailed": "Scénario échoué",
+  "radarV2FinalScore": "Score final",
+  "radarV2TryAgain": "Réessayer",
+  "radarV2Resolving": "EN COURS"
 }
