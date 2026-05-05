@@ -34,6 +34,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
   // Counts physics ticks (50ms each) where no conflict exists.
   // 100 ticks = 5 continuous seconds clear → success.
   int _conflictFreeTicks = 0;
+  bool _everSelected = false;   // hides the how-to hint after first selection
 
   // ── Timers ────────────────────────────────────────────────────────────────
   Timer? _countdownTimer;
@@ -138,6 +139,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
       _score = 100;
       _conflictFreeTicks = 0;
       _selected = null;
+      _everSelected = false;
     });
     _startTimers();
   }
@@ -167,18 +169,12 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
     });
   }
 
-  VoidCallback _guarded(BuildContext ctx, VoidCallback action) => () {
-    if (_selected == null) {
-      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-        content: Text(AppLocalizations.of(ctx)!.radarV2SelectHint),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppTheme.surface,
-      ));
-      return;
-    }
-    action();
-  };
+  // Score colour: green ≥80, amber 40–79, red <40
+  Color _scoreColor() {
+    if (_score >= 80) return AppTheme.primary;
+    if (_score >= 40) return AppTheme.warning;
+    return AppTheme.danger;
+  }
 
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
@@ -220,14 +216,14 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
               ),
             ),
           ),
-          // Score badge
+          // Score badge with dynamic colour
           Padding(
             padding: const EdgeInsets.only(right: 14),
             child: Center(
               child: Text(
-                '$_score pts',
-                style: const TextStyle(
-                  color: AppTheme.primary,
+                '$_score / 120',
+                style: TextStyle(
+                  color: _scoreColor(),
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
@@ -353,6 +349,34 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                 ),
               ),
 
+              // ── How-to hint (shown until first aircraft selected) ─────────
+              if (!_everSelected && _state == _ScenarioState.playing)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.secondary.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.touch_app_outlined, color: AppTheme.secondary, size: 14),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l10n.radarV2HowTo,
+                          style: const TextStyle(
+                            color: AppTheme.secondary,
+                            fontSize: 10,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // ── Radar display ────────────────────────────────────────────
               Expanded(
                 child: GestureDetector(
@@ -365,7 +389,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                       final d = sqrt(pow(p.dx - a.x, 2) + pow(p.dy - a.y, 2));
                       if (d < minDist) { minDist = d; hit = a; }
                     }
-                    setState(() => _selected = hit);
+                    setState(() { _selected = hit; if (hit != null) _everSelected = true; });
                   },
                   child: CustomPaint(
                     painter: RadarPainter(
@@ -418,12 +442,12 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                     runSpacing: 8,
                     alignment: WrapAlignment.center,
                     children: [
-                      _cmdBtn(context, l10n.cmdTurnLeft,  _guarded(context, () => _issueCommand('left'))),
-                      _cmdBtn(context, l10n.cmdTurnRight, _guarded(context, () => _issueCommand('right'))),
-                      _cmdBtn(context, l10n.cmdClimb,     _guarded(context, () => _issueCommand('climb'))),
-                      _cmdBtn(context, l10n.cmdDescend,   _guarded(context, () => _issueCommand('descend'))),
-                      _cmdBtn(context, l10n.cmdSlow,      _guarded(context, () => _issueCommand('slow'))),
-                      _cmdBtn(context, l10n.cmdFast,      _guarded(context, () => _issueCommand('fast'))),
+                      _cmdBtn(l10n.cmdTurnLeft,  _selected != null ? () => _issueCommand('left')    : null),
+                      _cmdBtn(l10n.cmdTurnRight, _selected != null ? () => _issueCommand('right')   : null),
+                      _cmdBtn(l10n.cmdClimb,     _selected != null ? () => _issueCommand('climb')   : null),
+                      _cmdBtn(l10n.cmdDescend,   _selected != null ? () => _issueCommand('descend') : null),
+                      _cmdBtn(l10n.cmdSlow,      _selected != null ? () => _issueCommand('slow')    : null),
+                      _cmdBtn(l10n.cmdFast,      _selected != null ? () => _issueCommand('fast')    : null),
                     ],
                   ),
                 ),
@@ -442,12 +466,13 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
     );
   }
 
-  Widget _cmdBtn(BuildContext ctx, String label, VoidCallback onTap) {
+  Widget _cmdBtn(String label, VoidCallback? onTap) {
+    final enabled = onTap != null;
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppTheme.primary,
-        side: const BorderSide(color: AppTheme.primary),
+        foregroundColor: enabled ? AppTheme.primary : AppTheme.textSecondary,
+        side: BorderSide(color: enabled ? AppTheme.primary : AppTheme.borderColor),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -496,9 +521,21 @@ class _ResultOverlay extends StatelessWidget {
                   letterSpacing: 0.4,
                 ),
               ),
+              if (success) ...[
+                const SizedBox(height: 6),
+                Text(
+                  l10n.radarV2SuccessHint,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
-                '${l10n.radarV2FinalScore}: $score',
+                '${l10n.radarV2FinalScore}: $score / 120',
                 style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 16,

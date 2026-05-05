@@ -424,5 +424,7 @@
   "radarV2ScenarioFailed": "Scénario échoué",
   "radarV2FinalScore": "Score final",
   "radarV2TryAgain": "Réessayer",
-  "radarV2Resolving": "EN COURS"
+  "radarV2Resolving": "EN COURS",
+  "radarV2HowTo": "Appuyez sur un aéronef → donnez un ordre de cap ou d'altitude → maintenez la séparation 5 s",
+  "radarV2SuccessHint": "Séparation rétablie par changement de cap ou d'altitude"
 }

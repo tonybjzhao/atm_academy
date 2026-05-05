@@ -850,5 +850,9 @@
   "radarV2TryAgain": "Try Again",
   "@radarV2TryAgain": {},
   "radarV2Resolving": "RESOLVING",
-  "@radarV2Resolving": {}
+  "@radarV2Resolving": {},
+  "radarV2HowTo": "Tap an aircraft → issue heading or altitude command → hold separation 5 s",
+  "@radarV2HowTo": {},
+  "radarV2SuccessHint": "Separation restored by heading or altitude change",
+  "@radarV2SuccessHint": {}
 }

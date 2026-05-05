@@ -1399,4 +1399,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radarV2Resolving => 'RESOLVING';
+
+  @override
+  String get radarV2HowTo =>
+      'Tap an aircraft → issue heading or altitude command → hold separation 5 s';
+
+  @override
+  String get radarV2SuccessHint =>
+      'Separation restored by heading or altitude change';
 }

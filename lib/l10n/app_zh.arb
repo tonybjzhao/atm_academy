@@ -424,5 +424,7 @@
   "radarV2ScenarioFailed": "场景失败",
   "radarV2FinalScore": "最终得分",
   "radarV2TryAgain": "再试一次",
-  "radarV2Resolving": "解除中"
+  "radarV2Resolving": "解除中",
+  "radarV2HowTo": "点击航空器 → 发出航向或高度指令 → 保持间隔5秒",
+  "radarV2SuccessHint": "通过调整航向或高度成功恢复间隔"
 }

@@ -1427,4 +1427,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radarV2Resolving => 'EN COURS';
+
+  @override
+  String get radarV2HowTo =>
+      'Appuyez sur un aéronef → donnez un ordre de cap ou d\'altitude → maintenez la séparation 5 s';
+
+  @override
+  String get radarV2SuccessHint =>
+      'Séparation rétablie par changement de cap ou d\'altitude';
 }

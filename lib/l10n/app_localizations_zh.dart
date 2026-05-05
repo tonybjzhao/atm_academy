@@ -1266,4 +1266,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get radarV2Resolving => '解除中';
+
+  @override
+  String get radarV2HowTo => '点击航空器 → 发出航向或高度指令 → 保持间隔5秒';
+
+  @override
+  String get radarV2SuccessHint => '通过调整航向或高度成功恢复间隔';
 }

@@ -2577,6 +2577,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'RESOLVING'**
   String get radarV2Resolving;
+
+  /// No description provided for @radarV2HowTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an aircraft → issue heading or altitude command → hold separation 5 s'**
+  String get radarV2HowTo;
+
+  /// No description provided for @radarV2SuccessHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation restored by heading or altitude change'**
+  String get radarV2SuccessHint;
 }
 
 class _AppLocalizationsDelegate
