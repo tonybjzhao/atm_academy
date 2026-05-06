@@ -1405,4 +1405,75 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get progRankMaster => '塔台大师';
+
+  @override
+  String get homeCardScenarioTraining => '场景训练';
+
+  @override
+  String get homeCardScenarioTrainingSub => '5个引导式ATM场景';
+
+  @override
+  String get alertNormal => '正常';
+
+  @override
+  String get alertAdvisory => '交通建议';
+
+  @override
+  String get alertWarning => '冲突警告';
+
+  @override
+  String get alertLOS => '间隔丢失';
+
+  @override
+  String get ratingExcellent => '优秀';
+
+  @override
+  String get ratingSafe => '安全';
+
+  @override
+  String get ratingNeedsImprovement => '需要改进';
+
+  @override
+  String get ratingUnsafe => '不安全';
+
+  @override
+  String get scenarioResult => '场景结果';
+
+  @override
+  String get scenarioWhatHappened => '发生了什么？';
+
+  @override
+  String get scenarioRetry => '重试';
+
+  @override
+  String get scenarioNext => '下一场景';
+
+  @override
+  String get scenarioDone => '完成';
+
+  @override
+  String scenarioLevelLabel(int n) {
+    return '第$n关';
+  }
+
+  @override
+  String get feedbackGood => '好——间隔正在增加';
+
+  @override
+  String get feedbackNeutral => '中性——无明显变化';
+
+  @override
+  String get feedbackBad => '警告——仍在汇聚';
+
+  @override
+  String get skillSeparation => '间隔';
+
+  @override
+  String get skillAltitude => '高度';
+
+  @override
+  String get skillSpeed => '速度';
+
+  @override
+  String get skillMixed => '综合';
 }

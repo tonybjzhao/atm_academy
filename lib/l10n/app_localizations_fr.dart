@@ -1579,4 +1579,75 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get progRankMaster => 'Maître de la tour';
+
+  @override
+  String get homeCardScenarioTraining => 'Entraînement scénario';
+
+  @override
+  String get homeCardScenarioTrainingSub => '5 scénarios GTA guidés';
+
+  @override
+  String get alertNormal => 'NORMAL';
+
+  @override
+  String get alertAdvisory => 'AVIS DE TRAFIC';
+
+  @override
+  String get alertWarning => 'AVERTISSEMENT CONFLIT';
+
+  @override
+  String get alertLOS => 'PERTE DE SÉPARATION';
+
+  @override
+  String get ratingExcellent => 'Excellent';
+
+  @override
+  String get ratingSafe => 'Sûr';
+
+  @override
+  String get ratingNeedsImprovement => 'À améliorer';
+
+  @override
+  String get ratingUnsafe => 'Non sûr';
+
+  @override
+  String get scenarioResult => 'Résultat du scénario';
+
+  @override
+  String get scenarioWhatHappened => 'Que s\'est-il passé ?';
+
+  @override
+  String get scenarioRetry => 'Réessayer';
+
+  @override
+  String get scenarioNext => 'Scénario suivant';
+
+  @override
+  String get scenarioDone => 'Terminé';
+
+  @override
+  String scenarioLevelLabel(int n) {
+    return 'Niveau $n';
+  }
+
+  @override
+  String get feedbackGood => 'Bien — séparation en augmentation';
+
+  @override
+  String get feedbackNeutral => 'Neutre — pas de changement notable';
+
+  @override
+  String get feedbackBad => 'Attention — toujours en convergence';
+
+  @override
+  String get skillSeparation => 'Séparation';
+
+  @override
+  String get skillAltitude => 'Altitude';
+
+  @override
+  String get skillSpeed => 'Vitesse';
+
+  @override
+  String get skillMixed => 'Mixte';
 }

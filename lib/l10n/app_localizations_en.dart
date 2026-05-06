@@ -1550,4 +1550,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get progRankMaster => 'Tower Master';
+
+  @override
+  String get homeCardScenarioTraining => 'Scenario Training';
+
+  @override
+  String get homeCardScenarioTrainingSub => '5 guided ATM scenarios';
+
+  @override
+  String get alertNormal => 'NORMAL';
+
+  @override
+  String get alertAdvisory => 'TRAFFIC ADVISORY';
+
+  @override
+  String get alertWarning => 'CONFLICT WARNING';
+
+  @override
+  String get alertLOS => 'LOSS OF SEPARATION';
+
+  @override
+  String get ratingExcellent => 'Excellent';
+
+  @override
+  String get ratingSafe => 'Safe';
+
+  @override
+  String get ratingNeedsImprovement => 'Needs Improvement';
+
+  @override
+  String get ratingUnsafe => 'Unsafe';
+
+  @override
+  String get scenarioResult => 'Scenario Result';
+
+  @override
+  String get scenarioWhatHappened => 'What happened?';
+
+  @override
+  String get scenarioRetry => 'Retry';
+
+  @override
+  String get scenarioNext => 'Next Scenario';
+
+  @override
+  String get scenarioDone => 'Done';
+
+  @override
+  String scenarioLevelLabel(int n) {
+    return 'Level $n';
+  }
+
+  @override
+  String get feedbackGood => 'Good — separation increasing';
+
+  @override
+  String get feedbackNeutral => 'Neutral — no clear change';
+
+  @override
+  String get feedbackBad => 'Warning — still converging';
+
+  @override
+  String get skillSeparation => 'Separation';
+
+  @override
+  String get skillAltitude => 'Altitude';
+
+  @override
+  String get skillSpeed => 'Speed';
+
+  @override
+  String get skillMixed => 'Mixed';
 }

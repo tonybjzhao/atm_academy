@@ -2823,6 +2823,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tower Master'**
   String get progRankMaster;
+
+  /// No description provided for @homeCardScenarioTraining.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario Training'**
+  String get homeCardScenarioTraining;
+
+  /// No description provided for @homeCardScenarioTrainingSub.
+  ///
+  /// In en, this message translates to:
+  /// **'5 guided ATM scenarios'**
+  String get homeCardScenarioTrainingSub;
+
+  /// No description provided for @alertNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'NORMAL'**
+  String get alertNormal;
+
+  /// No description provided for @alertAdvisory.
+  ///
+  /// In en, this message translates to:
+  /// **'TRAFFIC ADVISORY'**
+  String get alertAdvisory;
+
+  /// No description provided for @alertWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'CONFLICT WARNING'**
+  String get alertWarning;
+
+  /// No description provided for @alertLOS.
+  ///
+  /// In en, this message translates to:
+  /// **'LOSS OF SEPARATION'**
+  String get alertLOS;
+
+  /// No description provided for @ratingExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get ratingExcellent;
+
+  /// No description provided for @ratingSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe'**
+  String get ratingSafe;
+
+  /// No description provided for @ratingNeedsImprovement.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Improvement'**
+  String get ratingNeedsImprovement;
+
+  /// No description provided for @ratingUnsafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsafe'**
+  String get ratingUnsafe;
+
+  /// No description provided for @scenarioResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario Result'**
+  String get scenarioResult;
+
+  /// No description provided for @scenarioWhatHappened.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened?'**
+  String get scenarioWhatHappened;
+
+  /// No description provided for @scenarioRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get scenarioRetry;
+
+  /// No description provided for @scenarioNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Scenario'**
+  String get scenarioNext;
+
+  /// No description provided for @scenarioDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get scenarioDone;
+
+  /// No description provided for @scenarioLevelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {n}'**
+  String scenarioLevelLabel(int n);
+
+  /// No description provided for @feedbackGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good — separation increasing'**
+  String get feedbackGood;
+
+  /// No description provided for @feedbackNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral — no clear change'**
+  String get feedbackNeutral;
+
+  /// No description provided for @feedbackBad.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning — still converging'**
+  String get feedbackBad;
+
+  /// No description provided for @skillSeparation.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation'**
+  String get skillSeparation;
+
+  /// No description provided for @skillAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get skillAltitude;
+
+  /// No description provided for @skillSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get skillSpeed;
+
+  /// No description provided for @skillMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed'**
+  String get skillMixed;
 }
 
 class _AppLocalizationsDelegate
