@@ -1521,4 +1521,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get unityReplayBack => '← 返回结果';
+
+  @override
+  String get scenarioConflictPair => '冲突对';
+
+  @override
+  String get scenarioMinHorizSep => '最小水平间隔';
+
+  @override
+  String get scenarioMinVertSep => '最小垂直间隔';
+
+  @override
+  String get scenarioReactionTime => '反应时间';
+
+  @override
+  String get scenarioPenalties => '扣分项';
+
+  @override
+  String get scenarioBonuses => '加分项';
+
+  @override
+  String get scenarioLOSResult => '间隔丢失';
+
+  @override
+  String get scenarioSafeResult => '间隔维持';
 }

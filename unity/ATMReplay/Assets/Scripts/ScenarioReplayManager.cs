@@ -33,14 +33,32 @@ public class AircraftData
 [Serializable]
 public class ReplayPayload
 {
-    public string           scenarioId;
-    public string           scenarioTitle;
+    public string             scenarioId;
+    public string             scenarioTitle;
     public List<AircraftData> initialAircraft;
     public List<AircraftData> finalAircraft;
-    public float            minHorizDist;
-    public bool             hadLOS;
-    public int              score;
-    public string           ratingKey;
+
+    // Conflict metrics (from Flutter ScenarioEngine)
+    public List<string> conflictPairCallsigns;
+    public float        closestPointPxX;
+    public float        closestPointPxY;
+    public float        closestPointTimeSec;
+    public float        thresholdHorizontalPx;
+    public int          thresholdVerticalFt;
+
+    // User action
+    public float        actionTimeSec;
+    public string       userCommandSummary;
+
+    // Score (Flutter calculates; Unity only displays)
+    public float        minHorizDist;
+    public bool         hadLOS;
+    public int          score;
+    public string       ratingKey;
+
+    // Breakdown
+    public List<string> penaltyBreakdown;
+    public List<string> bonusBreakdown;
 }
 
 // ── Main controller ───────────────────────────────────────────────────────────
@@ -50,6 +68,9 @@ public class ScenarioReplayManager : MonoBehaviour
     [Header("Prefabs")]
     public GameObject aircraftPrefab;       // assign in Inspector
     public GameObject pathRendererPrefab;   // assign in Inspector
+
+    [Header("Overlay (optional)")]
+    public ReplayOverlay overlay;           // assign a world-space canvas overlay
 
     [Header("Scene scale")]
     // Flutter radar coords: ~370 x 430 px → divide by coordScale for world units
@@ -134,6 +155,12 @@ public class ScenarioReplayManager : MonoBehaviour
             _paths.Add(pr);
         }
 
+        // Closest-point marker (small pulsing sphere at conflict midpoint)
+        SpawnClosestPointMarker();
+
+        // Populate score overlay before animation begins
+        overlay?.Populate(_payload);
+
         // Notify cinematic camera replay is starting
         _cinCam?.BeginReplay(animationDuration + holdAfterFinish);
 
@@ -156,6 +183,45 @@ public class ScenarioReplayManager : MonoBehaviour
         yield return new WaitForSeconds(holdAfterFinish);
 
         NotifyFlutter("REPLAY_COMPLETE");
+    }
+
+    // ── Closest-point marker ──────────────────────────────────────────────────
+    // A small pulsing ring at the conflict midpoint so the viewer can see exactly
+    // where the aircraft came closest.
+    private void SpawnClosestPointMarker()
+    {
+        if (_payload == null) return;
+        var worldPos = ToWorld(_payload.closestPointPxX, _payload.closestPointPxY, 300);
+
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = "_ClosestPointMarker";
+        go.transform.position   = worldPos;
+        go.transform.localScale = Vector3.one * 0.25f;
+        Destroy(go.GetComponent<Collider>());
+
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                  ?? Shader.Find("Sprites/Default"));
+        bool hadLOS = _payload.hadLOS;
+        mat.color = hadLOS
+            ? new Color(1f, 0.12f, 0.18f, 0.5f)   // red for LOS
+            : new Color(1f, 0.85f, 0f,   0.5f);   // amber for warning
+        go.GetComponent<Renderer>().material = mat;
+
+        // Add pulsing scale via coroutine
+        StartCoroutine(PulseMarker(go.transform, hadLOS));
+    }
+
+    private static IEnumerator PulseMarker(Transform t, bool isLOS)
+    {
+        float elapsed = 0f;
+        float speed   = isLOS ? 4f : 2.5f;
+        while (t != null)
+        {
+            elapsed += Time.deltaTime;
+            float s = 0.20f + 0.10f * Mathf.Sin(elapsed * speed * Mathf.PI * 2f);
+            t.localScale = Vector3.one * s;
+            yield return null;
+        }
     }
 
     // ── Notify Flutter ────────────────────────────────────────────────────────

@@ -1668,4 +1668,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unityReplayBack => '← Back to Results';
+
+  @override
+  String get scenarioConflictPair => 'Conflict Pair';
+
+  @override
+  String get scenarioMinHorizSep => 'Min Horizontal Separation';
+
+  @override
+  String get scenarioMinVertSep => 'Min Vertical Separation';
+
+  @override
+  String get scenarioReactionTime => 'Reaction Time';
+
+  @override
+  String get scenarioPenalties => 'Penalties';
+
+  @override
+  String get scenarioBonuses => 'Bonuses';
+
+  @override
+  String get scenarioLOSResult => 'LOSS OF SEPARATION';
+
+  @override
+  String get scenarioSafeResult => 'SEPARATION MAINTAINED';
 }

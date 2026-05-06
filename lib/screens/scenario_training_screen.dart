@@ -114,12 +114,17 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     if (_screenState != _ScreenState.playing) return;
     _stopTimers();
     final result = _engine.finalize(_timeLeft);
-    final locale = _scenario.title.en; // title in English for Unity
 
     // Build replay data snapshot for optional 3D replay
+    final cmdType = _engine.firstCommandType;
+    final cmdCs   = _engine.firstCommandCallsign;
+    final cmdSummary = cmdCs.isEmpty
+        ? 'No command issued'
+        : '${_commandLabel(cmdType)} on $cmdCs';
+
     final replay = ScenarioReplayData(
-      scenarioId: _scenario.id,
-      scenarioTitle: locale,
+      scenarioId:    _scenario.id,
+      scenarioTitle: _scenario.title.en,
       initialAircraft: _scenario.aircraft.map((a) => AircraftReplayState(
         callsign: a.callsign, x: a.x, y: a.y,
         heading: a.heading, speed: a.speed, altitude: a.altitude,
@@ -128,15 +133,23 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
       finalAircraft: _engine.aircraft.map((a) => AircraftReplayState(
         callsign: a.callsign, x: a.x, y: a.y,
         heading: a.heading, speed: a.speed, altitude: a.altitude,
-        wasSelected: _selectedCallsign == a.callsign,
-        wasConflicting: result.hadLOS && _engine.alertLevel == AlertLevel.los,
+        wasSelected:    _selectedCallsign == a.callsign,
+        wasConflicting: result.conflictPair.contains(a.callsign),
       )).toList(),
-      minHorizDist: _engine.minHorizDist == double.infinity
-          ? 999
-          : _engine.minHorizDist,
-      hadLOS: result.hadLOS,
-      score: result.score,
-      ratingKey: result.ratingKey,
+      conflictPairCallsigns: result.conflictPair,
+      closestPointPxX:       _engine.closestPairMidX,
+      closestPointPxY:       _engine.closestPairMidY,
+      closestPointTimeSec:   result.closestPointTimeSec,
+      thresholdHorizontalPx: _scenario.conflictRules.minHorizontalDistancePx,
+      thresholdVerticalFt:   _scenario.conflictRules.minVerticalSeparationFL * 100,
+      actionTimeSec:         result.reactionTimeSec,
+      userCommandSummary:    cmdSummary,
+      minHorizDist:          result.minHorizontalDistancePx,
+      hadLOS:                result.hadLOS,
+      score:                 result.score,
+      ratingKey:             result.ratingKey,
+      penaltyBreakdown:      result.penaltyBreakdown,
+      bonusBreakdown:        result.bonusBreakdown,
     );
 
     setState(() {
@@ -188,6 +201,19 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   }
 
   // ── Skill label ───────────────────────────────────────────────────────────
+  // Human-readable command name for replay summary
+  static String _commandLabel(String cmd) {
+    switch (cmd) {
+      case 'left':    return 'Turn left';
+      case 'right':   return 'Turn right';
+      case 'climb':   return 'Climb';
+      case 'descend': return 'Descend';
+      case 'slow':    return 'Slow';
+      case 'fast':    return 'Fast';
+      default:        return cmd;
+    }
+  }
+
   String _skillLabel(AppLocalizations l10n) {
     switch (_scenario.skill) {
       case 'altitude':   return l10n.skillAltitude;

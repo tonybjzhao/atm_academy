@@ -19,16 +19,23 @@ class ScenarioAircraftConfig {
 }
 
 class ConflictRules {
-  final double minHorizontalDistancePx; // LOS threshold
-  final int minVerticalSeparationFL;    // must BOTH be below to count as LOS
+  // V1 spec: LOS = 60 px horizontal + 10 FL (1000 ft) vertical
+  //          Warning = 90 px horizontal + 15 FL (1500 ft) vertical
+  final double minHorizontalDistancePx;    // LOS threshold px
+  final int    minVerticalSeparationFL;    // LOS threshold FL (1 FL = 100 ft)
+  final double warningHorizontalDistancePx; // Warning threshold px
+  final int    warningVerticalSeparationFL; // Warning threshold FL
 
   const ConflictRules({
-    required this.minHorizontalDistancePx,
-    required this.minVerticalSeparationFL,
+    this.minHorizontalDistancePx     = 60,
+    this.minVerticalSeparationFL     = 10,
+    this.warningHorizontalDistancePx = 90,
+    this.warningVerticalSeparationFL = 15,
   });
 
-  double get warningDistancePx  => minHorizontalDistancePx * 1.45;
-  double get advisoryDistancePx => minHorizontalDistancePx * 1.90;
+  // Backward-compat aliases used by ScenarioEngine/PressureBar
+  double get warningDistancePx  => warningHorizontalDistancePx;
+  double get advisoryDistancePx => warningHorizontalDistancePx * 1.40;
 }
 
 class ScenarioFeedbackMessages {

@@ -96,80 +96,130 @@ class ScenarioFeedbackPanel extends StatelessWidget {
               ),
 
               const SizedBox(height: 16),
-              // Score + breakdown
+
+              // ── Score ─────────────────────────────────────────────────────
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.borderColor),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${result.score}',
+                      style: TextStyle(color: color, fontSize: 42, fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      ' / 120',
+                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 20),
+                    ),
+                    const SizedBox(width: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (result.hadLOS ? AppTheme.danger : AppTheme.primary)
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: (result.hadLOS ? AppTheme.danger : AppTheme.primary)
+                              .withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Text(
+                        result.hadLOS ? l10n.scenarioLOSResult : l10n.scenarioSafeResult,
+                        style: TextStyle(
+                          color: result.hadLOS ? AppTheme.danger : AppTheme.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ── Conflict metrics ──────────────────────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppTheme.borderColor),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${result.score} / 120',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _scoreRow('✓ ${l10n.scoreRowGoodCommands}',   '+${result.goodCommands * 5}',
-                        result.goodCommands > 0 ? AppTheme.primary : AppTheme.textSecondary),
-                    _scoreRow('✗ ${l10n.scoreRowBadCommands}',    '-${result.badCommands * 10}',
-                        result.badCommands > 0 ? AppTheme.danger : AppTheme.textSecondary),
-                    if (result.hadLOS)
-                      _scoreRow('⚠ ${l10n.scoreRowLOS}', '-50', AppTheme.danger),
-                    if (result.resolvedInFirstHalf)
-                      _scoreRow('⏱ ${l10n.scoreRowResolvedEarly}', '+20', AppTheme.primary),
-                    if (result.separationMaintained)
-                      _scoreRow('✓ ${l10n.scoreRowSeparationMaintained}', '+10', AppTheme.primary),
-                    if (result.levelAtFirstCommand.index >= AlertLevel.warning.index)
-                      _scoreRow('⚠ ${l10n.scoreRowLateAction}', '-30', AppTheme.warning),
+                    _metricRow(l10n.scenarioConflictPair,
+                        result.conflictPair.join(' & '),
+                        result.hadLOS ? AppTheme.danger : AppTheme.warning),
+                    _metricRow(l10n.scenarioMinHorizSep,
+                        '${result.minHorizontalDistancePx.toStringAsFixed(0)} px '
+                        '(threshold 60 px)',
+                        result.hadLOS ? AppTheme.danger : AppTheme.primary),
+                    _metricRow(l10n.scenarioMinVertSep,
+                        '${result.minVerticalDistanceFt} ft '
+                        '(threshold 1 000 ft)',
+                        result.hadLOS ? AppTheme.danger : AppTheme.primary),
+                    _metricRow(l10n.scenarioReactionTime,
+                        result.reactionTimeSec == 0
+                            ? 'No command'
+                            : '${result.reactionTimeSec.toStringAsFixed(1)} s',
+                        result.reactionTimeSec > 8
+                            ? AppTheme.warning
+                            : AppTheme.textSecondary),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 16),
-              // Why feedback
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppTheme.secondary.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.secondary.withValues(alpha: 0.35)),
+              const SizedBox(height: 12),
+
+              // ── What happened ─────────────────────────────────────────────
+              _Section(
+                icon: Icons.info_outline,
+                color: AppTheme.secondary,
+                title: l10n.scenarioWhatHappened,
+                child: Text(
+                  result.replayExplanationLong,
+                  style: const TextStyle(
+                      color: AppTheme.textSecondary, fontSize: 12, height: 1.55),
                 ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ── Penalty breakdown ─────────────────────────────────────────
+              _Section(
+                icon: Icons.remove_circle_outline,
+                color: AppTheme.danger,
+                title: l10n.scenarioPenalties,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.lightbulb_outline, color: AppTheme.secondary, size: 14),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.scenarioWhatHappened,
-                          style: const TextStyle(
-                            color: AppTheme.secondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _mainFeedback(),
-                      style: const TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 12,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
+                  children: result.penaltyBreakdown
+                      .map((s) => _breakdownLine(s, AppTheme.danger))
+                      .toList(),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ── Bonus breakdown ───────────────────────────────────────────
+              _Section(
+                icon: Icons.add_circle_outline,
+                color: AppTheme.primary,
+                title: l10n.scenarioBonuses,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: result.bonusBreakdown
+                      .map((s) => _breakdownLine(s, AppTheme.primary))
+                      .toList(),
                 ),
               ),
 
@@ -229,16 +279,68 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     );
   }
 
-  Widget _scoreRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
-          Text(value, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
+  Widget _metricRow(String label, String value, Color valueColor) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            Expanded(child: Text(label,
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11))),
+            Text(value,
+                style: TextStyle(color: valueColor, fontSize: 11, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+
+  Widget _breakdownLine(String text, Color color) => Padding(
+        padding: const EdgeInsets.only(bottom: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('• ', style: TextStyle(color: color, fontSize: 11)),
+            Expanded(child: Text(text,
+                style: TextStyle(color: color, fontSize: 11, height: 1.4))),
+          ],
+        ),
+      );
+}
+
+// ── Section widget ─────────────────────────────────────────────────────────────
+
+class _Section extends StatelessWidget {
+  final IconData icon;
+  final Color    color;
+  final String   title;
+  final Widget   child;
+
+  const _Section({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.30)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(icon, color: color, size: 13),
+              const SizedBox(width: 6),
+              Text(title,
+                  style: TextStyle(color: color, fontSize: 11,
+                      fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+            ]),
+            const SizedBox(height: 8),
+            child,
+          ],
+        ),
+      );
 }

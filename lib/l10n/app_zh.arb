@@ -509,5 +509,13 @@
   "watchReplay3d": "观看3D回放",
   "unityReplayTitle": "3D场景回放",
   "unityReplayComingSoon": "3D可视化将在未来版本中推出",
-  "unityReplayBack": "← 返回结果"
+  "unityReplayBack": "← 返回结果",
+  "scenarioConflictPair": "冲突对",
+  "scenarioMinHorizSep": "最小水平间隔",
+  "scenarioMinVertSep": "最小垂直间隔",
+  "scenarioReactionTime": "反应时间",
+  "scenarioPenalties": "扣分项",
+  "scenarioBonuses": "加分项",
+  "scenarioLOSResult": "间隔丢失",
+  "scenarioSafeResult": "间隔维持"
 }

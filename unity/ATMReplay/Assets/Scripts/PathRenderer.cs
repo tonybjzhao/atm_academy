@@ -93,17 +93,38 @@ public class PathRenderer : MonoBehaviour
         _line.positionCount = _pts.Count;
         _line.SetPositions(_pts.ToArray());
 
-        // Conflicting aircraft: pulse trail intensity
+        // Update trail colour based on aircraft explicit state each frame
+        UpdateTrailColor();
+    }
+
+    private void UpdateTrailColor()
+    {
+        Color c;
         if (_aircraft.WasConflicting)
         {
-            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 5f * Mathf.PI * 2f);
-            var pulsedColor = new Color(
-                conflictColor.r,
-                conflictColor.g * 0.3f,
-                conflictColor.b * 0.3f,
-                1f
-            );
-            _line.material.color = Color.Lerp(conflictColor, pulsedColor, pulse * 0.4f);
+            // Pulse red to dark-red in sync with aircraft body
+            float pulse = Mathf.Sin(Time.time * 5f * Mathf.PI * 2f) * 0.5f + 0.5f;
+            c = Color.Lerp(
+                new Color(conflictColor.r, conflictColor.g * 0.25f, conflictColor.b * 0.25f, 1f),
+                conflictColor, pulse * 0.5f);
         }
+        else if (_aircraft.WasSelected)
+        {
+            c = selectedColor;
+        }
+        else
+        {
+            c = normalColor;
+        }
+
+        _line.material.color = c;
+
+        // Rebuild gradient so both colour and alpha stay consistent
+        var grad = new Gradient();
+        grad.SetKeys(
+            new[] { new GradientColorKey(c, 0f), new GradientColorKey(c, 1f) },
+            new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.75f, 0.7f), new GradientAlphaKey(0.9f, 1f) }
+        );
+        _line.colorGradient = grad;
     }
 }

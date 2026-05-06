@@ -509,5 +509,13 @@
   "watchReplay3d": "Regarder le replay 3D",
   "unityReplayTitle": "Replay 3D du scénario",
   "unityReplayComingSoon": "La visualisation 3D sera disponible dans une prochaine mise à jour",
-  "unityReplayBack": "← Retour aux résultats"
+  "unityReplayBack": "← Retour aux résultats",
+  "scenarioConflictPair": "Paire en conflit",
+  "scenarioMinHorizSep": "Séparation horizontale minimale",
+  "scenarioMinVertSep": "Séparation verticale minimale",
+  "scenarioReactionTime": "Temps de réaction",
+  "scenarioPenalties": "Pénalités",
+  "scenarioBonuses": "Bonus",
+  "scenarioLOSResult": "PERTE DE SÉPARATION",
+  "scenarioSafeResult": "SÉPARATION MAINTENUE"
 }

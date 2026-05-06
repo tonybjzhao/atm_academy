@@ -42,15 +42,19 @@ public class AircraftController : MonoBehaviour
     public float labelOffsetX = 0.25f;
     public float labelOffsetY = 0.40f;
 
+    // ── Explicit state (set from Flutter data — never calculated in Unity) ────
+    public enum AircraftState { Safe, Selected, ConflictPair }
+
     // ── State ─────────────────────────────────────────────────────────────────
-    private Vector3  _startPos;
-    private Vector3  _endPos;
-    private float    _startHeading;
-    private string   _callsign;
-    private int      _altitude;
-    private float    _speed;
-    private bool     _wasSelected;
-    private bool     _wasConflicting;
+    private Vector3      _startPos;
+    private Vector3      _endPos;
+    private float        _startHeading;
+    private string       _callsign;
+    private int          _altitude;
+    private float        _speed;
+    private bool         _wasSelected;
+    private bool         _wasConflicting;
+    private AircraftState _state;
 
     private Renderer     _rend;
     private Vector3      _baseScale;
@@ -64,6 +68,11 @@ public class AircraftController : MonoBehaviour
         _speed          = data.speed;
         _wasSelected    = data.wasSelected;
         _wasConflicting = data.wasConflicting;
+
+        // Derive explicit state from Flutter flags (priority: conflict > selected > safe)
+        _state = _wasConflicting ? AircraftState.ConflictPair
+               : _wasSelected    ? AircraftState.Selected
+               : AircraftState.Safe;
 
         _startPos     = transform.position;
         _endPos       = worldEndPos;
@@ -108,30 +117,27 @@ public class AircraftController : MonoBehaviour
         Color   baseColor;
         Vector3 scale = _baseScale;
 
-        if (_wasConflicting)
+        switch (_state)
         {
-            // Fast sin pulse: drives BOTH scale and emission
-            float sin   = Mathf.Sin(Time.time * conflictPulseHz * Mathf.PI * 2f);
-            float pulse = sin * 0.5f + 0.5f;                          // 0 → 1
-
-            float s    = Mathf.Lerp(conflictScaleMin, conflictScaleMax, pulse);
-            scale      = _baseScale * s;
-
-            baseColor  = conflictColor;
-            emitMult   = Mathf.Lerp(1.0f, conflictEmitMultiplier, pulse);
-        }
-        else if (_wasSelected)
-        {
-            float sin   = Mathf.Sin(Time.time * selectedPulseHz * Mathf.PI * 2f);
-            float pulse = sin * 0.5f + 0.5f;
-
-            baseColor  = selectedColor;
-            emitMult   = Mathf.Lerp(0.6f, selectedEmitMult, pulse);
-        }
-        else
-        {
-            baseColor  = normalColor;
-            emitMult   = normalEmitMult;
+            case AircraftState.ConflictPair:
+            {
+                float pulse = Mathf.Sin(Time.time * conflictPulseHz * Mathf.PI * 2f) * 0.5f + 0.5f;
+                scale     = _baseScale * Mathf.Lerp(conflictScaleMin, conflictScaleMax, pulse);
+                baseColor = conflictColor;
+                emitMult  = Mathf.Lerp(1.0f, conflictEmitMultiplier, pulse);
+                break;
+            }
+            case AircraftState.Selected:
+            {
+                float pulse = Mathf.Sin(Time.time * selectedPulseHz * Mathf.PI * 2f) * 0.5f + 0.5f;
+                baseColor = selectedColor;
+                emitMult  = Mathf.Lerp(0.6f, selectedEmitMult, pulse);
+                break;
+            }
+            default: // Safe
+                baseColor = normalColor;
+                emitMult  = normalEmitMult;
+                break;
         }
 
         if (modelTransform != null) modelTransform.localScale = scale;

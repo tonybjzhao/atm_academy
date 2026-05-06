@@ -3051,6 +3051,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'← Back to Results'**
   String get unityReplayBack;
+
+  /// No description provided for @scenarioConflictPair.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict Pair'**
+  String get scenarioConflictPair;
+
+  /// No description provided for @scenarioMinHorizSep.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Horizontal Separation'**
+  String get scenarioMinHorizSep;
+
+  /// No description provided for @scenarioMinVertSep.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Vertical Separation'**
+  String get scenarioMinVertSep;
+
+  /// No description provided for @scenarioReactionTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Reaction Time'**
+  String get scenarioReactionTime;
+
+  /// No description provided for @scenarioPenalties.
+  ///
+  /// In en, this message translates to:
+  /// **'Penalties'**
+  String get scenarioPenalties;
+
+  /// No description provided for @scenarioBonuses.
+  ///
+  /// In en, this message translates to:
+  /// **'Bonuses'**
+  String get scenarioBonuses;
+
+  /// No description provided for @scenarioLOSResult.
+  ///
+  /// In en, this message translates to:
+  /// **'LOSS OF SEPARATION'**
+  String get scenarioLOSResult;
+
+  /// No description provided for @scenarioSafeResult.
+  ///
+  /// In en, this message translates to:
+  /// **'SEPARATION MAINTAINED'**
+  String get scenarioSafeResult;
 }
 
 class _AppLocalizationsDelegate

@@ -1021,5 +1021,22 @@
   "unityReplayComingSoon": "3D visualization coming in a future update",
   "@unityReplayComingSoon": {},
   "unityReplayBack": "← Back to Results",
-  "@unityReplayBack": {}
+  "@unityReplayBack": {},
+
+  "scenarioConflictPair": "Conflict Pair",
+  "@scenarioConflictPair": {},
+  "scenarioMinHorizSep": "Min Horizontal Separation",
+  "@scenarioMinHorizSep": {},
+  "scenarioMinVertSep": "Min Vertical Separation",
+  "@scenarioMinVertSep": {},
+  "scenarioReactionTime": "Reaction Time",
+  "@scenarioReactionTime": {},
+  "scenarioPenalties": "Penalties",
+  "@scenarioPenalties": {},
+  "scenarioBonuses": "Bonuses",
+  "@scenarioBonuses": {},
+  "scenarioLOSResult": "LOSS OF SEPARATION",
+  "@scenarioLOSResult": {},
+  "scenarioSafeResult": "SEPARATION MAINTAINED",
+  "@scenarioSafeResult": {}
 }
