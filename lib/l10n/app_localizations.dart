@@ -2589,6 +2589,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Separation restored by heading or altitude change'**
   String get radarV2SuccessHint;
+
+  /// No description provided for @radarLevel1Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Crossing'**
+  String get radarLevel1Name;
+
+  /// No description provided for @radarLevel2Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude Separation'**
+  String get radarLevel2Name;
+
+  /// No description provided for @radarLevel3Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed Control'**
+  String get radarLevel3Name;
+
+  /// No description provided for @radarLevel4Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed Conflict'**
+  String get radarLevel4Name;
+
+  /// No description provided for @radarLevel5Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Late Conflict'**
+  String get radarLevel5Name;
+
+  /// No description provided for @radarLevel6Name.
+  ///
+  /// In en, this message translates to:
+  /// **'High Traffic'**
+  String get radarLevel6Name;
+
+  /// No description provided for @radarLevel7Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb / Descend'**
+  String get radarLevel7Name;
+
+  /// No description provided for @radarLevel8Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Holding Pattern'**
+  String get radarLevel8Name;
+
+  /// No description provided for @radarLevel9Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Approach Conflict'**
+  String get radarLevel9Name;
+
+  /// No description provided for @radarLevel10Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority Emergency'**
+  String get radarLevel10Name;
+
+  /// No description provided for @radarLevel1Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Try turning one aircraft away — early heading change is easier than reacting late.'**
+  String get radarLevel1Tip;
+
+  /// No description provided for @radarLevel2Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading change alone is slow here. Climb or descend one aircraft for instant vertical separation.'**
+  String get radarLevel2Tip;
+
+  /// No description provided for @radarLevel3Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'The trailing aircraft is catching up fast. Use Slow to restore longitudinal spacing.'**
+  String get radarLevel3Tip;
+
+  /// No description provided for @radarLevel4Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Two conflicts at once. Resolve the closest pair first, then tackle the second.'**
+  String get radarLevel4Tip;
+
+  /// No description provided for @radarLevel5Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict develops fast. Issue a heading command immediately — don\'t wait.'**
+  String get radarLevel5Tip;
+
+  /// No description provided for @radarLevel6Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan all aircraft before acting. Prioritise the pair with least separation.'**
+  String get radarLevel6Tip;
+
+  /// No description provided for @radarLevel7Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Near-identical altitudes will conflict when aircraft converge. Climb or descend now.'**
+  String get radarLevel7Tip;
+
+  /// No description provided for @radarLevel8Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Bunching aircraft need speed adjustment. Slow the faster one or speed up the slower.'**
+  String get radarLevel8Tip;
+
+  /// No description provided for @radarLevel9Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Approach paths converge fast. Extend one aircraft with a heading or altitude change.'**
+  String get radarLevel9Tip;
+
+  /// No description provided for @radarLevel10Tip.
+  ///
+  /// In en, this message translates to:
+  /// **'MAYDAY has priority. Move all surrounding aircraft away using heading and altitude.'**
+  String get radarLevel10Tip;
+
+  /// No description provided for @radarLevelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}'**
+  String radarLevelLabel(int level);
+
+  /// No description provided for @radarLevelComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level} Complete!'**
+  String radarLevelComplete(int level);
+
+  /// No description provided for @radarXpEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'+{xp} XP'**
+  String radarXpEarned(int xp);
+
+  /// No description provided for @radarTotalXp.
+  ///
+  /// In en, this message translates to:
+  /// **'{xp} XP'**
+  String radarTotalXp(int xp);
+
+  /// No description provided for @radarNextLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next → Level {level}'**
+  String radarNextLevel(int level);
+
+  /// No description provided for @radarAllLevelsComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'All Levels Complete!'**
+  String get radarAllLevelsComplete;
+
+  /// No description provided for @radarBestScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Best: {score}'**
+  String radarBestScore(int score);
+
+  /// No description provided for @radarShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'I completed Level {level} in ATM Academy ✈️  Score: {score}/120 — Can you beat me?'**
+  String radarShareText(int level, int score);
+
+  /// No description provided for @radarShareCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Score card copied — share with your team!'**
+  String get radarShareCopied;
+
+  /// No description provided for @radarTechnique.
+  ///
+  /// In en, this message translates to:
+  /// **'Technique: {tech}'**
+  String radarTechnique(String tech);
+
+  /// No description provided for @radarTechHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get radarTechHeading;
+
+  /// No description provided for @radarTechAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get radarTechAltitude;
+
+  /// No description provided for @radarTechSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get radarTechSpeed;
+
+  /// No description provided for @radarTechMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed'**
+  String get radarTechMixed;
+
+  /// No description provided for @progRankCadet.
+  ///
+  /// In en, this message translates to:
+  /// **'Cadet'**
+  String get progRankCadet;
+
+  /// No description provided for @progRankTrainee.
+  ///
+  /// In en, this message translates to:
+  /// **'Trainee'**
+  String get progRankTrainee;
+
+  /// No description provided for @progRankController.
+  ///
+  /// In en, this message translates to:
+  /// **'Controller'**
+  String get progRankController;
+
+  /// No description provided for @progRankSenior.
+  ///
+  /// In en, this message translates to:
+  /// **'Senior Controller'**
+  String get progRankSenior;
+
+  /// No description provided for @progRankMaster.
+  ///
+  /// In en, this message translates to:
+  /// **'Tower Master'**
+  String get progRankMaster;
 }
 
 class _AppLocalizationsDelegate

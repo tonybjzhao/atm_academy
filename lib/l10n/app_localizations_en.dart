@@ -1407,4 +1407,147 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get radarV2SuccessHint =>
       'Separation restored by heading or altitude change';
+
+  @override
+  String get radarLevel1Name => 'Basic Crossing';
+
+  @override
+  String get radarLevel2Name => 'Altitude Separation';
+
+  @override
+  String get radarLevel3Name => 'Speed Control';
+
+  @override
+  String get radarLevel4Name => 'Mixed Conflict';
+
+  @override
+  String get radarLevel5Name => 'Late Conflict';
+
+  @override
+  String get radarLevel6Name => 'High Traffic';
+
+  @override
+  String get radarLevel7Name => 'Climb / Descend';
+
+  @override
+  String get radarLevel8Name => 'Holding Pattern';
+
+  @override
+  String get radarLevel9Name => 'Approach Conflict';
+
+  @override
+  String get radarLevel10Name => 'Priority Emergency';
+
+  @override
+  String get radarLevel1Tip =>
+      'Try turning one aircraft away — early heading change is easier than reacting late.';
+
+  @override
+  String get radarLevel2Tip =>
+      'Heading change alone is slow here. Climb or descend one aircraft for instant vertical separation.';
+
+  @override
+  String get radarLevel3Tip =>
+      'The trailing aircraft is catching up fast. Use Slow to restore longitudinal spacing.';
+
+  @override
+  String get radarLevel4Tip =>
+      'Two conflicts at once. Resolve the closest pair first, then tackle the second.';
+
+  @override
+  String get radarLevel5Tip =>
+      'Conflict develops fast. Issue a heading command immediately — don\'t wait.';
+
+  @override
+  String get radarLevel6Tip =>
+      'Scan all aircraft before acting. Prioritise the pair with least separation.';
+
+  @override
+  String get radarLevel7Tip =>
+      'Near-identical altitudes will conflict when aircraft converge. Climb or descend now.';
+
+  @override
+  String get radarLevel8Tip =>
+      'Bunching aircraft need speed adjustment. Slow the faster one or speed up the slower.';
+
+  @override
+  String get radarLevel9Tip =>
+      'Approach paths converge fast. Extend one aircraft with a heading or altitude change.';
+
+  @override
+  String get radarLevel10Tip =>
+      'MAYDAY has priority. Move all surrounding aircraft away using heading and altitude.';
+
+  @override
+  String radarLevelLabel(int level) {
+    return 'Level $level';
+  }
+
+  @override
+  String radarLevelComplete(int level) {
+    return 'Level $level Complete!';
+  }
+
+  @override
+  String radarXpEarned(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String radarTotalXp(int xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String radarNextLevel(int level) {
+    return 'Next → Level $level';
+  }
+
+  @override
+  String get radarAllLevelsComplete => 'All Levels Complete!';
+
+  @override
+  String radarBestScore(int score) {
+    return 'Best: $score';
+  }
+
+  @override
+  String radarShareText(int level, int score) {
+    return 'I completed Level $level in ATM Academy ✈️  Score: $score/120 — Can you beat me?';
+  }
+
+  @override
+  String get radarShareCopied => 'Score card copied — share with your team!';
+
+  @override
+  String radarTechnique(String tech) {
+    return 'Technique: $tech';
+  }
+
+  @override
+  String get radarTechHeading => 'Heading';
+
+  @override
+  String get radarTechAltitude => 'Altitude';
+
+  @override
+  String get radarTechSpeed => 'Speed';
+
+  @override
+  String get radarTechMixed => 'Mixed';
+
+  @override
+  String get progRankCadet => 'Cadet';
+
+  @override
+  String get progRankTrainee => 'Trainee';
+
+  @override
+  String get progRankController => 'Controller';
+
+  @override
+  String get progRankSenior => 'Senior Controller';
+
+  @override
+  String get progRankMaster => 'Tower Master';
 }

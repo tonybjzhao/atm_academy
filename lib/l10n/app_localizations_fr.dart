@@ -1435,4 +1435,148 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get radarV2SuccessHint =>
       'Séparation rétablie par changement de cap ou d\'altitude';
+
+  @override
+  String get radarLevel1Name => 'Croisement basique';
+
+  @override
+  String get radarLevel2Name => 'Séparation d\'altitude';
+
+  @override
+  String get radarLevel3Name => 'Contrôle de vitesse';
+
+  @override
+  String get radarLevel4Name => 'Conflit mixte';
+
+  @override
+  String get radarLevel5Name => 'Conflit tardif';
+
+  @override
+  String get radarLevel6Name => 'Trafic dense';
+
+  @override
+  String get radarLevel7Name => 'Montée / Descente';
+
+  @override
+  String get radarLevel8Name => 'Circuit d\'attente';
+
+  @override
+  String get radarLevel9Name => 'Conflit d\'approche';
+
+  @override
+  String get radarLevel10Name => 'Urgence prioritaire';
+
+  @override
+  String get radarLevel1Tip =>
+      'Tournez un aéronef — un changement de cap anticipé est plus facile qu\'une réaction tardive.';
+
+  @override
+  String get radarLevel2Tip =>
+      'Le changement de cap seul est trop lent ici. Montez ou descendez pour une séparation verticale immédiate.';
+
+  @override
+  String get radarLevel3Tip =>
+      'L\'aéronef arrière rattrape vite. Utilisez Ralentir pour restaurer l\'espacement longitudinal.';
+
+  @override
+  String get radarLevel4Tip =>
+      'Deux conflits simultanés. Résolvez la paire la plus proche d\'abord, puis la seconde.';
+
+  @override
+  String get radarLevel5Tip =>
+      'Le conflit se développe vite. Donnez un ordre de cap immédiatement — n\'attendez pas.';
+
+  @override
+  String get radarLevel6Tip =>
+      'Analysez tous les aéronefs avant d\'agir. Priorisez la paire avec le moins de séparation.';
+
+  @override
+  String get radarLevel7Tip =>
+      'Les altitudes quasi-identiques créeront un conflit à la convergence. Montez ou descendez maintenant.';
+
+  @override
+  String get radarLevel8Tip =>
+      'Les aéronefs groupés nécessitent un ajustement de vitesse. Ralentissez le plus rapide.';
+
+  @override
+  String get radarLevel9Tip =>
+      'Les routes d\'approche convergent vite. Allongez la trajectoire d\'un aéronef.';
+
+  @override
+  String get radarLevel10Tip =>
+      'MAYDAY est prioritaire. Éloignez tous les autres aéronefs par cap et altitude.';
+
+  @override
+  String radarLevelLabel(int level) {
+    return 'Niveau $level';
+  }
+
+  @override
+  String radarLevelComplete(int level) {
+    return 'Niveau $level réussi !';
+  }
+
+  @override
+  String radarXpEarned(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String radarTotalXp(int xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String radarNextLevel(int level) {
+    return 'Suivant → Niveau $level';
+  }
+
+  @override
+  String get radarAllLevelsComplete => 'Tous les niveaux accomplis !';
+
+  @override
+  String radarBestScore(int score) {
+    return 'Meilleur : $score';
+  }
+
+  @override
+  String radarShareText(int level, int score) {
+    return 'J\'ai complété le Niveau $level dans ATM Académie ✈️  Score : $score/120 — Pouvez-vous me battre ?';
+  }
+
+  @override
+  String get radarShareCopied =>
+      'Carte de score copiée — partagez avec votre équipe !';
+
+  @override
+  String radarTechnique(String tech) {
+    return 'Technique : $tech';
+  }
+
+  @override
+  String get radarTechHeading => 'Cap';
+
+  @override
+  String get radarTechAltitude => 'Altitude';
+
+  @override
+  String get radarTechSpeed => 'Vitesse';
+
+  @override
+  String get radarTechMixed => 'Mixte';
+
+  @override
+  String get progRankCadet => 'Cadet';
+
+  @override
+  String get progRankTrainee => 'Stagiaire';
+
+  @override
+  String get progRankController => 'Contrôleur';
+
+  @override
+  String get progRankSenior => 'Contrôleur senior';
+
+  @override
+  String get progRankMaster => 'Maître de la tour';
 }

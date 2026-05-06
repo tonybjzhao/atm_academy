@@ -5,13 +5,18 @@ import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'services/daily_challenge_service.dart';
 import 'services/language_service.dart';
+import 'data/radar_levels.dart';
+import 'models/radar_level_config.dart';
+import 'services/progression_service.dart';
 
 final _languageService = LanguageService();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  RadarLevelConfig.setResolver((n) => allLevels[(n - 1).clamp(0, allLevels.length - 1)]);
   await _languageService.load();
   await DailyChallengeService.instance.load();
+  await ProgressionService.instance.load();
   runApp(const AtmAcademyApp());
 }
 

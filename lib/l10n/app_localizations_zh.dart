@@ -1272,4 +1272,137 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get radarV2SuccessHint => '通过调整航向或高度成功恢复间隔';
+
+  @override
+  String get radarLevel1Name => '基础交叉';
+
+  @override
+  String get radarLevel2Name => '高度分离';
+
+  @override
+  String get radarLevel3Name => '速度控制';
+
+  @override
+  String get radarLevel4Name => '混合冲突';
+
+  @override
+  String get radarLevel5Name => '晚期冲突';
+
+  @override
+  String get radarLevel6Name => '高流量';
+
+  @override
+  String get radarLevel7Name => '爬升/下降交叉';
+
+  @override
+  String get radarLevel8Name => '等待航线';
+
+  @override
+  String get radarLevel9Name => '进近冲突';
+
+  @override
+  String get radarLevel10Name => '优先级紧急情况';
+
+  @override
+  String get radarLevel1Tip => '尝试转向一架飞机——提前改变航向比临时反应更容易。';
+
+  @override
+  String get radarLevel2Tip => '单纯改变航向较慢。爬升或下降一架飞机可立即获得垂直间隔。';
+
+  @override
+  String get radarLevel3Tip => '后方飞机追赶速度很快。使用减速命令恢复纵向间隔。';
+
+  @override
+  String get radarLevel4Tip => '同时发生两个冲突。先解决间隔最小的一对，再处理另一对。';
+
+  @override
+  String get radarLevel5Tip => '冲突发展迅速。立即发出航向指令——不要等待。';
+
+  @override
+  String get radarLevel6Tip => '行动前先扫描所有飞机。优先处理间隔最小的一对。';
+
+  @override
+  String get radarLevel7Tip => '接近相同的高度在飞机汇聚时会产生冲突。现在就爬升或下降。';
+
+  @override
+  String get radarLevel8Tip => '聚集的飞机需要调整速度。减慢较快的飞机或加快较慢的飞机。';
+
+  @override
+  String get radarLevel9Tip => '进近航路汇聚迅速。通过航向或高度变化延长一架飞机的路径。';
+
+  @override
+  String get radarLevel10Tip => 'MAYDAY优先。使用航向和高度将所有周围飞机移开。';
+
+  @override
+  String radarLevelLabel(int level) {
+    return '第$level关';
+  }
+
+  @override
+  String radarLevelComplete(int level) {
+    return '第$level关完成！';
+  }
+
+  @override
+  String radarXpEarned(int xp) {
+    return '+$xp 经验';
+  }
+
+  @override
+  String radarTotalXp(int xp) {
+    return '$xp 经验';
+  }
+
+  @override
+  String radarNextLevel(int level) {
+    return '下一关 → 第$level关';
+  }
+
+  @override
+  String get radarAllLevelsComplete => '所有关卡完成！';
+
+  @override
+  String radarBestScore(int score) {
+    return '最佳：$score';
+  }
+
+  @override
+  String radarShareText(int level, int score) {
+    return '我在ATM学院完成了第$level关 ✈️ 得分：$score/120 — 你能超越我吗？';
+  }
+
+  @override
+  String get radarShareCopied => '成绩卡已复制——分享给你的团队！';
+
+  @override
+  String radarTechnique(String tech) {
+    return '技术：$tech';
+  }
+
+  @override
+  String get radarTechHeading => '航向';
+
+  @override
+  String get radarTechAltitude => '高度';
+
+  @override
+  String get radarTechSpeed => '速度';
+
+  @override
+  String get radarTechMixed => '综合';
+
+  @override
+  String get progRankCadet => '学员';
+
+  @override
+  String get progRankTrainee => '见习管制员';
+
+  @override
+  String get progRankController => '管制员';
+
+  @override
+  String get progRankSenior => '高级管制员';
+
+  @override
+  String get progRankMaster => '塔台大师';
 }
