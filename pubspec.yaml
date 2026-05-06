@@ -14,10 +14,10 @@ dependencies:
   intl: any
   shared_preferences: ^2.2.0
   cupertino_icons: ^1.0.2
-  # Unity 3D Replay integration.
-  # Requires Unity project built and exported before enabling.
-  # See unity/SETUP.md for the full integration guide.
-  flutter_unity_widget: ^2022.2.1
+  # flutter_unity_widget: ^2022.2.1
+  # ↑ Uncomment ONLY after Unity project is built and exported.
+  #   Requires ios/UnityFramework/ and android/unityLibrary/ to be present.
+  #   See unity/SETUP.md for the full integration guide.
 
 dev_dependencies:
   flutter_test:

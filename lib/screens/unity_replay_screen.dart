@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_unity_widget/flutter_unity_widget.dart';
+// import 'package:flutter_unity_widget/flutter_unity_widget.dart';
+// ↑ Uncomment when flutter_unity_widget is added back to pubspec.yaml
+//   (requires Unity native framework — see unity/SETUP.md)
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
@@ -28,85 +30,75 @@ class UnityReplayScreen extends StatelessWidget {
 }
 
 // ── Live Unity view ───────────────────────────────────────────────────────────
-// Active when kUnityEnabled = true and native libraries are present.
+// Uncomment this class AND the flutter_unity_widget import AND pubspec entry
+// once the Unity project is built and native libraries are in place.
+// See unity/SETUP.md for the complete setup guide.
+//
+// class _UnityReplayView extends StatefulWidget {
+//   final ScenarioReplayData replayData;
+//   const _UnityReplayView({required this.replayData});
+//   @override State<_UnityReplayView> createState() => _UnityReplayViewState();
+// }
+//
+// class _UnityReplayViewState extends State<_UnityReplayView> {
+//   UnityWidgetController? _controller;
+//   bool _sent = false;
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final l10n = AppLocalizations.of(context)!;
+//     return Scaffold(
+//       backgroundColor: Colors.black,
+//       extendBodyBehindAppBar: true,
+//       appBar: AppBar(
+//         backgroundColor: Colors.transparent, elevation: 0,
+//         leading: IconButton(
+//           icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
+//           onPressed: () { _controller?.dispose(); Navigator.pop(context); },
+//         ),
+//         title: Text(l10n.unityReplayTitle,
+//             style: const TextStyle(color: AppTheme.primary, fontSize: 14)),
+//       ),
+//       body: UnityWidget(
+//         onUnityCreated: _onUnityCreated,
+//         onUnityMessage: _onUnityMessage,
+//         onUnitySceneLoaded: (_) { if (!_sent) _sendReplayData(); },
+//         useAndroidViewSurface: true,
+//         fullscreen: false,
+//       ),
+//     );
+//   }
+//
+//   void _onUnityCreated(UnityWidgetController c) {
+//     _controller = c;
+//     Future.delayed(const Duration(milliseconds: 600), () {
+//       if (mounted && !_sent) _sendReplayData();
+//     });
+//   }
+//
+//   void _sendReplayData() {
+//     _sent = true;
+//     _controller?.postMessage(
+//       'ScenarioReplayManager', 'LoadReplayData', widget.replayData.toJson());
+//   }
+//
+//   void _onUnityMessage(dynamic message) {
+//     if (message?.toString() == 'REPLAY_COMPLETE' && mounted) {
+//       _controller?.dispose();
+//       Navigator.pop(context);
+//     }
+//   }
+//
+//   @override
+//   void dispose() { _controller?.dispose(); super.dispose(); }
+// }
 
-class _UnityReplayView extends StatefulWidget {
+// Placeholder used when kUnityEnabled = false (or when live view is commented out)
+class _UnityReplayView extends StatelessWidget {
   final ScenarioReplayData replayData;
   const _UnityReplayView({required this.replayData});
-
   @override
-  State<_UnityReplayView> createState() => _UnityReplayViewState();
-}
-
-class _UnityReplayViewState extends State<_UnityReplayView> {
-  UnityWidgetController? _controller;
-  bool _sent = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
-          onPressed: () {
-            _controller?.dispose();
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-          l10n.unityReplayTitle,
-          style: const TextStyle(color: AppTheme.primary, fontSize: 14, letterSpacing: 0.8),
-        ),
-      ),
-      body: UnityWidget(
-        onUnityCreated: _onUnityCreated,
-        onUnityMessage: _onUnityMessage,
-        onUnitySceneLoaded: (_) {
-          // Scene loaded — send data if not already sent
-          if (!_sent) _sendReplayData();
-        },
-        useAndroidViewSurface: true,
-        fullscreen: false,
-      ),
-    );
-  }
-
-  void _onUnityCreated(UnityWidgetController controller) {
-    _controller = controller;
-    // Small delay to ensure scene is fully initialised before sending data
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted && !_sent) _sendReplayData();
-    });
-  }
-
-  void _sendReplayData() {
-    _sent = true;
-    // postMessage sends a plain string — Unity receives it as the json param
-    // in ScenarioReplayManager.LoadReplayData(string json).
-    _controller?.postMessage(
-      'ScenarioReplayManager', // Unity GameObject name (must match exactly)
-      'LoadReplayData',        // Method on ScenarioReplayManager.cs
-      widget.replayData.toJson(),
-    );
-  }
-
-  void _onUnityMessage(dynamic message) {
-    if (message?.toString() == 'REPLAY_COMPLETE' && mounted) {
-      _controller?.dispose();
-      Navigator.pop(context);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
+  Widget build(BuildContext context) => _PlaceholderView(replayData: replayData);
 }
 
 // ── Placeholder view ──────────────────────────────────────────────────────────
