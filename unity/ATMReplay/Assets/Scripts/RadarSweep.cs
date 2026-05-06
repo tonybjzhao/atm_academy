@@ -1,113 +1,101 @@
 // RadarSweep.cs
-// Procedurally renders a rotating radar sweep fan above the radar floor.
-// Uses a series of LineRenderers (main bright line + fading trail) — no new packages.
-//
-// Attach to any GameObject (ScenarioReplayManager spawns it automatically).
-// Works standalone; no prefab required.
+// Rotating radar sweep with a bright main beam, wide glow layer, and fading trail.
+// Spawned by ScenarioReplayManager.Awake() — no prefab required.
 
 using UnityEngine;
 
 public class RadarSweep : MonoBehaviour
 {
     [Header("Geometry")]
-    public float radius        = 9.0f;    // should match RadarFloor.outerRingRadius
-    public float sweepHeight   = 0.008f;  // just above radar floor rings
+    public float radius      = 9.2f;
+    public float sweepHeight = 0.010f;
 
     [Header("Rotation")]
-    public float rotationSpeed = 55f;     // degrees per second (CCW)
+    public float rotationSpeed = 38f;  // degrees/second — slow, cinematic
 
-    [Header("Sweep line")]
-    public float   lineWidth       = 0.06f;
-    public Color   sweepColor      = new Color(0.05f, 1f, 0.5f, 0.9f);
+    [Header("Main beam")]
+    public float mainWidth = 0.15f;
+    public Color mainColor = new Color(0.05f, 1f, 0.55f, 1f);
+
+    [Header("Glow layer (wide, low alpha — creates bloom feel)")]
+    public float glowWidth = 0.55f;
+    public Color glowColor = new Color(0.05f, 1f, 0.55f, 0.18f);
 
     [Header("Trail fan")]
-    public int   trailCount        = 14;   // number of fading trail lines
-    public float trailArcDegrees   = 55f;  // arc covered by trail
-    public float trailMaxAlpha     = 0.45f;
-    public float trailWidthScale   = 0.5f; // trail lines thinner than main
+    public int   trailCount      = 20;
+    public float trailArcDeg     = 65f;
+    public float trailMaxAlpha   = 0.55f;
+    public float trailWidthScale = 0.6f;
 
     // ── Internal ──────────────────────────────────────────────────────────────
     private float          _angle;
-    private LineRenderer   _mainLine;
-    private LineRenderer[] _trailLines;
+    private LineRenderer   _mainBeam;
+    private LineRenderer   _glowBeam;
+    private LineRenderer[] _trail;
 
-    private void Awake()
+    private void Awake()  => Build();
+    private void Update() { _angle = (_angle + rotationSpeed * Time.deltaTime) % 360f; Tick(); }
+
+    // ── Build ─────────────────────────────────────────────────────────────────
+    private void Build()
     {
-        CreateLines();
-    }
+        // Glow first (behind main)
+        _glowBeam = Line("_Glow", glowWidth, glowColor, new Color(glowColor.r, glowColor.g, glowColor.b, 0.02f));
 
-    private void Update()
-    {
-        _angle = (_angle + rotationSpeed * Time.deltaTime) % 360f;
-        UpdateLines();
-    }
+        // Main bright beam
+        _mainBeam = Line("_Main", mainWidth, mainColor, new Color(mainColor.r, mainColor.g, mainColor.b, 0.05f));
 
-    // ── Setup ─────────────────────────────────────────────────────────────────
-    private void CreateLines()
-    {
-        _mainLine = MakeLine("_Sweep_Main", lineWidth, sweepColor, sweepColor);
-
-        _trailLines = new LineRenderer[trailCount];
+        // Trail
+        _trail = new LineRenderer[trailCount];
         for (int i = 0; i < trailCount; i++)
         {
-            // Alpha fades from near-main to zero
-            float t   = (float)(i + 1) / trailCount;
-            float a   = trailMaxAlpha * (1f - t);
-            var col   = new Color(sweepColor.r, sweepColor.g, sweepColor.b, a);
-            var colTip = new Color(sweepColor.r, sweepColor.g, sweepColor.b, a * 0.15f);
-            _trailLines[i] = MakeLine($"_Sweep_Trail_{i}",
-                lineWidth * trailWidthScale * (1f - t * 0.5f), col, colTip);
+            float t     = (float)(i + 1) / trailCount;
+            float alpha = trailMaxAlpha * (1f - t);
+            var   c0    = new Color(mainColor.r, mainColor.g, mainColor.b, alpha);
+            var   c1    = new Color(mainColor.r, mainColor.g, mainColor.b, alpha * 0.08f);
+            float w     = mainWidth * trailWidthScale * (1f - t * 0.4f);
+            _trail[i]   = Line($"_Trail{i}", w, c0, c1);
         }
     }
 
-    // ── Each frame ────────────────────────────────────────────────────────────
-    private void UpdateLines()
+    // ── Per-frame ─────────────────────────────────────────────────────────────
+    private void Tick()
     {
-        SetLine(_mainLine, _angle);
-
+        Place(_glowBeam, _angle);
+        Place(_mainBeam, _angle);
         for (int i = 0; i < trailCount; i++)
-        {
-            float offset = (i + 1) * (trailArcDegrees / trailCount);
-            SetLine(_trailLines[i], _angle - offset);
-        }
+            Place(_trail[i], _angle - (i + 1) * (trailArcDeg / trailCount));
     }
 
-    private void SetLine(LineRenderer lr, float angleDeg)
+    private void Place(LineRenderer lr, float deg)
     {
-        float rad = angleDeg * Mathf.Deg2Rad;
-        var origin = new Vector3(0f, sweepHeight, 0f);
-        var tip    = new Vector3(Mathf.Cos(rad) * radius,
-                                 sweepHeight,
-                                 Mathf.Sin(rad) * radius);
-        lr.SetPosition(0, origin);
-        lr.SetPosition(1, tip);
+        float rad = deg * Mathf.Deg2Rad;
+        lr.SetPosition(0, new Vector3(0f, sweepHeight, 0f));
+        lr.SetPosition(1, new Vector3(Mathf.Cos(rad) * radius, sweepHeight, Mathf.Sin(rad) * radius));
     }
 
-    // ── Line renderer factory ─────────────────────────────────────────────────
-    private LineRenderer MakeLine(string goName, float width, Color startCol, Color endCol)
+    // ── Factory ───────────────────────────────────────────────────────────────
+    private LineRenderer Line(string n, float width, Color start, Color end)
     {
-        var go = new GameObject(goName);
+        var go = new GameObject(n);
         go.transform.SetParent(transform);
 
         var lr = go.AddComponent<LineRenderer>();
-        lr.positionCount = 2;
-        lr.useWorldSpace = true;
-        lr.startWidth    = width;
-        lr.endWidth      = width * 0.1f;   // taper toward tip
-        lr.startColor    = startCol;
-        lr.endColor      = endCol;
+        lr.positionCount   = 2;
+        lr.useWorldSpace   = true;
+        lr.startWidth      = width;
+        lr.endWidth        = width * 0.06f;
+        lr.startColor      = start;
+        lr.endColor        = end;
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lr.receiveShadows  = false;
 
-        // Try URP unlit first, fall back to legacy Sprites/Default
         var mat = new Material(
             Shader.Find("Universal Render Pipeline/Particles/Unlit")
             ?? Shader.Find("Sprites/Default")
-            ?? Shader.Find("Unlit/Color")
-        );
-        mat.color = startCol;
+            ?? Shader.Find("Unlit/Color"));
+        mat.color = start;
         lr.material = mat;
-
-        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        lr.receiveShadows    = false;
         return lr;
     }
 }

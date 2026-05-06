@@ -13,14 +13,14 @@ using UnityEngine;
 public class PathRenderer : MonoBehaviour
 {
     [Header("Trail")]
-    public int   maxPoints      = 300;
-    public float recordInterval = 0.04f; // seconds between recorded points
-    public float lineWidth      = 0.045f;
+    public int   maxPoints      = 400;
+    public float recordInterval = 0.033f; // ~30 fps recording
+    public float lineWidth      = 0.08f;  // wider trail = more visible
 
     [Header("Colours (override from aircraft at runtime)")]
-    public Color normalColor   = new Color(0.00f, 0.85f, 0.45f, 1f);
-    public Color conflictColor = new Color(1.00f, 0.15f, 0.20f, 1f);
-    public Color selectedColor = new Color(1.00f, 0.90f, 0.00f, 1f);
+    public Color normalColor   = new Color(0.00f, 1.00f, 0.55f, 1f);  // bright green
+    public Color conflictColor = new Color(1.00f, 0.10f, 0.15f, 1f);  // vivid red
+    public Color selectedColor = new Color(1.00f, 0.92f, 0.00f, 1f);  // yellow
 
     // ── Internal ──────────────────────────────────────────────────────────────
     private AircraftController _aircraft;

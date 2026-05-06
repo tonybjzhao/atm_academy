@@ -53,7 +53,9 @@ public class ScenarioReplayManager : MonoBehaviour
 
     [Header("Scene scale")]
     // Flutter radar coords: ~370 x 430 px → divide by coordScale for world units
-    public float coordScale = 40f;
+    public float coordScale    = 40f;
+    // Scale applied to aircraft prefab at spawn (increase if aircraft look too small)
+    public float aircraftScale = 2.2f;
 
     [Header("Replay timing")]
     public float animationDuration = 6f;   // seconds for full replay
@@ -120,6 +122,7 @@ public class ScenarioReplayManager : MonoBehaviour
             var go   = Instantiate(aircraftPrefab,
                                    ToWorld(init.x, init.y, init.altitude),
                                    Quaternion.identity);
+            go.transform.localScale = Vector3.one * aircraftScale;
             var ctrl = go.GetComponent<AircraftController>();
             ctrl.Initialise(init, ToWorld(final_.x, final_.y, final_.altitude));
             _controllers.Add(ctrl);
