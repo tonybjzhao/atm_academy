@@ -1,15 +1,16 @@
-// ignore_for_file: unused_import
 import 'package:flutter/material.dart';
+import 'package:flutter_unity_widget/flutter_unity_widget.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Feature flag.  Set to true ONLY after:
-//   1. flutter_unity_widget added to pubspec.yaml
-//   2. Unity project built for iOS/Android and exported
-//   3. Exported files placed in ios/UnityFramework & android/unityLibrary
-// See unity/SETUP.md for the full integration guide.
+// Feature flag — flip to true ONLY after:
+//   1. Unity project built for iOS/Android and exported
+//   2. iOS:     exported framework placed in ios/UnityFramework/
+//   3. Android: exported project placed in android/unityLibrary/
+//   4. Native podfile/gradle wired per flutter_unity_widget docs
+// See unity/SETUP.md for the full step-by-step guide.
 // ─────────────────────────────────────────────────────────────────────────────
 const bool kUnityEnabled = false;
 
@@ -21,78 +22,97 @@ class UnityReplayScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return kUnityEnabled
-        ? _UnityView(replayData: replayData)
+        ? _UnityReplayView(replayData: replayData)
         : _PlaceholderView(replayData: replayData);
   }
 }
 
 // ── Live Unity view ───────────────────────────────────────────────────────────
-// Uncomment this class and the flutter_unity_widget import once the Unity
-// project is built and kUnityEnabled is set to true.
-//
-// import 'package:flutter_unity_widget/flutter_unity_widget.dart';
-//
-// class _UnityView extends StatefulWidget {
-//   final ScenarioReplayData replayData;
-//   const _UnityView({required this.replayData});
-//   @override State<_UnityView> createState() => _UnityViewState();
-// }
-//
-// class _UnityViewState extends State<_UnityView> {
-//   UnityWidgetController? _controller;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final l10n = AppLocalizations.of(context)!;
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-//       appBar: AppBar(
-//         title: Text(l10n.unityReplayTitle),
-//         backgroundColor: Colors.black,
-//         foregroundColor: AppTheme.primary,
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//       ),
-//       body: UnityWidget(
-//         onUnityCreated: (controller) {
-//           _controller = controller;
-//           // Send scenario data to Unity after widget is ready
-//           Future.delayed(const Duration(milliseconds: 500), () {
-//             _controller?.postMessage(
-//               'ScenarioReplayManager',  // Unity GameObject name
-//               'LoadReplayData',         // Unity method name
-//               widget.replayData.toJson(),
-//             );
-//           });
-//         },
-//         onUnityMessage: (message) {
-//           // Unity sends 'REPLAY_COMPLETE' when done
-//           if (message == 'REPLAY_COMPLETE' && mounted) {
-//             Navigator.pop(context);
-//           }
-//         },
-//       ),
-//     );
-//   }
-//
-//   @override
-//   void dispose() {
-//     _controller?.dispose();
-//     super.dispose();
-//   }
-// }
+// Active when kUnityEnabled = true and native libraries are present.
 
-// Stub that satisfies the type reference when kUnityEnabled is false.
-class _UnityView extends StatelessWidget {
+class _UnityReplayView extends StatefulWidget {
   final ScenarioReplayData replayData;
-  const _UnityView({required this.replayData});
+  const _UnityReplayView({required this.replayData});
+
   @override
-  Widget build(BuildContext context) => _PlaceholderView(replayData: replayData);
+  State<_UnityReplayView> createState() => _UnityReplayViewState();
 }
 
-// ── Placeholder view (shown until Unity is integrated) ────────────────────────
+class _UnityReplayViewState extends State<_UnityReplayView> {
+  UnityWidgetController? _controller;
+  bool _sent = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
+          onPressed: () {
+            _controller?.dispose();
+            Navigator.pop(context);
+          },
+        ),
+        title: Text(
+          l10n.unityReplayTitle,
+          style: const TextStyle(color: AppTheme.primary, fontSize: 14, letterSpacing: 0.8),
+        ),
+      ),
+      body: UnityWidget(
+        onUnityCreated: _onUnityCreated,
+        onUnityMessage: _onUnityMessage,
+        onUnitySceneLoaded: (_) {
+          // Scene loaded — send data if not already sent
+          if (!_sent) _sendReplayData();
+        },
+        useAndroidViewSurface: true,
+        fullscreen: false,
+      ),
+    );
+  }
+
+  void _onUnityCreated(UnityWidgetController controller) {
+    _controller = controller;
+    // Small delay to ensure scene is fully initialised before sending data
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted && !_sent) _sendReplayData();
+    });
+  }
+
+  void _sendReplayData() {
+    _sent = true;
+    // postMessage sends a plain string — Unity receives it as the json param
+    // in ScenarioReplayManager.LoadReplayData(string json).
+    _controller?.postMessage(
+      'ScenarioReplayManager', // Unity GameObject name (must match exactly)
+      'LoadReplayData',        // Method on ScenarioReplayManager.cs
+      widget.replayData.toJson(),
+    );
+  }
+
+  void _onUnityMessage(dynamic message) {
+    if (message?.toString() == 'REPLAY_COMPLETE' && mounted) {
+      _controller?.dispose();
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+}
+
+// ── Placeholder view ──────────────────────────────────────────────────────────
+// Shown when kUnityEnabled = false.  Displays scenario summary on a dark
+// radar-style screen so the screen is never empty.
+
 class _PlaceholderView extends StatelessWidget {
   final ScenarioReplayData replayData;
   const _PlaceholderView({required this.replayData});
@@ -122,7 +142,7 @@ class _PlaceholderView extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // Radar-style placeholder circle
+            // Radar-style circle with aircraft blips
             Container(
               width: 260,
               height: 260,
@@ -134,7 +154,6 @@ class _PlaceholderView extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Rings
                   for (final r in [0.33, 0.66, 1.0])
                     Container(
                       width: 260 * r,
@@ -146,36 +165,33 @@ class _PlaceholderView extends StatelessWidget {
                         ),
                       ),
                     ),
-                  // Aircraft blips
-                  for (int i = 0; i < replayData.finalAircraft.length; i++)
-                    _AircraftBlip(
-                      state: replayData.finalAircraft[i],
-                      radarRadius: 130,
-                    ),
-                  // Centre label
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 120),
-                      const Icon(Icons.view_in_ar_outlined,
-                          color: AppTheme.textSecondary, size: 28),
-                      const SizedBox(height: 6),
-                      Text(
-                        l10n.unityReplayComingSoon,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 10,
-                          height: 1.4,
+                  for (final a in replayData.finalAircraft)
+                    _AircraftBlip(state: a, radarRadius: 130),
+                  // "Coming soon" label at bottom of circle
+                  Positioned(
+                    bottom: 32,
+                    child: Column(
+                      children: [
+                        const Icon(Icons.view_in_ar_outlined,
+                            color: AppTheme.textSecondary, size: 22),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.unityReplayComingSoon,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 9,
+                            height: 1.4,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            // Scenario summary card
+            const SizedBox(height: 20),
+            // Scenario summary
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -195,19 +211,14 @@ class _PlaceholderView extends StatelessWidget {
                         fontSize: 15),
                   ),
                   const SizedBox(height: 12),
-                  _SummaryRow('Score', '${replayData.score} / 120', _ratingColor()),
-                  _SummaryRow(
-                    'Min separation',
-                    '${replayData.minHorizDist.toStringAsFixed(0)} px',
-                    replayData.hadLOS ? AppTheme.danger : AppTheme.primary,
-                  ),
-                  _SummaryRow(
-                    'Loss of separation',
-                    replayData.hadLOS ? 'YES' : 'No',
-                    replayData.hadLOS ? AppTheme.danger : AppTheme.primary,
-                  ),
+                  _Row('Score', '${replayData.score} / 120', _ratingColor()),
+                  _Row('Min separation',
+                      '${replayData.minHorizDist.toStringAsFixed(0)} px',
+                      replayData.hadLOS ? AppTheme.danger : AppTheme.primary),
+                  _Row('Loss of separation',
+                      replayData.hadLOS ? 'YES' : 'No',
+                      replayData.hadLOS ? AppTheme.danger : AppTheme.primary),
                   const SizedBox(height: 8),
-                  // Aircraft list
                   const Divider(color: AppTheme.borderColor, height: 1),
                   const SizedBox(height: 8),
                   for (final a in replayData.finalAircraft)
@@ -216,7 +227,7 @@ class _PlaceholderView extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(Icons.flight,
-                              size: 13,
+                              size: 12,
                               color: a.wasConflicting
                                   ? AppTheme.danger
                                   : a.wasSelected
@@ -224,8 +235,7 @@ class _PlaceholderView extends StatelessWidget {
                                       : AppTheme.textSecondary),
                           const SizedBox(width: 6),
                           Text(
-                            '${a.callsign}  FL${a.altitude}  '
-                            'HDG ${a.heading.toInt()}°',
+                            '${a.callsign}  FL${a.altitude}  HDG ${a.heading.toInt()}°',
                             style: TextStyle(
                               color: a.wasSelected
                                   ? Colors.yellowAccent
@@ -236,15 +246,13 @@ class _PlaceholderView extends StatelessWidget {
                           if (a.wasSelected) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
                                 color: Colors.yellowAccent.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text('selected',
-                                  style: TextStyle(
-                                      color: Colors.yellowAccent, fontSize: 9)),
+                                  style: TextStyle(color: Colors.yellowAccent, fontSize: 9)),
                             ),
                           ],
                         ],
@@ -280,12 +288,8 @@ class _AircraftBlip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Map scenario coords (0..370 x 0..430) to radar circle (-1..1)
-    final nx = (state.x / 370.0) * 2 - 1; // -1..1
+    final nx = (state.x / 370.0) * 2 - 1;
     final ny = (state.y / 430.0) * 2 - 1;
-    final px = nx * radarRadius;
-    final py = ny * radarRadius;
-
     final color = state.wasConflicting
         ? AppTheme.danger
         : state.wasSelected
@@ -293,15 +297,12 @@ class _AircraftBlip extends StatelessWidget {
             : AppTheme.primary;
 
     return Positioned(
-      left: radarRadius + px - 4,
-      top: radarRadius + py - 4,
+      left: radarRadius + nx * radarRadius - 4,
+      top:  radarRadius + ny * radarRadius - 4,
       child: Column(
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-          ),
+          Container(width: 8, height: 8,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
           Text(state.callsign,
               style: TextStyle(color: color, fontSize: 7, height: 1.1)),
         ],
@@ -310,29 +311,20 @@ class _AircraftBlip extends StatelessWidget {
   }
 }
 
-class _SummaryRow extends StatelessWidget {
-  final String label;
-  final String value;
+class _Row extends StatelessWidget {
+  final String label, value;
   final Color valueColor;
-  const _SummaryRow(this.label, this.value, this.valueColor);
+  const _Row(this.label, this.value, this.valueColor);
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style:
-                  const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-          Text(value,
-              style: TextStyle(
-                  color: valueColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            Text(value, style: TextStyle(color: valueColor, fontSize: 12, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
 }

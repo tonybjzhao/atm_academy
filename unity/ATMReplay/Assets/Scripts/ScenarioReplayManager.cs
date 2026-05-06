@@ -64,14 +64,18 @@ public class ScenarioReplayManager : MonoBehaviour
     private List<AircraftController>   _controllers = new();
     private List<PathRenderer>         _paths       = new();
     private RadarFloor                 _radarFloor;
+    private RadarSweep                 _radarSweep;
     private CinematicReplayCamera      _cinCam;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
     private void Awake()
     {
-        // Spawn radar floor procedurally
+        // Spawn radar floor + sweep procedurally
         var floorGo = new GameObject("RadarFloor");
         _radarFloor = floorGo.AddComponent<RadarFloor>();
+
+        var sweepGo = new GameObject("RadarSweep");
+        _radarSweep = sweepGo.AddComponent<RadarSweep>();
 
         // Find cinematic camera on Main Camera
         if (Camera.main != null)

@@ -1,10 +1,11 @@
 // PathRenderer.cs
-// Draws a coloured trail line behind each aircraft using Unity's LineRenderer.
-// Green = safe separation.  Red = conflict / LOS.
+// Draws a coloured trail behind each aircraft using Unity's LineRenderer.
 //
-// Prefab setup:
-//   • Empty GameObject with this script + LineRenderer component
-//   • Set LineRenderer material to a simple unlit colour material
+//   Conflicting aircraft → RED trail (fades from bright near head to transparent)
+//   Selected aircraft    → YELLOW trail
+//   Normal aircraft      → GREEN/CYAN trail
+//
+// Prefab: empty GameObject with this script (LineRenderer added at runtime).
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,42 +13,66 @@ using UnityEngine;
 public class PathRenderer : MonoBehaviour
 {
     [Header("Trail")]
-    public int    maxPoints     = 200;
-    public float  lineWidth     = 0.04f;
-    public float  recordInterval = 0.05f; // seconds between recorded points
+    public int   maxPoints      = 300;
+    public float recordInterval = 0.04f; // seconds between recorded points
+    public float lineWidth      = 0.045f;
+
+    [Header("Colours (override from aircraft at runtime)")]
+    public Color normalColor   = new Color(0.00f, 0.85f, 0.45f, 1f);
+    public Color conflictColor = new Color(1.00f, 0.15f, 0.20f, 1f);
+    public Color selectedColor = new Color(1.00f, 0.90f, 0.00f, 1f);
 
     // ── Internal ──────────────────────────────────────────────────────────────
     private AircraftController _aircraft;
     private LineRenderer       _line;
-    private List<Vector3>      _points = new();
+    private List<Vector3>      _pts  = new();
     private float              _timer;
-    private float              _conflictThreshold; // world units
-    private float              _coordScale;
-
-    private Color _safeColor     = new Color(0f, 0.9f, 0.42f, 0.7f);
-    private Color _conflictColor = new Color(1f, 0.1f, 0.22f, 0.7f);
+    private Color              _trailColor;
 
     public void Initialise(AircraftController aircraft, float minHorizDistPx, float coordScale)
     {
-        _aircraft   = aircraft;
-        _coordScale = coordScale;
-        // Convert pixel threshold to world units for approximate colouring
-        _conflictThreshold = (minHorizDistPx / coordScale) * 1.5f;
+        _aircraft = aircraft;
 
-        _line = GetComponent<LineRenderer>();
-        if (_line == null) _line = gameObject.AddComponent<LineRenderer>();
-        _line.startWidth = lineWidth;
-        _line.endWidth   = lineWidth;
-        _line.useWorldSpace = true;
-        _line.positionCount = 0;
+        // Pick colour from aircraft state
+        _trailColor = aircraft.WasConflicting ? conflictColor
+                    : aircraft.WasSelected    ? selectedColor
+                    : normalColor;
 
-        // Gradient: green → red as aircraft approaches conflict
+        _line = gameObject.GetComponent<LineRenderer>()
+             ?? gameObject.AddComponent<LineRenderer>();
+
+        _line.useWorldSpace   = true;
+        _line.positionCount   = 0;
+        _line.startWidth      = lineWidth;
+        _line.endWidth        = lineWidth * 0.05f; // taper to a point
+
+        // Gradient: opaque at tail tip, transparent at oldest point
         var grad = new Gradient();
         grad.SetKeys(
-            new[] { new GradientColorKey(_safeColor, 0f), new GradientColorKey(_conflictColor, 1f) },
-            new[] { new GradientAlphaKey(0.7f, 0f), new GradientAlphaKey(0.7f, 1f) }
+            new[]
+            {
+                new GradientColorKey(_trailColor, 0f),
+                new GradientColorKey(_trailColor, 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(0.00f, 0f),   // oldest: invisible
+                new GradientAlphaKey(0.75f, 0.70f), // recent: semi-opaque
+                new GradientAlphaKey(0.90f, 1f)    // newest: bright
+            }
         );
         _line.colorGradient = grad;
+
+        var mat = new Material(
+            Shader.Find("Universal Render Pipeline/Particles/Unlit")
+            ?? Shader.Find("Sprites/Default")
+            ?? Shader.Find("Unlit/Color")
+        );
+        mat.color = _trailColor;
+        _line.material = mat;
+
+        _line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        _line.receiveShadows    = false;
     }
 
     private void Update()
@@ -58,27 +83,27 @@ public class PathRenderer : MonoBehaviour
         if (_timer < recordInterval) return;
         _timer = 0f;
 
+        // Record position — keep Y constant to floor height for visual clarity
         var pos = _aircraft.CurrentPosition;
-        _points.Add(pos);
-        if (_points.Count > maxPoints) _points.RemoveAt(0);
+        pos.y = 0.003f; // hugs the floor slightly
+        _pts.Add(pos);
 
-        _line.positionCount = _points.Count;
-        _line.SetPositions(_points.ToArray());
+        if (_pts.Count > maxPoints) _pts.RemoveAt(0);
 
-        // Colour the most recent segment based on proximity to other aircraft
-        UpdateLineColor();
-    }
+        _line.positionCount = _pts.Count;
+        _line.SetPositions(_pts.ToArray());
 
-    private void UpdateLineColor()
-    {
-        // If this aircraft was flagged as conflicting, shift gradient toward red
-        bool inConflict = _aircraft.WasConflicting;
-        var grad = new Gradient();
-        var startColor = inConflict ? _conflictColor : _safeColor;
-        grad.SetKeys(
-            new[] { new GradientColorKey(startColor, 0f), new GradientColorKey(startColor, 1f) },
-            new[] { new GradientAlphaKey(0.3f, 0f), new GradientAlphaKey(0.8f, 1f) }
-        );
-        _line.colorGradient = grad;
+        // Conflicting aircraft: pulse trail intensity
+        if (_aircraft.WasConflicting)
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 5f * Mathf.PI * 2f);
+            var pulsedColor = new Color(
+                conflictColor.r,
+                conflictColor.g * 0.3f,
+                conflictColor.b * 0.3f,
+                1f
+            );
+            _line.material.color = Color.Lerp(conflictColor, pulsedColor, pulse * 0.4f);
+        }
     }
 }
