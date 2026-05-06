@@ -1,0 +1,19 @@
+# Unity generated caches — do not commit
+/Library/
+/Temp/
+/Logs/
+/UserSettings/
+/obj/
+/Build/
+/Builds/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+.DS_Store
+.vs/
