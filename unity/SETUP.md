@@ -36,10 +36,25 @@ Create a new scene `Assets/Scenes/ReplayScene.unity`:
 - Add Component → `ScenarioReplayManager`
 - Assign `aircraftPrefab` and `pathRendererPrefab` (see Step 3)
 
+### Camera (cinematic orbit)
+- Select Main Camera → Add Component → `CinematicReplayCamera`
+- Set **Target** to the ScenarioReplayManager GameObject (drag into Inspector)
+- Recommended Inspector values:
+  - Orbit Radius: 10  |  Orbit Height: 5  |  Orbit Speed: 14
+  - Zoom In Radius: 7  |  Intro Duration: 1.8
+  - Outro Start Pct: 0.75  |  Outro End Radius: 11
+- `BeginReplay()` is called automatically by ScenarioReplayManager — no extra wiring needed
+
+### Radar floor
+- `RadarFloor` is spawned **automatically at runtime** by ScenarioReplayManager.Awake()
+  so no manual scene object is required.
+- To customise ring colours or count, add a `RadarFloor` component to any
+  empty GameObject *before* play and ScenarioReplayManager will skip auto-spawn.
+
 ### Environment
-- Add a Directional Light
-- Optional: dark plane at y=-0.5 (radar-floor aesthetic)
-- Skybox: Window → Rendering → Lighting → Environment → set Skybox to a dark solid colour (e.g. `Color(0.03, 0.06, 0.10)`)
+- Add a Directional Light (set intensity 0.6, angle ~45°)
+- Skybox: Window → Rendering → Lighting → Environment → set Skybox to a dark
+  solid colour (e.g. `Color(0.02, 0.04, 0.06)`) for the radar night look
 
 ---
 

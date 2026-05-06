@@ -3,42 +3,47 @@
 // Receives JSON from Flutter via flutter_unity_widget, spawns aircraft,
 // plays the replay animation, and notifies Flutter when done.
 //
-// Unity setup:
-//   1. Create an empty GameObject named "ScenarioReplayManager" in the scene.
-//   2. Attach this script.
-//   3. Assign aircraftPrefab in the Inspector (see AircraftController.cs).
-//   4. Assign pathRendererPrefab in the Inspector (see PathRenderer.cs).
+// Scene setup (see unity/SETUP.md for full guide):
+//   1. Empty GameObject named exactly "ScenarioReplayManager" — attach this script.
+//   2. Assign aircraftPrefab and pathRendererPrefab in Inspector.
+//   3. RadarFloor is spawned automatically at Awake.
+//   4. Main Camera needs CinematicReplayCamera component — assign its target
+//      to this GameObject's Transform.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// ── Data classes (must match Flutter's ScenarioReplayData.toJson()) ───────────
+
 [Serializable]
 public class AircraftData
 {
     public string callsign;
-    public float x;
-    public float y;
-    public float heading;
-    public float speed;
-    public int altitude;
-    public bool wasSelected;
-    public bool wasConflicting;
+    public float  x;
+    public float  y;
+    public float  heading;
+    public float  speed;
+    public int    altitude;
+    public bool   wasSelected;
+    public bool   wasConflicting;
 }
 
 [Serializable]
 public class ReplayPayload
 {
-    public string scenarioId;
-    public string scenarioTitle;
+    public string           scenarioId;
+    public string           scenarioTitle;
     public List<AircraftData> initialAircraft;
     public List<AircraftData> finalAircraft;
-    public float minHorizDist;
-    public bool hadLOS;
-    public int score;
-    public string ratingKey;
+    public float            minHorizDist;
+    public bool             hadLOS;
+    public int              score;
+    public string           ratingKey;
 }
+
+// ── Main controller ───────────────────────────────────────────────────────────
 
 public class ScenarioReplayManager : MonoBehaviour
 {
@@ -47,8 +52,7 @@ public class ScenarioReplayManager : MonoBehaviour
     public GameObject pathRendererPrefab;   // assign in Inspector
 
     [Header("Scene scale")]
-    // Flutter radar coords are ~370 x 430 px.
-    // Map to Unity world units: divide by this factor.
+    // Flutter radar coords: ~370 x 430 px → divide by coordScale for world units
     public float coordScale = 40f;
 
     [Header("Replay timing")]
@@ -56,17 +60,45 @@ public class ScenarioReplayManager : MonoBehaviour
     public float holdAfterFinish   = 2f;   // seconds to hold final frame
 
     // ── Internal ──────────────────────────────────────────────────────────────
-    private ReplayPayload _payload;
-    private List<AircraftController> _controllers = new();
-    private List<PathRenderer>       _paths       = new();
-    private bool _replayStarted;
+    private ReplayPayload              _payload;
+    private List<AircraftController>   _controllers = new();
+    private List<PathRenderer>         _paths       = new();
+    private RadarFloor                 _radarFloor;
+    private CinematicReplayCamera      _cinCam;
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────────
+    private void Awake()
+    {
+        // Spawn radar floor procedurally
+        var floorGo = new GameObject("RadarFloor");
+        _radarFloor = floorGo.AddComponent<RadarFloor>();
+
+        // Find cinematic camera on Main Camera
+        if (Camera.main != null)
+            _cinCam = Camera.main.GetComponent<CinematicReplayCamera>();
+
+        // Point cinematic camera at this GameObject (scene centre)
+        if (_cinCam != null && _cinCam.target == null)
+            _cinCam.target = transform;
+    }
 
     // ── Entry point called by flutter_unity_widget ────────────────────────────
-    // Flutter calls: controller.postMessage("ScenarioReplayManager", "LoadReplayData", jsonString)
+    // Flutter: controller.postMessage("ScenarioReplayManager", "LoadReplayData", jsonString)
     public void LoadReplayData(string json)
-    {        
+    {
+        // Clear any previous replay
+        foreach (var c in _controllers) if (c) Destroy(c.gameObject);
+        foreach (var p in _paths)       if (p) Destroy(p.gameObject);
+        _controllers.Clear();
+        _paths.Clear();
+        StopAllCoroutines();
+
         _payload = UnityEngine.JsonUtility.FromJson<ReplayPayload>(json);
-        if (_payload == null) { Debug.LogError("[ATMReplay] Failed to parse JSON"); return; }
+        if (_payload == null)
+        {
+            Debug.LogError("[ATMReplay] Failed to parse JSON. Check that the JSON matches ReplayPayload fields.");
+            return;
+        }
         StartCoroutine(RunReplay());
     }
 
@@ -76,27 +108,33 @@ public class ScenarioReplayManager : MonoBehaviour
         // Spawn aircraft at initial positions
         for (int i = 0; i < _payload.initialAircraft.Count; i++)
         {
-            var init  = _payload.initialAircraft[i];
+            var init   = _payload.initialAircraft[i];
             var final_ = i < _payload.finalAircraft.Count
                 ? _payload.finalAircraft[i]
                 : init;
 
-            var go = Instantiate(aircraftPrefab, ToWorld(init.x, init.y, init.altitude), Quaternion.identity);
+            var go   = Instantiate(aircraftPrefab,
+                                   ToWorld(init.x, init.y, init.altitude),
+                                   Quaternion.identity);
             var ctrl = go.GetComponent<AircraftController>();
             ctrl.Initialise(init, ToWorld(final_.x, final_.y, final_.altitude));
             _controllers.Add(ctrl);
 
-            // Path renderer for this aircraft
+            // Path renderer
             var prGo = Instantiate(pathRendererPrefab);
             var pr   = prGo.GetComponent<PathRenderer>();
             pr.Initialise(ctrl, _payload.minHorizDist, coordScale);
             _paths.Add(pr);
         }
 
-        // Animate to final positions
-        float elapsed = 0f;
-        _replayStarted = true;
+        // Notify cinematic camera replay is starting
+        _cinCam?.BeginReplay(animationDuration + holdAfterFinish);
 
+        // One frame delay so camera has correct initial state
+        yield return null;
+
+        // Animate initial → final positions
+        float elapsed = 0f;
         while (elapsed < animationDuration)
         {
             float t = elapsed / animationDuration;
@@ -105,62 +143,68 @@ public class ScenarioReplayManager : MonoBehaviour
             yield return null;
         }
 
-        // Snap to final
+        // Snap to final frame
         foreach (var ctrl in _controllers) ctrl.SetProgress(1f);
 
         yield return new WaitForSeconds(holdAfterFinish);
 
-        // Notify Flutter replay complete
-        // flutter_unity_widget will trigger OnUnityMessage("REPLAY_COMPLETE")
+        NotifyFlutter("REPLAY_COMPLETE");
+    }
+
+    // ── Notify Flutter ────────────────────────────────────────────────────────
+    private void NotifyFlutter(string message)
+    {
 #if UNITY_WEBGL && !UNITY_EDITOR
-        ReactUnityWebGL.ReactUnityBridgeCallback("REPLAY_COMPLETE");
+        // WebGL bridge (not used for mobile but kept for completeness)
+        try { ReactUnityWebGL.ReactUnityBridgeCallback(message); } catch { }
 #else
-        // flutter_unity_widget native bridge
         try
         {
-            // The method name matches what is registered in UnityWidgetController.onUnityMessage
-            SendMessageUpwards("OnUnityMessage", "REPLAY_COMPLETE", SendMessageOptions.DontRequireReceiver);
+            // flutter_unity_widget: triggers onUnityMessage callback in Dart
+            SendMessageUpwards("OnUnityMessage", message, SendMessageOptions.DontRequireReceiver);
         }
-        catch { /* swallow if bridge not present during development */ }
+        catch { /* No bridge present (in-editor testing) — ignore */ }
 #endif
     }
 
     // ── Coordinate mapping ────────────────────────────────────────────────────
-    // Flutter: origin top-left, Y down. Unity: origin centre, Y up (XZ plane).
+    // Flutter origin: top-left, Y down.
+    // Unity origin: world centre, Y up, aircraft move on XZ plane.
     private Vector3 ToWorld(float fx, float fy, int flightLevel)
     {
-        // Centre the Flutter 370x430 space around world origin
         float wx = (fx - 185f) / coordScale;
         float wz = (fy - 215f) / coordScale;
-        // Altitude: FL320 → 32,000 ft. Scale to a visible height range.
-        float wy = (flightLevel - 250f) * 0.02f;
+        // FL320 ≈ cruise. Map altitude to a small vertical range for visual clarity.
+        float wy = (flightLevel - 300f) * 0.015f;
         return new Vector3(wx, wy, wz);
     }
 
-    // Called if user presses Back inside Unity (optional)
+    // ── Called when user presses Back inside Unity ────────────────────────────
     public void OnBackPressed()
     {
         StopAllCoroutines();
-        SendMessageUpwards("OnUnityMessage", "REPLAY_COMPLETE", SendMessageOptions.DontRequireReceiver);
+        NotifyFlutter("REPLAY_COMPLETE");
     }
 
-    void Start()
+    // ── In-editor test (fires automatically in Play mode) ────────────────────
+    // Remove or disable this in a production build to avoid a spurious test replay.
+    private void Start()
     {
-        string testJson = @"{
-        ""scenarioId"": ""test"",
-        ""scenarioTitle"": ""Test"",
-        ""initialAircraft"": [
-            { ""callsign"": ""A1"", ""x"": 100, ""y"": 200, ""heading"": 90, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": true, ""wasConflicting"": false },
-            { ""callsign"": ""B2"", ""x"": 250, ""y"": 200, ""heading"": 270, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": false, ""wasConflicting"": true }
-        ],
-        ""finalAircraft"": [
-            { ""callsign"": ""A1"", ""x"": 180, ""y"": 180, ""heading"": 60, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": true, ""wasConflicting"": false },
-            { ""callsign"": ""B2"", ""x"": 220, ""y"": 210, ""heading"": 270, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": false, ""wasConflicting"": true }
-        ],
-        ""minHorizDist"": 50,
-        ""hadLOS"": false,
-        ""score"": 100,
-        ""ratingKey"": ""ratingSafe""
+        const string testJson = @"{
+            ""scenarioId"":    ""basic_crossing_same_level"",
+            ""scenarioTitle"": ""Crossing Traffic at Same Level"",
+            ""initialAircraft"": [
+                { ""callsign"":""QFA123"", ""x"":60,  ""y"":210, ""heading"":90,  ""speed"":0.8, ""altitude"":320, ""wasSelected"":true,  ""wasConflicting"":false },
+                { ""callsign"":""UAE406"", ""x"":310, ""y"":210, ""heading"":270, ""speed"":0.8, ""altitude"":320, ""wasSelected"":false, ""wasConflicting"":true  }
+            ],
+            ""finalAircraft"": [
+                { ""callsign"":""QFA123"", ""x"":180, ""y"":165, ""heading"":75,  ""speed"":0.8, ""altitude"":320, ""wasSelected"":true,  ""wasConflicting"":false },
+                { ""callsign"":""UAE406"", ""x"":222, ""y"":205, ""heading"":270, ""speed"":0.8, ""altitude"":320, ""wasSelected"":false, ""wasConflicting"":true  }
+            ],
+            ""minHorizDist"": 52.0,
+            ""hadLOS"":       false,
+            ""score"":        98,
+            ""ratingKey"":    ""ratingExcellent""
         }";
 
         LoadReplayData(testJson);
