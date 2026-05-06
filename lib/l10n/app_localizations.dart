@@ -2961,6 +2961,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mixed'**
   String get skillMixed;
+
+  /// No description provided for @scoreRowGoodCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Good commands'**
+  String get scoreRowGoodCommands;
+
+  /// No description provided for @scoreRowBadCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Bad commands'**
+  String get scoreRowBadCommands;
+
+  /// No description provided for @scoreRowLOS.
+  ///
+  /// In en, this message translates to:
+  /// **'Loss of separation'**
+  String get scoreRowLOS;
+
+  /// No description provided for @scoreRowResolvedEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved early'**
+  String get scoreRowResolvedEarly;
+
+  /// No description provided for @scoreRowSeparationMaintained.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation maintained'**
+  String get scoreRowSeparationMaintained;
+
+  /// No description provided for @scoreRowLateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Late first action'**
+  String get scoreRowLateAction;
 }
 
 class _AppLocalizationsDelegate

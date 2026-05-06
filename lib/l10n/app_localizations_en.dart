@@ -1621,4 +1621,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillMixed => 'Mixed';
+
+  @override
+  String get scoreRowGoodCommands => 'Good commands';
+
+  @override
+  String get scoreRowBadCommands => 'Bad commands';
+
+  @override
+  String get scoreRowLOS => 'Loss of separation';
+
+  @override
+  String get scoreRowResolvedEarly => 'Resolved early';
+
+  @override
+  String get scoreRowSeparationMaintained => 'Separation maintained';
+
+  @override
+  String get scoreRowLateAction => 'Late first action';
 }

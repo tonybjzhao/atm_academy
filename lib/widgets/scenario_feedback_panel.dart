@@ -112,18 +112,18 @@ class ScenarioFeedbackPanel extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _scoreRow('✓ Good commands',   '+${result.goodCommands * 5}',
+                    _scoreRow('✓ ${l10n.scoreRowGoodCommands}',   '+${result.goodCommands * 5}',
                         result.goodCommands > 0 ? AppTheme.primary : AppTheme.textSecondary),
-                    _scoreRow('✗ Bad commands',    '-${result.badCommands * 10}',
+                    _scoreRow('✗ ${l10n.scoreRowBadCommands}',    '-${result.badCommands * 10}',
                         result.badCommands > 0 ? AppTheme.danger : AppTheme.textSecondary),
                     if (result.hadLOS)
-                      _scoreRow('⚠ Loss of separation', '-50', AppTheme.danger),
+                      _scoreRow('⚠ ${l10n.scoreRowLOS}', '-50', AppTheme.danger),
                     if (result.resolvedInFirstHalf)
-                      _scoreRow('⏱ Resolved early', '+20', AppTheme.primary),
+                      _scoreRow('⏱ ${l10n.scoreRowResolvedEarly}', '+20', AppTheme.primary),
                     if (result.separationMaintained)
-                      _scoreRow('✓ Separation maintained', '+10', AppTheme.primary),
+                      _scoreRow('✓ ${l10n.scoreRowSeparationMaintained}', '+10', AppTheme.primary),
                     if (result.levelAtFirstCommand.index >= AlertLevel.warning.index)
-                      _scoreRow('⚠ Late first action', '-30', AppTheme.warning),
+                      _scoreRow('⚠ ${l10n.scoreRowLateAction}', '-30', AppTheme.warning),
                   ],
                 ),
               ),

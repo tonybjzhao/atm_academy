@@ -988,5 +988,18 @@
   "skillSpeed": "Speed",
   "@skillSpeed": {},
   "skillMixed": "Mixed",
-  "@skillMixed": {}
+  "@skillMixed": {},
+
+  "scoreRowGoodCommands": "Good commands",
+  "@scoreRowGoodCommands": {},
+  "scoreRowBadCommands": "Bad commands",
+  "@scoreRowBadCommands": {},
+  "scoreRowLOS": "Loss of separation",
+  "@scoreRowLOS": {},
+  "scoreRowResolvedEarly": "Resolved early",
+  "@scoreRowResolvedEarly": {},
+  "scoreRowSeparationMaintained": "Separation maintained",
+  "@scoreRowSeparationMaintained": {},
+  "scoreRowLateAction": "Late first action",
+  "@scoreRowLateAction": {}
 }

@@ -1584,7 +1584,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeCardScenarioTraining => 'Entraînement scénario';
 
   @override
-  String get homeCardScenarioTrainingSub => '5 scénarios GTA guidés';
+  String get homeCardScenarioTrainingSub => '5 scénarios ATM guidés';
 
   @override
   String get alertNormal => 'NORMAL';
@@ -1650,4 +1650,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get skillMixed => 'Mixte';
+
+  @override
+  String get scoreRowGoodCommands => 'Bonnes instructions';
+
+  @override
+  String get scoreRowBadCommands => 'Mauvaises instructions';
+
+  @override
+  String get scoreRowLOS => 'Perte de séparation';
+
+  @override
+  String get scoreRowResolvedEarly => 'Résolu tôt';
+
+  @override
+  String get scoreRowSeparationMaintained => 'Séparation maintenue';
+
+  @override
+  String get scoreRowLateAction => 'Première action tardive';
 }

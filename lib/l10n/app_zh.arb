@@ -472,7 +472,7 @@
   "progRankMaster": "塔台大师",
 
   "homeCardScenarioTraining": "场景训练",
-  "homeCardScenarioTrainingSub": "5个引导式ATM场景",
+  "homeCardScenarioTrainingSub": "5个引导式空管场景",
   "alertNormal": "正常",
   "alertAdvisory": "交通建议",
   "alertWarning": "冲突警告",
@@ -493,5 +493,11 @@
   "skillSeparation": "间隔",
   "skillAltitude": "高度",
   "skillSpeed": "速度",
-  "skillMixed": "综合"
+  "skillMixed": "综合",
+  "scoreRowGoodCommands": "有效指令",
+  "scoreRowBadCommands": "无效指令",
+  "scoreRowLOS": "间隔丢失",
+  "scoreRowResolvedEarly": "提前解决",
+  "scoreRowSeparationMaintained": "间隔保持稳定",
+  "scoreRowLateAction": "初次行动过晚"
 }

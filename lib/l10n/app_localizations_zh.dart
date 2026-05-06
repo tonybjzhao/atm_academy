@@ -1410,7 +1410,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeCardScenarioTraining => '场景训练';
 
   @override
-  String get homeCardScenarioTrainingSub => '5个引导式ATM场景';
+  String get homeCardScenarioTrainingSub => '5个引导式空管场景';
 
   @override
   String get alertNormal => '正常';
@@ -1476,4 +1476,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get skillMixed => '综合';
+
+  @override
+  String get scoreRowGoodCommands => '有效指令';
+
+  @override
+  String get scoreRowBadCommands => '无效指令';
+
+  @override
+  String get scoreRowLOS => '间隔丢失';
+
+  @override
+  String get scoreRowResolvedEarly => '提前解决';
+
+  @override
+  String get scoreRowSeparationMaintained => '间隔保持稳定';
+
+  @override
+  String get scoreRowLateAction => '初次行动过晚';
 }

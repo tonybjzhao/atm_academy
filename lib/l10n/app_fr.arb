@@ -472,7 +472,7 @@
   "progRankMaster": "Maître de la tour",
 
   "homeCardScenarioTraining": "Entraînement scénario",
-  "homeCardScenarioTrainingSub": "5 scénarios GTA guidés",
+  "homeCardScenarioTrainingSub": "5 scénarios ATM guidés",
   "alertNormal": "NORMAL",
   "alertAdvisory": "AVIS DE TRAFIC",
   "alertWarning": "AVERTISSEMENT CONFLIT",
@@ -493,5 +493,11 @@
   "skillSeparation": "Séparation",
   "skillAltitude": "Altitude",
   "skillSpeed": "Vitesse",
-  "skillMixed": "Mixte"
+  "skillMixed": "Mixte",
+  "scoreRowGoodCommands": "Bonnes instructions",
+  "scoreRowBadCommands": "Mauvaises instructions",
+  "scoreRowLOS": "Perte de séparation",
+  "scoreRowResolvedEarly": "Résolu tôt",
+  "scoreRowSeparationMaintained": "Séparation maintenue",
+  "scoreRowLateAction": "Première action tardive"
 }

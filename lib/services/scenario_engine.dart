@@ -103,6 +103,49 @@ class ScenarioEngine {
     return min;
   }
 
+  // ── Projected separation ─────────────────────────────────────────────────
+  // Clones aircraft, simulates N physics ticks, returns minimum horiz distance.
+  // Using ~1.5 s (30 ticks at 50 ms) gives heading/speed changes time to show.
+  static const _projTicks = 30;
+  static const _radarSize = Size(370, 430);
+
+  double _projectedMinHoriz() {
+    final clones = aircraft.map((a) => Aircraft(
+      callsign: a.callsign, x: a.x, y: a.y,
+      heading: a.heading, speed: a.speed, altitude: a.altitude,
+    )).toList();
+    for (int t = 0; t < _projTicks; t++) {
+      for (final c in clones) c.update(_radarSize);
+    }
+    double min = double.infinity;
+    for (int i = 0; i < clones.length; i++) {
+      for (int j = i + 1; j < clones.length; j++) {
+        final dx = clones[i].x - clones[j].x;
+        final dy = clones[i].y - clones[j].y;
+        final d  = sqrt(dx * dx + dy * dy);
+        if (d < min) min = d;
+      }
+    }
+    return min;
+  }
+
+  // Returns true if any horizontally-close pair now has adequate vertical sep.
+  bool _altitudeSeparationRestored() {
+    final r = scenario.conflictRules;
+    for (int i = 0; i < aircraft.length; i++) {
+      for (int j = i + 1; j < aircraft.length; j++) {
+        final dx = aircraft[i].x - aircraft[j].x;
+        final dy = aircraft[i].y - aircraft[j].y;
+        final horiz = sqrt(dx * dx + dy * dy);
+        if (horiz < r.advisoryDistancePx) {
+          final vert = (aircraft[i].altitude - aircraft[j].altitude).abs();
+          if (vert >= r.minVerticalSeparationFL) return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // ── Commands ─────────────────────────────────────────────────────────────
   // Returns 'good' | 'neutral' | 'bad'
   String issueCommand(String callsign, String command) {
@@ -111,7 +154,9 @@ class ScenarioEngine {
       _levelAtFirstCommand = alertLevel;
     }
 
-    final prevMin = _minHoriz();
+    // Project BEFORE applying command
+    final projBefore = _projectedMinHoriz();
+
     final a = aircraft.firstWhere((a) => a.callsign == callsign,
         orElse: () => aircraft.first);
 
@@ -124,13 +169,21 @@ class ScenarioEngine {
       case 'fast':    a.speed = min(1.8,  a.speed + 0.1);
     }
 
-    // One-step lookahead to gauge direction
-    final newMin = _minHoriz();
-    if (newMin > prevMin + 1.5) {
+    // Altitude shortcut: if vertical separation is now adequate for any
+    // close pair, count as good immediately regardless of horiz projection.
+    if ((command == 'climb' || command == 'descend') &&
+        _altitudeSeparationRestored()) {
       _goodCommands++;
       return 'good';
     }
-    if (newMin < prevMin - 1.5) {
+
+    // Compare 1.5 s projected separation after vs before command.
+    final projAfter = _projectedMinHoriz();
+    if (projAfter > projBefore + 2.0) {
+      _goodCommands++;
+      return 'good';
+    }
+    if (projAfter < projBefore - 2.0) {
       _badCommands++;
       return 'bad';
     }
