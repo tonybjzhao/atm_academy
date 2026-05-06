@@ -3,13 +3,16 @@ import '../core/models/scenario.dart';
 import '../core/models/scenario_result.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
+import '../models/replay_data.dart';
+import '../screens/unity_replay_screen.dart';
 
 class ScenarioFeedbackPanel extends StatelessWidget {
   final ScenarioResult result;
   final Scenario scenario;
   final String languageCode;
+  final ScenarioReplayData? replayData; // null = replay not available
   final VoidCallback onRetry;
-  final VoidCallback? onNext; // null if last scenario
+  final VoidCallback? onNext;
   final VoidCallback onDone;
 
   const ScenarioFeedbackPanel({
@@ -17,6 +20,7 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     required this.result,
     required this.scenario,
     required this.languageCode,
+    required this.replayData,
     required this.onRetry,
     required this.onNext,
     required this.onDone,
@@ -177,6 +181,26 @@ class ScenarioFeedbackPanel extends StatelessWidget {
                     icon: const Icon(Icons.arrow_forward, size: 15),
                     label: Text(l10n.scenarioNext),
                     onPressed: onNext,
+                  ),
+                ),
+              const SizedBox(height: 10),
+              // 3D Replay button (shows placeholder until Unity is integrated)
+              if (replayData != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.view_in_ar_outlined, size: 15),
+                    label: Text(l10n.watchReplay3d),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UnityReplayScreen(replayData: replayData!),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.secondary,
+                      side: BorderSide(color: AppTheme.secondary.withValues(alpha: 0.5)),
+                    ),
                   ),
                 ),
               const SizedBox(height: 10),

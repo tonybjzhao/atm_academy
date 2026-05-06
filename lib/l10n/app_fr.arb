@@ -505,5 +505,9 @@
   "homePathLearn": "Apprendre les bases",
   "homePathRadarPractice": "Radar · N1",
   "homePathGuidedScenario": "Scénario · 1",
-  "homePathQuiz": "Quiz"
+  "homePathQuiz": "Quiz",
+  "watchReplay3d": "Regarder le replay 3D",
+  "unityReplayTitle": "Replay 3D du scénario",
+  "unityReplayComingSoon": "La visualisation 3D sera disponible dans une prochaine mise à jour",
+  "unityReplayBack": "← Retour aux résultats"
 }

@@ -1655,4 +1655,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePathQuiz => 'Quiz';
+
+  @override
+  String get watchReplay3d => 'Watch 3D Replay';
+
+  @override
+  String get unityReplayTitle => '3D Scenario Replay';
+
+  @override
+  String get unityReplayComingSoon =>
+      '3D visualization coming in a future update';
+
+  @override
+  String get unityReplayBack => '← Back to Results';
 }

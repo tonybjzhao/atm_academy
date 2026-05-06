@@ -3027,6 +3027,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quiz'**
   String get homePathQuiz;
+
+  /// No description provided for @watchReplay3d.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch 3D Replay'**
+  String get watchReplay3d;
+
+  /// No description provided for @unityReplayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'3D Scenario Replay'**
+  String get unityReplayTitle;
+
+  /// No description provided for @unityReplayComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'3D visualization coming in a future update'**
+  String get unityReplayComingSoon;
+
+  /// No description provided for @unityReplayBack.
+  ///
+  /// In en, this message translates to:
+  /// **'← Back to Results'**
+  String get unityReplayBack;
 }
 
 class _AppLocalizationsDelegate

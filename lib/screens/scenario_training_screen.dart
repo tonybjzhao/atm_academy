@@ -6,6 +6,7 @@ import '../core/models/scenario_result.dart';
 import '../core/theme/app_theme.dart';
 import '../data/scenario_data.dart';
 import '../l10n/app_localizations.dart';
+import '../models/replay_data.dart';
 import '../services/scenario_engine.dart';
 import '../widgets/pressure_bar.dart';
 import '../widgets/radar_painter.dart';
@@ -41,6 +42,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   Timer? _feedbackTimer;
 
   ScenarioResult? _result;
+  ScenarioReplayData? _replayData;
 
   // Timers
   Timer? _countdownTimer;
@@ -55,6 +57,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     _everSelected = false;
     _cmdFeedback = null;
     _result = null;
+    _replayData = null;
     _screenState = _ScreenState.playing;
   }
 
@@ -111,8 +114,34 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     if (_screenState != _ScreenState.playing) return;
     _stopTimers();
     final result = _engine.finalize(_timeLeft);
+    final locale = _scenario.title.en; // title in English for Unity
+
+    // Build replay data snapshot for optional 3D replay
+    final replay = ScenarioReplayData(
+      scenarioId: _scenario.id,
+      scenarioTitle: locale,
+      initialAircraft: _scenario.aircraft.map((a) => AircraftReplayState(
+        callsign: a.callsign, x: a.x, y: a.y,
+        heading: a.heading, speed: a.speed, altitude: a.altitude,
+        wasSelected: false, wasConflicting: false,
+      )).toList(),
+      finalAircraft: _engine.aircraft.map((a) => AircraftReplayState(
+        callsign: a.callsign, x: a.x, y: a.y,
+        heading: a.heading, speed: a.speed, altitude: a.altitude,
+        wasSelected: _selectedCallsign == a.callsign,
+        wasConflicting: result.hadLOS && _engine.alertLevel == AlertLevel.los,
+      )).toList(),
+      minHorizDist: _engine.minHorizDist == double.infinity
+          ? 999
+          : _engine.minHorizDist,
+      hadLOS: result.hadLOS,
+      score: result.score,
+      ratingKey: result.ratingKey,
+    );
+
     setState(() {
       _result = result;
+      _replayData = replay;
       _screenState = _ScreenState.result;
     });
   }
@@ -398,6 +427,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               result: _result!,
               scenario: _scenario,
               languageCode: locale,
+              replayData: _replayData,
               onRetry: _retryScenario,
               onNext: _scenarioIndex < allScenarios.length - 1 ? _goToNext : null,
               onDone: () => Navigator.pop(context),

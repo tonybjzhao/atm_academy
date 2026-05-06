@@ -1012,5 +1012,14 @@
   "homePathGuidedScenario": "Scenario · 1",
   "@homePathGuidedScenario": {},
   "homePathQuiz": "Quiz",
-  "@homePathQuiz": {}
+  "@homePathQuiz": {},
+
+  "watchReplay3d": "Watch 3D Replay",
+  "@watchReplay3d": {},
+  "unityReplayTitle": "3D Scenario Replay",
+  "@unityReplayTitle": {},
+  "unityReplayComingSoon": "3D visualization coming in a future update",
+  "@unityReplayComingSoon": {},
+  "unityReplayBack": "← Back to Results",
+  "@unityReplayBack": {}
 }

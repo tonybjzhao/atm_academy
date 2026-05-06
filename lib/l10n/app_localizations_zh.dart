@@ -1509,4 +1509,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homePathQuiz => '测验';
+
+  @override
+  String get watchReplay3d => '观看3D回放';
+
+  @override
+  String get unityReplayTitle => '3D场景回放';
+
+  @override
+  String get unityReplayComingSoon => '3D可视化将在未来版本中推出';
+
+  @override
+  String get unityReplayBack => '← 返回结果';
 }
