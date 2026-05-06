@@ -64,8 +64,8 @@ public class ScenarioReplayManager : MonoBehaviour
     // ── Entry point called by flutter_unity_widget ────────────────────────────
     // Flutter calls: controller.postMessage("ScenarioReplayManager", "LoadReplayData", jsonString)
     public void LoadReplayData(string json)
-    {
-        _payload = JsonUtility.FromJson<ReplayPayload>(json);
+    {        
+        _payload = UnityEngine.JsonUtility.FromJson<ReplayPayload>(json);
         if (_payload == null) { Debug.LogError("[ATMReplay] Failed to parse JSON"); return; }
         StartCoroutine(RunReplay());
     }
@@ -142,5 +142,27 @@ public class ScenarioReplayManager : MonoBehaviour
     {
         StopAllCoroutines();
         SendMessageUpwards("OnUnityMessage", "REPLAY_COMPLETE", SendMessageOptions.DontRequireReceiver);
+    }
+
+    void Start()
+    {
+        string testJson = @"{
+        ""scenarioId"": ""test"",
+        ""scenarioTitle"": ""Test"",
+        ""initialAircraft"": [
+            { ""callsign"": ""A1"", ""x"": 100, ""y"": 200, ""heading"": 90, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": true, ""wasConflicting"": false },
+            { ""callsign"": ""B2"", ""x"": 250, ""y"": 200, ""heading"": 270, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": false, ""wasConflicting"": true }
+        ],
+        ""finalAircraft"": [
+            { ""callsign"": ""A1"", ""x"": 180, ""y"": 180, ""heading"": 60, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": true, ""wasConflicting"": false },
+            { ""callsign"": ""B2"", ""x"": 220, ""y"": 210, ""heading"": 270, ""speed"": 0.8, ""altitude"": 320, ""wasSelected"": false, ""wasConflicting"": true }
+        ],
+        ""minHorizDist"": 50,
+        ""hadLOS"": false,
+        ""score"": 100,
+        ""ratingKey"": ""ratingSafe""
+        }";
+
+        LoadReplayData(testJson);
     }
 }
