@@ -403,10 +403,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeCardLearnAtmSub => '10节课 · 初级到专家';
 
   @override
-  String get homeCardRadarSim => '雷达模拟';
+  String get homeCardRadarSim => '雷达练习';
 
   @override
-  String get homeCardRadarSimSub => '实时2D雷达 · 4架航空器';
+  String get homeCardRadarSimSub => '通过10个递进关卡提升技能';
 
   @override
   String get homeCardRunwayOps => '跑道运行';
@@ -469,7 +469,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get rankMissionComplete => '任务完成';
 
   @override
-  String get radarSimTitle => '雷达模拟';
+  String get radarSimTitle => '雷达练习';
 
   @override
   String get radarStatusConflict => '⚠ 冲突';
@@ -1407,10 +1407,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get progRankMaster => '塔台大师';
 
   @override
-  String get homeCardScenarioTraining => '场景训练';
+  String get homeCardScenarioTraining => '引导式场景';
 
   @override
-  String get homeCardScenarioTrainingSub => '5个引导式空管场景';
+  String get homeCardScenarioTrainingSub => '在压力、评分和解析中学习管制员思维';
 
   @override
   String get alertNormal => '正常';
@@ -1494,4 +1494,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scoreRowLateAction => '初次行动过晚';
+
+  @override
+  String get homeRecommendedPath => '推荐学习路径';
+
+  @override
+  String get homePathLearn => '学习基础';
+
+  @override
+  String get homePathRadarPractice => '雷达 · 第1关';
+
+  @override
+  String get homePathGuidedScenario => '场景 · 第1个';
+
+  @override
+  String get homePathQuiz => '测验';
 }

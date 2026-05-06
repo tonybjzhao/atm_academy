@@ -460,10 +460,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeCardLearnAtmSub => '10 leçons · Débutant à Expert';
 
   @override
-  String get homeCardRadarSim => 'Sim Radar';
+  String get homeCardRadarSim => 'Pratique radar';
 
   @override
-  String get homeCardRadarSimSub => 'Radar 2D en direct · 4 aéronefs';
+  String get homeCardRadarSimSub =>
+      'Développez vos compétences sur 10 niveaux progressifs';
 
   @override
   String get homeCardRunwayOps => 'Ops Piste';
@@ -528,7 +529,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rankMissionComplete => 'Mission accomplie';
 
   @override
-  String get radarSimTitle => 'SIM RADAR';
+  String get radarSimTitle => 'PRATIQUE RADAR';
 
   @override
   String get radarStatusConflict => '⚠ CONFLIT';
@@ -1581,10 +1582,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get progRankMaster => 'Maître de la tour';
 
   @override
-  String get homeCardScenarioTraining => 'Entraînement scénario';
+  String get homeCardScenarioTraining => 'Scénarios guidés';
 
   @override
-  String get homeCardScenarioTrainingSub => '5 scénarios ATM guidés';
+  String get homeCardScenarioTrainingSub =>
+      'Apprenez la pensée contrôleur avec pression, score et explication';
 
   @override
   String get alertNormal => 'NORMAL';
@@ -1668,4 +1670,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get scoreRowLateAction => 'Première action tardive';
+
+  @override
+  String get homeRecommendedPath => 'PARCOURS RECOMMANDÉ';
+
+  @override
+  String get homePathLearn => 'Apprendre les bases';
+
+  @override
+  String get homePathRadarPractice => 'Radar · N1';
+
+  @override
+  String get homePathGuidedScenario => 'Scénario · 1';
+
+  @override
+  String get homePathQuiz => 'Quiz';
 }

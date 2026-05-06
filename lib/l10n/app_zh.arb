@@ -132,8 +132,8 @@
   "modulesSection": "模块",
   "homeCardLearnAtm": "学习ATM",
   "homeCardLearnAtmSub": "10节课 · 初级到专家",
-  "homeCardRadarSim": "雷达模拟",
-  "homeCardRadarSimSub": "实时2D雷达 · 4架航空器",
+  "homeCardRadarSim": "雷达练习",
+  "homeCardRadarSimSub": "通过10个递进关卡提升技能",
   "homeCardRunwayOps": "跑道运行",
   "homeCardRunwayOpsSub": "地面运动与排序",
   "homeCardQuizSub": "测试你的知识",
@@ -154,7 +154,7 @@
   "rankControllerTrainee": "管制学员",
   "rankTowerReady": "塔台就绪",
   "rankMissionComplete": "任务完成",
-  "radarSimTitle": "雷达模拟",
+  "radarSimTitle": "雷达练习",
   "radarStatusConflict": "⚠ 冲突",
   "radarStatusNormal": "● 正常",
   "radarConflictAlert": "冲突警告——航空器过近",
@@ -471,8 +471,8 @@
   "progRankSenior": "高级管制员",
   "progRankMaster": "塔台大师",
 
-  "homeCardScenarioTraining": "场景训练",
-  "homeCardScenarioTrainingSub": "5个引导式空管场景",
+  "homeCardScenarioTraining": "引导式场景",
+  "homeCardScenarioTrainingSub": "在压力、评分和解析中学习管制员思维",
   "alertNormal": "正常",
   "alertAdvisory": "交通建议",
   "alertWarning": "冲突警告",
@@ -499,5 +499,11 @@
   "scoreRowLOS": "间隔丢失",
   "scoreRowResolvedEarly": "提前解决",
   "scoreRowSeparationMaintained": "间隔保持稳定",
-  "scoreRowLateAction": "初次行动过晚"
+  "scoreRowLateAction": "初次行动过晚",
+
+  "homeRecommendedPath": "推荐学习路径",
+  "homePathLearn": "学习基础",
+  "homePathRadarPractice": "雷达 · 第1关",
+  "homePathGuidedScenario": "场景 · 第1个",
+  "homePathQuiz": "测验"
 }

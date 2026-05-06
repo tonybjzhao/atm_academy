@@ -132,8 +132,8 @@
   "modulesSection": "MODULES",
   "homeCardLearnAtm": "Apprendre la GTA",
   "homeCardLearnAtmSub": "10 leçons · Débutant à Expert",
-  "homeCardRadarSim": "Sim Radar",
-  "homeCardRadarSimSub": "Radar 2D en direct · 4 aéronefs",
+  "homeCardRadarSim": "Pratique radar",
+  "homeCardRadarSimSub": "Développez vos compétences sur 10 niveaux progressifs",
   "homeCardRunwayOps": "Ops Piste",
   "homeCardRunwayOpsSub": "Mouvements sol & séquencement",
   "homeCardQuizSub": "Testez vos connaissances",
@@ -154,7 +154,7 @@
   "rankControllerTrainee": "Stagiaire contrôleur",
   "rankTowerReady": "Prêt tour",
   "rankMissionComplete": "Mission accomplie",
-  "radarSimTitle": "SIM RADAR",
+  "radarSimTitle": "PRATIQUE RADAR",
   "radarStatusConflict": "⚠ CONFLIT",
   "radarStatusNormal": "● NORMAL",
   "radarConflictAlert": "ALERTE CONFLIT — AÉRONEFS TROP PROCHES",
@@ -471,8 +471,8 @@
   "progRankSenior": "Contrôleur senior",
   "progRankMaster": "Maître de la tour",
 
-  "homeCardScenarioTraining": "Entraînement scénario",
-  "homeCardScenarioTrainingSub": "5 scénarios ATM guidés",
+  "homeCardScenarioTraining": "Scénarios guidés",
+  "homeCardScenarioTrainingSub": "Apprenez la pensée contrôleur avec pression, score et explication",
   "alertNormal": "NORMAL",
   "alertAdvisory": "AVIS DE TRAFIC",
   "alertWarning": "AVERTISSEMENT CONFLIT",
@@ -499,5 +499,11 @@
   "scoreRowLOS": "Perte de séparation",
   "scoreRowResolvedEarly": "Résolu tôt",
   "scoreRowSeparationMaintained": "Séparation maintenue",
-  "scoreRowLateAction": "Première action tardive"
+  "scoreRowLateAction": "Première action tardive",
+
+  "homeRecommendedPath": "PARCOURS RECOMMANDÉ",
+  "homePathLearn": "Apprendre les bases",
+  "homePathRadarPractice": "Radar · N1",
+  "homePathGuidedScenario": "Scénario · 1",
+  "homePathQuiz": "Quiz"
 }

@@ -263,9 +263,9 @@
   "@homeCardLearnAtm": {},
   "homeCardLearnAtmSub": "10 lessons · Beginner to Expert",
   "@homeCardLearnAtmSub": {},
-  "homeCardRadarSim": "Radar Sim",
+  "homeCardRadarSim": "Radar Practice",
   "@homeCardRadarSim": {},
-  "homeCardRadarSimSub": "Live 2D radar · 4 aircraft",
+  "homeCardRadarSimSub": "Build skill through 10 progressive levels",
   "@homeCardRadarSimSub": {},
   "homeCardRunwayOps": "Runway Ops",
   "@homeCardRunwayOps": {},
@@ -309,7 +309,7 @@
   "rankMissionComplete": "Mission Complete",
   "@rankMissionComplete": {},
 
-  "radarSimTitle": "RADAR SIM",
+  "radarSimTitle": "RADAR PRACTICE",
   "@radarSimTitle": {},
   "radarStatusConflict": "⚠ CONFLICT",
   "@radarStatusConflict": {},
@@ -938,9 +938,9 @@
   "progRankMaster": "Tower Master",
   "@progRankMaster": {},
 
-  "homeCardScenarioTraining": "Scenario Training",
+  "homeCardScenarioTraining": "Guided Scenarios",
   "@homeCardScenarioTraining": {},
-  "homeCardScenarioTrainingSub": "5 guided ATM scenarios",
+  "homeCardScenarioTrainingSub": "Learn controller thinking with pressure, scoring, and explanation",
   "@homeCardScenarioTrainingSub": {},
 
   "alertNormal": "NORMAL",
@@ -1001,5 +1001,16 @@
   "scoreRowSeparationMaintained": "Separation maintained",
   "@scoreRowSeparationMaintained": {},
   "scoreRowLateAction": "Late first action",
-  "@scoreRowLateAction": {}
+  "@scoreRowLateAction": {},
+
+  "homeRecommendedPath": "RECOMMENDED PATH",
+  "@homeRecommendedPath": {},
+  "homePathLearn": "Learn Basics",
+  "@homePathLearn": {},
+  "homePathRadarPractice": "Radar · L1",
+  "@homePathRadarPractice": {},
+  "homePathGuidedScenario": "Scenario · 1",
+  "@homePathGuidedScenario": {},
+  "homePathQuiz": "Quiz",
+  "@homePathQuiz": {}
 }

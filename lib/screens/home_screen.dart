@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../data/lessons_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/daily_challenge_state.dart';
 import '../services/daily_challenge_service.dart';
@@ -9,7 +8,6 @@ import '../widgets/control_panel_light.dart';
 import 'about_safety_screen.dart';
 import 'contribute_screen.dart';
 import 'language_settings_screen.dart';
-import 'lesson_detail_screen.dart';
 import 'lessons_screen.dart';
 import 'radar_simulation_screen.dart';
 import 'scenario_training_screen.dart';
@@ -143,24 +141,16 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 AtmCard(
-                  icon: Icons.flight_land_outlined,
+                  icon: Icons.flag_outlined,
                   iconColor: AppTheme.warning,
-                  title: AppLocalizations.of(context)!.homeCardRunwayOps,
-                  subtitle: AppLocalizations.of(context)!.homeCardRunwayOpsSub,
-                  onTap: () {
-                    final runwayLesson = lessonsData.firstWhere(
-                      (l) => l.id == 'runway_operations',
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LessonDetailScreen(
-                          lesson: runwayLesson,
-                          languageCode: languageCode,
-                        ),
-                      ),
-                    );
-                  },
+                  title: AppLocalizations.of(context)!.homeCardScenarioTraining,
+                  subtitle: AppLocalizations.of(context)!.homeCardScenarioTrainingSub,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ScenarioTrainingScreen(),
+                    ),
+                  ),
                 ),
                 AtmCard(
                   icon: Icons.quiz_outlined,
@@ -180,73 +170,7 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Scenario Training — full-width feature card
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ScenarioTrainingScreen(),
-                ),
-              ),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.secondary.withValues(alpha: 0.5), width: 1.2),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.secondary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.radar, color: AppTheme.secondary, size: 22),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.homeCardScenarioTraining,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            AppLocalizations.of(context)!.homeCardScenarioTrainingSub,
-                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppTheme.secondary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'NEW',
-                        style: TextStyle(
-                          color: AppTheme.secondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _RecommendedPath(languageCode: languageCode),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -279,6 +203,120 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Recommended Path ─────────────────────────────────────────────────────────
+
+class _RecommendedPath extends StatelessWidget {
+  final String languageCode;
+  const _RecommendedPath({required this.languageCode});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.homeRecommendedPath,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _PathStep(
+                  icon: Icons.school_outlined,
+                  label: l10n.homePathLearn,
+                  color: AppTheme.secondary,
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => LessonsScreen(languageCode: languageCode))),
+                ),
+                const _PathArrow(),
+                _PathStep(
+                  icon: Icons.radar,
+                  label: l10n.homePathRadarPractice,
+                  color: AppTheme.primary,
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const RadarSimulationScreen())),
+                ),
+                const _PathArrow(),
+                _PathStep(
+                  icon: Icons.flag_outlined,
+                  label: l10n.homePathGuidedScenario,
+                  color: AppTheme.warning,
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ScenarioTrainingScreen())),
+                ),
+                const _PathArrow(),
+                _PathStep(
+                  icon: Icons.quiz_outlined,
+                  label: l10n.homePathQuiz,
+                  color: Colors.purpleAccent,
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => LessonsScreen(languageCode: languageCode, quizMode: true))),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PathStep extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _PathStep({required this.icon, required this.label, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: 5),
+            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PathArrow extends StatelessWidget {
+  const _PathArrow();
+  @override
+  Widget build(BuildContext context) => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: Icon(Icons.arrow_forward_ios, size: 10, color: AppTheme.borderColor),
+      );
 }
 
 // ─── Bottom row cards ────────────────────────────────────────────────────────

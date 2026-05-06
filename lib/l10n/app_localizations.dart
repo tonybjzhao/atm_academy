@@ -889,13 +889,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeCardRadarSim.
   ///
   /// In en, this message translates to:
-  /// **'Radar Sim'**
+  /// **'Radar Practice'**
   String get homeCardRadarSim;
 
   /// No description provided for @homeCardRadarSimSub.
   ///
   /// In en, this message translates to:
-  /// **'Live 2D radar · 4 aircraft'**
+  /// **'Build skill through 10 progressive levels'**
   String get homeCardRadarSimSub;
 
   /// No description provided for @homeCardRunwayOps.
@@ -1021,7 +1021,7 @@ abstract class AppLocalizations {
   /// No description provided for @radarSimTitle.
   ///
   /// In en, this message translates to:
-  /// **'RADAR SIM'**
+  /// **'RADAR PRACTICE'**
   String get radarSimTitle;
 
   /// No description provided for @radarStatusConflict.
@@ -2827,13 +2827,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeCardScenarioTraining.
   ///
   /// In en, this message translates to:
-  /// **'Scenario Training'**
+  /// **'Guided Scenarios'**
   String get homeCardScenarioTraining;
 
   /// No description provided for @homeCardScenarioTrainingSub.
   ///
   /// In en, this message translates to:
-  /// **'5 guided ATM scenarios'**
+  /// **'Learn controller thinking with pressure, scoring, and explanation'**
   String get homeCardScenarioTrainingSub;
 
   /// No description provided for @alertNormal.
@@ -2997,6 +2997,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Late first action'**
   String get scoreRowLateAction;
+
+  /// No description provided for @homeRecommendedPath.
+  ///
+  /// In en, this message translates to:
+  /// **'RECOMMENDED PATH'**
+  String get homeRecommendedPath;
+
+  /// No description provided for @homePathLearn.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn Basics'**
+  String get homePathLearn;
+
+  /// No description provided for @homePathRadarPractice.
+  ///
+  /// In en, this message translates to:
+  /// **'Radar · L1'**
+  String get homePathRadarPractice;
+
+  /// No description provided for @homePathGuidedScenario.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario · 1'**
+  String get homePathGuidedScenario;
+
+  /// No description provided for @homePathQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz'**
+  String get homePathQuiz;
 }
 
 class _AppLocalizationsDelegate
