@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // TODO (Phase 2 — Unity 3D Replay):
-//   1. Export Unity project → ios/UnityFramework/ and android/unityLibrary/
+//   1. Export Unity project for each supported platform
 //   2. Add back to pubspec.yaml:  flutter_unity_widget: ^2022.2.1
 //   3. Uncomment the import below and the _UnityReplayView class
 //   4. Set kUnityEnabled = true

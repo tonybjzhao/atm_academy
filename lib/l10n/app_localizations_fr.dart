@@ -688,7 +688,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aboutAppSectionContent =>
-      'ATM Académie est un projet éducatif ouvert créé par des ingénieurs GTA pour la communauté d\'apprentissage de l\'aviation et de la GTA.\n\nVersion : 1.0.0\nPlateforme : iOS & Android\n\nPour les retours et contributions, visitez la page du projet.';
+      'ATM Académie est un projet éducatif ouvert créé par des ingénieurs GTA pour la communauté d\'apprentissage de l\'aviation et de la GTA.\n\nVersion : 1.0.0\nPlateforme : application mobile\n\nPour les retours et contributions, visitez la page du projet.';
 
   @override
   String get aboutNoCertificationTitle => 'Pas de certification officielle';

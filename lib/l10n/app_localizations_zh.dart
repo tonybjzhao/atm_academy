@@ -625,7 +625,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutAppSectionContent =>
-      'ATM学院是由ATM工程师为航空和ATM学习社区创建的开放教育项目。\n\n版本：1.0.0\n平台：iOS和Android\n\n如需反馈和贡献，请访问项目页面。';
+      'ATM学院是由ATM工程师为航空和ATM学习社区创建的开放教育项目。\n\n版本：1.0.0\n平台：移动应用\n\n如需反馈和贡献，请访问项目页面。';
 
   @override
   String get aboutNoCertificationTitle => '无官方认证';

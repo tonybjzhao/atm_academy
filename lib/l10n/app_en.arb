@@ -418,7 +418,7 @@
   "@aboutContentComplianceContent": {},
   "aboutAppSectionTitle": "About ATM Academy",
   "@aboutAppSectionTitle": {},
-  "aboutAppSectionContent": "ATM Academy is an open educational project created by ATM engineers for the aviation and ATM learning community.\n\nVersion: 1.0.0\nPlatform: iOS & Android\n\nFor feedback and contributions, visit the project page.",
+  "aboutAppSectionContent": "ATM Academy is an open educational project created by ATM engineers for the aviation and ATM learning community.\n\nVersion: 1.0.0\nPlatform: Mobile app\n\nFor feedback and contributions, visit the project page.",
   "@aboutAppSectionContent": {},
   "aboutNoCertificationTitle": "No Official Certification",
   "@aboutNoCertificationTitle": {},

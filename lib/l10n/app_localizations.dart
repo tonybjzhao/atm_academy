@@ -1315,7 +1315,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutAppSectionContent.
   ///
   /// In en, this message translates to:
-  /// **'ATM Academy is an open educational project created by ATM engineers for the aviation and ATM learning community.\n\nVersion: 1.0.0\nPlatform: iOS & Android\n\nFor feedback and contributions, visit the project page.'**
+  /// **'ATM Academy is an open educational project created by ATM engineers for the aviation and ATM learning community.\n\nVersion: 1.0.0\nPlatform: Mobile app\n\nFor feedback and contributions, visit the project page.'**
   String get aboutAppSectionContent;
 
   /// No description provided for @aboutNoCertificationTitle.

@@ -18,7 +18,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Keep the status bar transparent so the app draws behind it,
-  // but give the Android nav bar the same dark colour as the app background.
+  // and keep the system navigation area aligned with the app background.
   // This avoids content being hidden behind a transparent nav bar without
   // needing SafeArea changes in every screen.
   SystemChrome.setEnabledSystemUIMode(
