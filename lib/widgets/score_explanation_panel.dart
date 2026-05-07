@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../models/projected_outcome.dart';
 import '../models/scenario_result.dart';
 import '../models/score_penalty.dart';
 
@@ -30,7 +31,12 @@ class ScoreExplanationPanel extends StatelessWidget {
               text: 'Why You Lost Points',
             ),
             const SizedBox(height: 8),
-            ...result.penalties.map((p) => _PenaltyCard(penalty: p)),
+            ...result.penalties.asMap().entries.map((e) {
+              final projected = e.key < result.projectedOutcomes.length
+                  ? result.projectedOutcomes[e.key]
+                  : null;
+              return _PenaltyCard(penalty: e.value, projected: projected);
+            }),
             const SizedBox(height: 12),
           ],
 
@@ -187,8 +193,9 @@ class _SectionTitle extends StatelessWidget {
 // ── Penalty card ───────────────────────────────────────────────────────────────
 
 class _PenaltyCard extends StatefulWidget {
-  final ScorePenalty penalty;
-  const _PenaltyCard({required this.penalty});
+  final ScorePenalty     penalty;
+  final ProjectedOutcome? projected;
+  const _PenaltyCard({required this.penalty, this.projected});
 
   @override
   State<_PenaltyCard> createState() => _PenaltyCardState();
@@ -259,9 +266,125 @@ class _PenaltyCardState extends State<_PenaltyCard> {
                   ),
                 ],
               ),
+
+              // ── Better Alternative ────────────────────────────────────────
+              if (widget.projected != null) ...[
+                const SizedBox(height: 10),
+                _BetterAlternative(outcome: widget.projected!),
+              ],
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Better Alternative card ────────────────────────────────────────────────────
+
+class _BetterAlternative extends StatelessWidget {
+  final ProjectedOutcome outcome;
+  const _BetterAlternative({required this.outcome});
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = outcome.projectedConflictResolved;
+    final sepColor = resolved ? AppTheme.primary : AppTheme.warning;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A1F14),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(children: [
+            const Icon(Icons.lightbulb, color: AppTheme.primary, size: 12),
+            const SizedBox(width: 5),
+            const Text(
+              'BETTER ALTERNATIVE',
+              style: TextStyle(
+                color: AppTheme.primary,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.9,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 6),
+
+          // Action label
+          Text(
+            outcome.alternativeAction,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+
+          // Explanation
+          Text(
+            outcome.explanation,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          // Projected result pill
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: sepColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: sepColor.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      resolved ? Icons.check_circle_outline : Icons.warning_amber_outlined,
+                      color: sepColor, size: 11,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Projected: ${outcome.projectedSeparation.toStringAsFixed(0)} px  '
+                      '${resolved ? "✓ Safe" : "⚠ Still tight"}',
+                      style: TextStyle(
+                        color: sepColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+
+          // Coaching insight
+          Text(
+            outcome.insightText,
+            style: const TextStyle(
+              color: AppTheme.primary,
+              fontSize: 10,
+              fontStyle: FontStyle.italic,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }

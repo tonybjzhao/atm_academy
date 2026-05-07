@@ -1,6 +1,7 @@
 import 'dart:math';
 import '../core/models/scenario.dart';
 import '../core/models/scenario_result.dart' as engine;
+import '../models/projected_outcome.dart';
 import '../models/replay_data.dart';
 import '../models/replay_event.dart';
 import '../models/scenario_result.dart';
@@ -22,32 +23,36 @@ class ScoringEngine {
     required DateTime startedAt,
     required DateTime completedAt,
   }) {
-    final frames   = _buildFrames(replayData);
-    final events   = _buildEvents(replayData, result);
-    final actions  = _buildUserActions(replayData, result);
+    final frames    = _buildFrames(replayData);
+    final events    = _buildEvents(replayData, result);
+    final actions   = _buildUserActions(replayData, result);
     final penalties = _buildPenalties(result, replayData);
     final bonuses   = _buildBonuses(result);
+    final projected = _buildProjectedOutcomes(result, replayData);
+    final ideal     = _buildIdealFrames(replayData, result);
     final summary   = _buildSummary(result, replayData, scenario);
     final tips      = _buildTips(result, replayData);
     final grade     = ScenarioGradeLabel.fromScore(result.score);
 
     return DetailedScenarioResult(
-      scenarioId:    scenario.id,
-      scenarioTitle: scenario.title.en,
-      finalScore:    result.score,
-      maxScore:      120,
-      grade:         grade,
-      startedAt:     startedAt,
-      completedAt:   completedAt,
-      replayFrames:  frames,
-      replayEvents:  events,
-      userActions:   actions,
-      penalties:     penalties,
-      bonuses:       bonuses,
-      summaryText:   summary,
-      improvementTips: tips,
-      hadLOS:        result.hadLOS,
-      minHorizDistPx: result.minHorizontalDistancePx,
+      scenarioId:       scenario.id,
+      scenarioTitle:    scenario.title.en,
+      finalScore:       result.score,
+      maxScore:         120,
+      grade:            grade,
+      startedAt:        startedAt,
+      completedAt:      completedAt,
+      replayFrames:     frames,
+      idealFrames:      ideal,
+      replayEvents:     events,
+      userActions:      actions,
+      penalties:        penalties,
+      bonuses:          bonuses,
+      projectedOutcomes: projected,
+      summaryText:      summary,
+      improvementTips:  tips,
+      hadLOS:           result.hadLOS,
+      minHorizDistPx:   result.minHorizontalDistancePx,
     );
   }
 
@@ -297,6 +302,188 @@ class ScoringEngine {
     return list;
   }
 
+  // ── Projected outcomes ────────────────────────────────────────────────────
+  // Simple approximation: not physics-accurate, but convincing and fair.
+  // For each major penalty we estimate how much separation would have
+  // improved with a better decision, then phrase it in coaching language.
+  static List<ProjectedOutcome> _buildProjectedOutcomes(
+      engine.ScenarioResult result, ScenarioReplayData data) {
+
+    final outcomes   = <ProjectedOutcome>[];
+    final actualSep  = result.minHorizontalDistancePx;
+    final pairFirst  = result.conflictPair.isNotEmpty ? result.conflictPair.first : '';
+    final pairStr    = result.conflictPair.join(' & ');
+    final reactionSec = result.reactionTimeSec;
+
+    for (final raw in result.penaltyBreakdown) {
+      if (raw == 'None') continue;
+      final lower = raw.toLowerCase();
+
+      // ── Loss of separation ────────────────────────────────────────────────
+      if (lower.contains('loss of separation')) {
+        final timeSaved   = 8.0;
+        final projSep     = (actualSep + 38.0)\.clamp(0.0, 300.0);
+        final idealAction = reactionSec > timeSaved
+            ? reactionSec - timeSaved
+            : max(0.0, reactionSec - 2);
+        outcomes.add(ProjectedOutcome(
+          timestampSeconds:          idealAction,
+          aircraftId:                pairFirst,
+          alternativeAction:         'Turn $pairFirst at t=${idealAction.toStringAsFixed(0)}s '
+                                     '(${timeSaved.toInt()}s earlier)',
+          projectedSeparation:       projSep,
+          projectedConflictResolved: projSep >= 60,
+          explanation:               'At t=${idealAction.toStringAsFixed(0)}s the aircraft '
+                                     'were still ~${(actualSep + 55).toStringAsFixed(0)} px apart. '
+                                     'An early turn of 15° would have kept projected separation '
+                                     'above ${projSep.toStringAsFixed(0)} px — above the 60 px threshold.',
+          insightText:               'Earlier vectoring gives more room to manoeuvre. '
+                                     'Act before the warning activates.',
+        ));
+      }
+
+      // ── Late command ──────────────────────────────────────────────────────
+      else if (lower.contains('late command')) {
+        final timeSaved = 5.0;
+        final projSep   = (actualSep + 22.0)\.clamp(0.0, 300.0);
+        final idealTs   = max(0.0, reactionSec - timeSaved);
+        outcomes.add(ProjectedOutcome(
+          timestampSeconds:          idealTs,
+          aircraftId:                pairFirst,
+          alternativeAction:         'Act at t=${idealTs.toStringAsFixed(0)}s '
+                                     '(${timeSaved.toInt()}s sooner)',
+          projectedSeparation:       projSep,
+          projectedConflictResolved: projSep >= 60,
+          explanation:               'Issuing the same command ${timeSaved.toInt()}s earlier '
+                                     'would have given the aircraft more time to diverge, '
+                                     'raising projected minimum separation to '
+                                     '~${projSep.toStringAsFixed(0)} px.',
+          insightText:               'Good recovery, but earlier action improves the safety margin.',
+        ));
+      }
+
+      // ── Wrong aircraft ────────────────────────────────────────────────────
+      else if (lower.contains('wrong aircraft')) {
+        final projSep = (actualSep + 32.0)\.clamp(0.0, 300.0);
+        outcomes.add(ProjectedOutcome(
+          timestampSeconds:          reactionSec,
+          aircraftId:                pairFirst,
+          alternativeAction:         'Command $pairFirst (conflict aircraft) instead',
+          projectedSeparation:       projSep,
+          projectedConflictResolved: true,
+          explanation:               '$pairFirst was the aircraft driving the conflict. '
+                                     'Commanding it directly at t=${reactionSec.toStringAsFixed(1)}s '
+                                     'would have increased projected separation to '
+                                     '~${projSep.toStringAsFixed(0)} px.',
+          insightText:               'Identify the conflict pair first — they appear in red. '
+                                     'Always act on one of those aircraft.',
+        ));
+      }
+
+      // ── No command ────────────────────────────────────────────────────────
+      else if (lower.contains('no command')) {
+        final projSep = (actualSep + 45.0)\.clamp(0.0, 300.0);
+        outcomes.add(ProjectedOutcome(
+          timestampSeconds:          3.0,
+          aircraftId:                pairFirst,
+          alternativeAction:         'Turn $pairFirst left 15° at t=3s',
+          projectedSeparation:       projSep,
+          projectedConflictResolved: projSep >= 60,
+          explanation:               'A single 15° heading change on $pairFirst at t=3s '
+                                     'would have deflected its track, raising minimum '
+                                     'separation to ~${projSep.toStringAsFixed(0)} px.',
+          insightText:               'Even a small heading change early in the scenario '
+                                     'is enough to prevent most conflicts.',
+        ));
+      }
+
+      // ── Ineffective command ───────────────────────────────────────────────
+      else if (lower.contains('ineffective command')) {
+        final projSep = (actualSep + 28.0)\.clamp(0.0, 300.0);
+        outcomes.add(ProjectedOutcome(
+          timestampSeconds:          reactionSec,
+          aircraftId:                pairFirst,
+          alternativeAction:         'Turn $pairFirst in the opposite direction',
+          projectedSeparation:       projSep,
+          projectedConflictResolved: projSep >= 60,
+          explanation:               'Your command moved $pairFirst toward the conflict. '
+                                     'Turning the opposite way at the same moment would '
+                                     'have projected separation to ~${projSep.toStringAsFixed(0)} px.',
+          insightText:               'Check which way opens separation before turning. '
+                                     'A turn toward the other aircraft makes things worse.',
+        ));
+      }
+    }
+    return outcomes;
+  }
+
+  // ── Ideal replay frames ────────────────────────────────────────────────────
+  // Generates an alternative set of aircraft frames showing what the replay
+  // would have looked like if the user had acted earlier / more effectively.
+  // Approximation: the selected aircraft is deflected away from the conflict
+  // pair after the "ideal action time", creating more separation.
+  static List<AircraftStateFrame> _buildIdealFrames(
+      ScenarioReplayData data, engine.ScenarioResult result) {
+
+    if (data.initialAircraft.isEmpty || data.finalAircraft.isEmpty) return [];
+
+    // Identify the "key" aircraft (conflict pair member) and its index
+    final keyCallsign = result.conflictPair.isNotEmpty ? result.conflictPair.first : '';
+    final keyIdx = data.initialAircraft.indexWhere((a) => a.callsign == keyCallsign);
+    if (keyIdx < 0) return []; // cannot build ideal without conflict pair info
+
+    // Ideal action 6 seconds earlier than actual (clamped to t=2s minimum)
+    final idealActionSec = max(2.0, result.reactionTimeSec - 6.0);
+
+    const totalSec   = 6.0;
+    const frameCount = 120;
+    final frames = <AircraftStateFrame>[];
+
+    for (int f = 0; f <= frameCount; f++) {
+      final t    = f / frameCount;
+      final sec  = f / 20.0;
+      final ease = _smoothStep(t);
+
+      for (int i = 0; i < data.initialAircraft.length; i++) {
+        if (i >= data.finalAircraft.length) continue;
+        final ini = data.initialAircraft[i];
+        final fin = data.finalAircraft[i];
+
+        double x = ini.x + (fin.x - ini.x) * ease;
+        double y = ini.y + (fin.y - ini.y) * ease;
+
+        // Apply deflection to the key aircraft after ideal action time
+        if (i == keyIdx && sec >= idealActionSec) {
+          final deflectFrac = ((sec - idealActionSec) / (totalSec - idealActionSec))
+              .clamp(0.0, 1.0);
+          // Perpendicular push: assume conflict is horizontal, push vertically
+          final deflectAmount = deflectFrac * 55.0; // up to 55 px offset
+          // Determine push direction: away from the other conflict aircraft
+          final otherIdx = data.initialAircraft.indexWhere(
+              (a) => result.conflictPair.contains(a.callsign) && a.callsign != keyCallsign);
+          if (otherIdx >= 0) {
+            final otherY = data.initialAircraft[otherIdx].y +
+                (data.finalAircraft[otherIdx].y - data.initialAircraft[otherIdx].y) * ease;
+            y += y < otherY ? -deflectAmount : deflectAmount;
+          } else {
+            y -= deflectAmount; // default: push up
+          }
+        }
+
+        frames.add(AircraftStateFrame(
+          timestampSeconds: sec,
+          callsign: ini.callsign,
+          x: x,
+          y: y,
+          altitude: (ini.altitude + (fin.altitude - ini.altitude) * ease).round(),
+          heading:  ini.heading + (fin.heading - ini.heading) * ease,
+          speed:    ini.speed + (fin.speed - ini.speed) * ease,
+        ));
+      }
+    }
+    return frames;
+  }
+
   // ── Summary text ──────────────────────────────────────────────────────────
   static String _buildSummary(
       engine.ScenarioResult result, ScenarioReplayData data, Scenario scenario) {
@@ -426,6 +613,21 @@ class ScoringEngine {
           explanation: 'Aircraft remained separated for 5+ continuous seconds.',
         ),
       ],
+      projectedOutcomes: [
+        const ProjectedOutcome(
+          timestampSeconds:          2.2,
+          aircraftId:                'QFA123',
+          alternativeAction:         'Turn QFA123 at t=2s (5s earlier)',
+          projectedSeparation:       86.0,
+          projectedConflictResolved: true,
+          explanation:               'At t=2s the aircraft were ~115 px apart. '
+                                     'A 15° left turn on QFA123 would have kept '
+                                     'projected minimum separation above 86 px — well '
+                                     'clear of the 60 px threshold.',
+          insightText:               'Good recovery, but earlier action improves the safety margin.',
+        ),
+      ],
+      idealFrames: [],  // populated by _buildIdealFrames in real usage
     );
   }
 

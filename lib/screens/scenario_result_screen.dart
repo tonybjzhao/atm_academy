@@ -49,7 +49,8 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   bool _autoStarted      = false;
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  int _selectedTab = 0; // 0 = Replay, 1 = Debrief
+  int  _selectedTab   = 0; // 0 = Replay, 1 = Debrief
+  bool _showIdeal     = false; // Actual vs Ideal replay toggle
 
   @override
   void initState() {
@@ -167,6 +168,36 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
             ),
           ),
 
+          // ── Replay mode toggle (shown only on Replay tab) ─────────────────
+          if (_selectedTab == 0 && result.idealFrames.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              color: AppTheme.surface,
+              child: Row(
+                children: [
+                  const Text('View:',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                  const SizedBox(width: 10),
+                  _ModeChip(
+                    label: 'Actual',
+                    active: !_showIdeal,
+                    onTap: () { setState(() { _showIdeal = false; }); _restart(); },
+                  ),
+                  const SizedBox(width: 6),
+                  _ModeChip(
+                    label: '💡 Ideal',
+                    active: _showIdeal,
+                    color: AppTheme.primary,
+                    onTap: () { setState(() { _showIdeal = true; }); _restart(); },
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('(earlier action)',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 9,
+                          fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+
           // ── Content ────────────────────────────────────────────────────────
           Expanded(
             child: _selectedTab == 0
@@ -175,6 +206,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
                     progress:        _progress,
                     playing:         _playing,
                     speedMultiplier: _speedMultiplier,
+                    showIdeal:       _showIdeal,
                     onPlayPause:     _togglePlay,
                     onCycleSpeed:    _cycleSpeed,
                   )
@@ -235,6 +267,7 @@ class _ReplayTab extends StatelessWidget {
   final DetailedScenarioResult result;
   final ValueNotifier<double>  progress;
   final bool    playing;
+  final bool    showIdeal;
   final int     speedMultiplier;
   final VoidCallback onPlayPause;
   final VoidCallback onCycleSpeed;
@@ -243,6 +276,7 @@ class _ReplayTab extends StatelessWidget {
     required this.result,
     required this.progress,
     required this.playing,
+    required this.showIdeal,
     required this.speedMultiplier,
     required this.onPlayPause,
     required this.onCycleSpeed,
@@ -250,12 +284,17 @@ class _ReplayTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Build a "virtual" result with ideal frames when showIdeal is true
+    final displayResult = showIdeal && result.idealFrames.isNotEmpty
+        ? _withIdealFrames(result)
+        : result;
+
     return Column(
       children: [
         // Radar display
         Expanded(
           child: RadarReplayView(
-            result:           result,
+            result:           displayResult,
             externalProgress: progress,
           ),
         ),
@@ -274,6 +313,72 @@ class _ReplayTab extends StatelessWidget {
       ],
     );
   }
+}
+
+// ── Ideal-frame helper ─────────────────────────────────────────────────────────
+
+DetailedScenarioResult _withIdealFrames(DetailedScenarioResult r) =>
+    DetailedScenarioResult(
+      scenarioId:       r.scenarioId,
+      scenarioTitle:    r.scenarioTitle,
+      finalScore:       r.finalScore,
+      maxScore:         r.maxScore,
+      grade:            r.grade,
+      startedAt:        r.startedAt,
+      completedAt:      r.completedAt,
+      replayFrames:     r.idealFrames,  // ← swap frames
+      idealFrames:      r.idealFrames,
+      replayEvents:     r.replayEvents,
+      userActions:      r.userActions,
+      penalties:        r.penalties,
+      bonuses:          r.bonuses,
+      projectedOutcomes: r.projectedOutcomes,
+      summaryText:      r.summaryText,
+      improvementTips:  r.improvementTips,
+      hadLOS:           false,          // ideal = no LOS
+      minHorizDistPx:   r.minHorizDistPx,
+    );
+
+// ── Mode chip (Actual / Ideal) ─────────────────────────────────────────────────
+
+class _ModeChip extends StatelessWidget {
+  final String   label;
+  final bool     active;
+  final Color    color;
+  final VoidCallback onTap;
+
+  const _ModeChip({
+    required this.label,
+    required this.active,
+    this.color = AppTheme.textSecondary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: active
+                ? color.withValues(alpha: 0.15)
+                : AppTheme.background,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: active ? color : AppTheme.borderColor,
+              width: active ? 1.3 : 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: active ? color : AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+        ),
+      );
 }
 
 // ── Tab widget ─────────────────────────────────────────────────────────────────

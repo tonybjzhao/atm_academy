@@ -1,3 +1,4 @@
+import 'projected_outcome.dart';
 import 'replay_event.dart';
 import 'score_penalty.dart';
 
@@ -54,6 +55,13 @@ class DetailedScenarioResult {
   /// 2–4 concrete improvement tips.
   final List<String> improvementTips;
 
+  /// What would have happened with a better decision (one per major penalty).
+  final List<ProjectedOutcome> projectedOutcomes;
+
+  /// Ideal aircraft frames: same replay but with the key action taken earlier.
+  /// Used for the "Ideal Replay" toggle.
+  final List<AircraftStateFrame> idealFrames;
+
   /// true if a loss-of-separation occurred.
   final bool hadLOS;
 
@@ -75,6 +83,8 @@ class DetailedScenarioResult {
     required this.bonuses,
     required this.summaryText,
     required this.improvementTips,
+    required this.projectedOutcomes,
+    required this.idealFrames,
     required this.hadLOS,
     required this.minHorizDistPx,
   });
