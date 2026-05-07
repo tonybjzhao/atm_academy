@@ -65,8 +65,11 @@ class LessonsScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(quizMode ? AppLocalizations.of(context)!.lessonsSelectTitle : AppLocalizations.of(context)!.lessonsTitle),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+        padding: EdgeInsets.only(
+          top: 8, bottom: MediaQuery.of(context).padding.bottom + 24),
         children: LessonLevel.values.expand((level) {
           final levelLessons = lessonsData.where((l) => l.level == level).toList();
           if (levelLessons.isEmpty) return <Widget>[];
@@ -164,6 +167,7 @@ class LessonsScreen extends StatelessWidget {
           ];
         }).toList(),
       ),
+      ), // SafeArea
     );
   }
 }

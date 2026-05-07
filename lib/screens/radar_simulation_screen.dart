@@ -530,7 +530,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
               // ── Command buttons ────────────────────────────────────────────
               if (_state == _ScenarioState.playing)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 14),
+                  padding: EdgeInsets.fromLTRB(12, 4, 12, MediaQuery.of(context).padding.bottom + 14),
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,

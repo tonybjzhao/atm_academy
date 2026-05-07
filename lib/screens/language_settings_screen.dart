@@ -17,6 +17,7 @@ class LanguageSettingsScreen extends StatelessWidget {
         valueListenable: languageService.localeNotifier,
         builder: (context, currentLocale, _) {
           return ListView(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 16),
             children: [
               _LanguageOptionTile(
                 label: context.l10n.languageSystemDefault,

@@ -80,7 +80,7 @@ class ScenarioFeedbackPanel extends StatelessWidget {
       color: AppTheme.background.withValues(alpha: 0.94),
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
