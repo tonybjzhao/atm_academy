@@ -16,11 +16,21 @@ final _navigatorKey     = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // Keep the status bar transparent so the app draws behind it,
+  // but give the Android nav bar the same dark colour as the app background.
+  // This avoids content being hidden behind a transparent nav bar without
+  // needing SafeArea changes in every screen.
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.manual,
+    overlays: SystemUiOverlay.values,
+  );
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    systemNavigationBarColor: Colors.transparent,
-    systemNavigationBarDividerColor: Colors.transparent,
-    statusBarColor: Colors.transparent,
+    statusBarColor:                    Colors.transparent,
+    statusBarIconBrightness:           Brightness.light,
+    systemNavigationBarColor:          Color(0xFF07111E), // == AppTheme.background
+    systemNavigationBarDividerColor:   Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.light,
   ));
   RadarLevelConfig.setResolver((n) => allLevels[(n - 1).clamp(0, allLevels.length - 1)]);
   await _languageService.load();

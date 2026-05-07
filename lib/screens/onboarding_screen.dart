@@ -142,21 +142,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 32),
 
             // Action button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(32, 0, 32, 20),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _next,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(
-                    isLast ? 'Start Training' : 'Next',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _next,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      isLast ? 'Start Training' : 'Next',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ),
