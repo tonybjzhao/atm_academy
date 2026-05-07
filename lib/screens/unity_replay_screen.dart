@@ -1,116 +1,118 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO (Phase 2 — Unity 3D Replay):
+//   1. Export Unity project → ios/UnityFramework/ and android/unityLibrary/
+//   2. Add back to pubspec.yaml:  flutter_unity_widget: ^2022.2.1
+//   3. Uncomment the import below and the _UnityReplayView class
+//   4. Set kUnityEnabled = true
+// See unity/SETUP.md for the complete integration guide.
+// Until then, the Flutter replay view below is the primary experience.
+// ─────────────────────────────────────────────────────────────────────────────
 // import 'package:flutter_unity_widget/flutter_unity_widget.dart';
-// ↑ Uncomment when flutter_unity_widget is added back to pubspec.yaml
-//   (requires Unity native framework — see unity/SETUP.md)
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Feature flag — flip to true ONLY after:
-//   1. Unity project built for iOS/Android and exported
-//   2. iOS:     exported framework placed in ios/UnityFramework/
-//   3. Android: exported project placed in android/unityLibrary/
-//   4. Native podfile/gradle wired per flutter_unity_widget docs
-// See unity/SETUP.md for the full step-by-step guide.
-// ─────────────────────────────────────────────────────────────────────────────
 const bool kUnityEnabled = false;
 
 class UnityReplayScreen extends StatelessWidget {
   final ScenarioReplayData replayData;
-
   const UnityReplayScreen({super.key, required this.replayData});
 
   @override
-  Widget build(BuildContext context) {
-    return kUnityEnabled
-        ? _UnityReplayView(replayData: replayData)
-        : _PlaceholderView(replayData: replayData);
-  }
+  Widget build(BuildContext context) =>
+      kUnityEnabled ? _UnityReplayView(replayData: replayData)
+                    : _FlutterReplayView(replayData: replayData);
 }
 
-// ── Live Unity view ───────────────────────────────────────────────────────────
-// Uncomment this class AND the flutter_unity_widget import AND pubspec entry
-// once the Unity project is built and native libraries are in place.
-// See unity/SETUP.md for the complete setup guide.
-//
-// class _UnityReplayView extends StatefulWidget {
-//   final ScenarioReplayData replayData;
-//   const _UnityReplayView({required this.replayData});
-//   @override State<_UnityReplayView> createState() => _UnityReplayViewState();
-// }
-//
-// class _UnityReplayViewState extends State<_UnityReplayView> {
-//   UnityWidgetController? _controller;
-//   bool _sent = false;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final l10n = AppLocalizations.of(context)!;
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-//       extendBodyBehindAppBar: true,
-//       appBar: AppBar(
-//         backgroundColor: Colors.transparent, elevation: 0,
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
-//           onPressed: () { _controller?.dispose(); Navigator.pop(context); },
-//         ),
-//         title: Text(l10n.unityReplayTitle,
-//             style: const TextStyle(color: AppTheme.primary, fontSize: 14)),
-//       ),
-//       body: UnityWidget(
-//         onUnityCreated: _onUnityCreated,
-//         onUnityMessage: _onUnityMessage,
-//         onUnitySceneLoaded: (_) { if (!_sent) _sendReplayData(); },
-//         useAndroidViewSurface: true,
-//         fullscreen: false,
-//       ),
-//     );
-//   }
-//
-//   void _onUnityCreated(UnityWidgetController c) {
-//     _controller = c;
-//     Future.delayed(const Duration(milliseconds: 600), () {
-//       if (mounted && !_sent) _sendReplayData();
-//     });
-//   }
-//
-//   void _sendReplayData() {
-//     _sent = true;
-//     _controller?.postMessage(
-//       'ScenarioReplayManager', 'LoadReplayData', widget.replayData.toJson());
-//   }
-//
-//   void _onUnityMessage(dynamic message) {
-//     if (message?.toString() == 'REPLAY_COMPLETE' && mounted) {
-//       _controller?.dispose();
-//       Navigator.pop(context);
-//     }
-//   }
-//
-//   @override
-//   void dispose() { _controller?.dispose(); super.dispose(); }
-// }
-
-// Placeholder used when kUnityEnabled = false (or when live view is commented out)
+// ── Unity live view (disabled — see TODO above) ────────────────────────────
+// class _UnityReplayView extends StatefulWidget { ... }
 class _UnityReplayView extends StatelessWidget {
   final ScenarioReplayData replayData;
   const _UnityReplayView({required this.replayData});
   @override
-  Widget build(BuildContext context) => _PlaceholderView(replayData: replayData);
+  Widget build(BuildContext context) => _FlutterReplayView(replayData: replayData);
 }
 
-// ── Placeholder view ──────────────────────────────────────────────────────────
-// Shown when kUnityEnabled = false.  Displays scenario summary on a dark
-// radar-style screen so the screen is never empty.
+// ═══════════════════════════════════════════════════════════════════════════
+//  Flutter Replay View — full animated 2-D replay, score explanation,
+//  penalty/bonus breakdown.  No Unity dependency.
+// ═══════════════════════════════════════════════════════════════════════════
 
-class _PlaceholderView extends StatelessWidget {
+class _FlutterReplayView extends StatefulWidget {
   final ScenarioReplayData replayData;
-  const _PlaceholderView({required this.replayData});
+  const _FlutterReplayView({required this.replayData});
+
+  @override
+  State<_FlutterReplayView> createState() => _FlutterReplayViewState();
+}
+
+class _FlutterReplayViewState extends State<_FlutterReplayView>
+    with TickerProviderStateMixin {
+
+  static const _totalSec = 7.0; // replay playback duration in seconds
+
+  late final AnimationController _replayCtr;  // 0→1 over _totalSec
+  late final AnimationController _sweepCtr;   // continuous radar sweep
+  late final AnimationController _pulseCtr;   // conflict pulse
+
+  @override
+  void initState() {
+    super.initState();
+
+    _replayCtr = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: (_totalSec * 1000).toInt()),
+    )..addListener(() => setState(() {}));
+
+    _sweepCtr = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+
+    _pulseCtr = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 750),
+    )..repeat(reverse: true);
+
+    // Auto-play
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _replayCtr.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _replayCtr.dispose();
+    _sweepCtr.dispose();
+    _pulseCtr.dispose();
+    super.dispose();
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  double get _t => _replayCtr.value; // 0→1
+  bool   get _done => _replayCtr.isCompleted;
+
+  // Normalised time at which the closest approach occurred
+  double get _conflictT {
+    if (widget.replayData.closestPointTimeSec <= 0) return 0.5;
+    return (widget.replayData.closestPointTimeSec / _totalSec).clamp(0.0, 1.0);
+  }
+
+  double get _actionT {
+    if (widget.replayData.actionTimeSec <= 0) return -1;
+    return (widget.replayData.actionTimeSec / _totalSec).clamp(0.0, 1.0);
+  }
+
+  void _restart() { _replayCtr.reset(); _replayCtr.forward(); }
+  void _togglePlay() {
+    if (_done) { _restart(); return; }
+    _replayCtr.isAnimating ? _replayCtr.stop() : _replayCtr.forward();
+  }
 
   Color _ratingColor() {
-    switch (replayData.ratingKey) {
+    switch (widget.replayData.ratingKey) {
       case 'ratingExcellent': return AppTheme.primary;
       case 'ratingSafe':      return Colors.greenAccent;
       case 'ratingNeedsImprovement': return AppTheme.warning;
@@ -118,9 +120,22 @@ class _PlaceholderView extends StatelessWidget {
     }
   }
 
+  String _ratingLabel(AppLocalizations l10n) {
+    switch (widget.replayData.ratingKey) {
+      case 'ratingExcellent':        return l10n.ratingExcellent;
+      case 'ratingSafe':             return l10n.ratingSafe;
+      case 'ratingNeedsImprovement': return l10n.ratingNeedsImprovement;
+      default:                       return l10n.ratingUnsafe;
+    }
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n  = AppLocalizations.of(context)!;
+    final data  = widget.replayData;
+    final rc    = _ratingColor();
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -130,192 +145,591 @@ class _PlaceholderView extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Radar-style circle with aircraft blips
-            Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF050F0A),
-                border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4), width: 1.5),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  for (final r in [0.33, 0.66, 1.0])
-                    Container(
-                      width: 260 * r,
-                      height: 260 * r,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppTheme.primary.withValues(alpha: 0.12),
+      body: Column(
+        children: [
+
+          // ── Radar display ─────────────────────────────────────────────────
+          Expanded(
+            flex: 5,
+            child: Stack(
+              children: [
+                CustomPaint(
+                  painter: _ReplayPainter(
+                    data:         data,
+                    t:            _t,
+                    sweepAngle:   _sweepCtr.value * 2 * pi,
+                    conflictT:    _conflictT,
+                    actionT:      _actionT,
+                    pulseVal:     _pulseCtr.value,
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+                // "REPLAY COMPLETE" banner
+                if (_done)
+                  Positioned(
+                    top: 10, left: 0, right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.borderColor),
+                        ),
+                        child: const Text(
+                          'REPLAY COMPLETE',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                       ),
                     ),
-                  for (final a in replayData.finalAircraft)
-                    _AircraftBlip(state: a, radarRadius: 130),
-                  // "Coming soon" label at bottom of circle
-                  Positioned(
-                    bottom: 32,
-                    child: Column(
-                      children: [
-                        const Icon(Icons.view_in_ar_outlined,
-                            color: AppTheme.textSecondary, size: 22),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.unityReplayComingSoon,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 9,
-                            height: 1.4,
+                  ),
+              ],
+            ),
+          ),
+
+          // ── Timeline + controls ───────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+            child: Row(
+              children: [
+                // Play / Pause / Replay
+                GestureDetector(
+                  onTap: _togglePlay,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.borderColor),
+                    ),
+                    child: Icon(
+                      _done ? Icons.replay
+                            : _replayCtr.isAnimating ? Icons.pause : Icons.play_arrow,
+                      color: AppTheme.primary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      // Background track
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: _t,
+                          minHeight: 6,
+                          color: AppTheme.primary,
+                          backgroundColor: AppTheme.surface,
+                        ),
+                      ),
+                      // Conflict marker on timeline
+                      if (_conflictT > 0)
+                        FractionallySizedBox(
+                          widthFactor: _conflictT,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              width: 8, height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: data.hadLOS ? AppTheme.danger : AppTheme.warning,
+                                border: Border.all(color: AppTheme.background, width: 1),
+                              ),
+                            ),
                           ),
+                        ),
+                      // Action marker on timeline
+                      if (_actionT > 0)
+                        FractionallySizedBox(
+                          widthFactor: _actionT,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              width: 8, height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.yellowAccent,
+                                border: Border.all(color: AppTheme.background, width: 1),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '${(_t * _totalSec).toStringAsFixed(1)}s',
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+
+          // Legend
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Row(
+              children: [
+                _Dot(color: data.hadLOS ? AppTheme.danger : AppTheme.warning),
+                const SizedBox(width: 4),
+                const Text('Closest approach', style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+                const SizedBox(width: 16),
+                _Dot(color: Colors.yellowAccent),
+                const SizedBox(width: 4),
+                const Text('Your action', style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+              ],
+            ),
+          ),
+
+          // ── Score + detail ────────────────────────────────────────────────
+          Expanded(
+            flex: 4,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  // Score header
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${data.score}',
+                          style: TextStyle(
+                            color: rc, fontSize: 36, fontWeight: FontWeight.w900),
+                        ),
+                        const Text(' / 120',
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 18)),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(_ratingLabel(l10n),
+                                style: TextStyle(color: rc, fontWeight: FontWeight.w800, fontSize: 13)),
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (data.hadLOS ? AppTheme.danger : AppTheme.primary)
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: (data.hadLOS ? AppTheme.danger : AppTheme.primary)
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ),
+                              child: Text(
+                                data.hadLOS ? l10n.scenarioLOSResult : l10n.scenarioSafeResult,
+                                style: TextStyle(
+                                  color: data.hadLOS ? AppTheme.danger : AppTheme.primary,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Scenario summary
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    replayData.scenarioTitle,
-                    style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15),
-                  ),
-                  const SizedBox(height: 12),
-                  _Row('Score', '${replayData.score} / 120', _ratingColor()),
-                  _Row('Min separation',
-                      '${replayData.minHorizDist.toStringAsFixed(0)} px',
-                      replayData.hadLOS ? AppTheme.danger : AppTheme.primary),
-                  _Row('Loss of separation',
-                      replayData.hadLOS ? 'YES' : 'No',
-                      replayData.hadLOS ? AppTheme.danger : AppTheme.primary),
+
+                  const SizedBox(height: 10),
+
+                  // Key metrics
+                  _MetricRow(l10n.scenarioConflictPair,
+                      data.conflictPairCallsigns.join(' ↔ '),
+                      data.hadLOS ? AppTheme.danger : AppTheme.warning),
+                  _MetricRow(l10n.scenarioMinHorizSep,
+                      '${data.minHorizDist.toStringAsFixed(0)} px  (threshold ${data.thresholdHorizontalPx.toStringAsFixed(0)} px)',
+                      data.hadLOS ? AppTheme.danger : AppTheme.textSecondary),
+                  _MetricRow(l10n.scenarioMinVertSep,
+                      '${data.thresholdVerticalFt} ft threshold',
+                      AppTheme.textSecondary),
+                  _MetricRow('Action',
+                      data.actionTimeSec > 0
+                          ? '${data.userCommandSummary}  (${data.actionTimeSec.toStringAsFixed(1)} s)'
+                          : 'No command issued',
+                      data.actionTimeSec > 0 ? Colors.yellowAccent : AppTheme.danger),
+
+                  const SizedBox(height: 10),
+
+                  // Why you lost / gained points
+                  if (data.penaltyBreakdown.isNotEmpty && data.penaltyBreakdown.first != 'None')
+                    _BreakdownSection(
+                      icon: Icons.remove_circle_outline,
+                      color: AppTheme.danger,
+                      title: l10n.scenarioPenalties,
+                      items: data.penaltyBreakdown,
+                    ),
                   const SizedBox(height: 8),
-                  const Divider(color: AppTheme.borderColor, height: 1),
-                  const SizedBox(height: 8),
-                  for (final a in replayData.finalAircraft)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.flight,
-                              size: 12,
-                              color: a.wasConflicting
-                                  ? AppTheme.danger
-                                  : a.wasSelected
-                                      ? Colors.yellowAccent
-                                      : AppTheme.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${a.callsign}  FL${a.altitude}  HDG ${a.heading.toInt()}°',
-                            style: TextStyle(
-                              color: a.wasSelected
-                                  ? Colors.yellowAccent
-                                  : AppTheme.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                          if (a.wasSelected) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: Colors.yellowAccent.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text('selected',
-                                  style: TextStyle(color: Colors.yellowAccent, fontSize: 9)),
-                            ),
-                          ],
-                        ],
+                  if (data.bonusBreakdown.isNotEmpty && data.bonusBreakdown.first != 'None')
+                    _BreakdownSection(
+                      icon: Icons.add_circle_outline,
+                      color: AppTheme.primary,
+                      title: l10n.scenarioBonuses,
+                      items: data.bonusBreakdown,
+                    ),
+
+                  const SizedBox(height: 10),
+
+                  // Back button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.arrow_back, size: 15),
+                      label: Text(l10n.unityReplayBack),
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textSecondary,
+                        side: const BorderSide(color: AppTheme.borderColor),
                       ),
                     ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.arrow_back, size: 15),
-                label: Text(l10n.unityReplayBack),
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
-                  side: const BorderSide(color: AppTheme.borderColor),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AircraftBlip extends StatelessWidget {
-  final AircraftReplayState state;
-  final double radarRadius;
-  const _AircraftBlip({required this.state, required this.radarRadius});
-
-  @override
-  Widget build(BuildContext context) {
-    final nx = (state.x / 370.0) * 2 - 1;
-    final ny = (state.y / 430.0) * 2 - 1;
-    final color = state.wasConflicting
-        ? AppTheme.danger
-        : state.wasSelected
-            ? Colors.yellowAccent
-            : AppTheme.primary;
-
-    return Positioned(
-      left: radarRadius + nx * radarRadius - 4,
-      top:  radarRadius + ny * radarRadius - 4,
-      child: Column(
-        children: [
-          Container(width: 8, height: 8,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-          Text(state.callsign,
-              style: TextStyle(color: color, fontSize: 7, height: 1.1)),
+          ),
         ],
       ),
     );
   }
 }
 
-class _Row extends StatelessWidget {
+// ── Radar painter ──────────────────────────────────────────────────────────
+
+class _ReplayPainter extends CustomPainter {
+  final ScenarioReplayData data;
+  final double t;          // replay progress 0→1
+  final double sweepAngle; // radians
+  final double conflictT;  // normalised time of closest approach
+  final double actionT;    // normalised time of user action
+  final double pulseVal;   // 0→1 for conflict pulse
+
+  const _ReplayPainter({
+    required this.data,
+    required this.t,
+    required this.sweepAngle,
+    required this.conflictT,
+    required this.actionT,
+    required this.pulseVal,
+  });
+
+  static const _srcW = 370.0;
+  static const _srcH = 430.0;
+
+  // Map scenario coords → canvas coords
+  Offset _map(double x, double y, Size canvas) => Offset(
+        x / _srcW * canvas.width,
+        y / _srcH * canvas.height,
+      );
+
+  Offset _lerp(AircraftReplayState a, AircraftReplayState b, double frac, Size sz) {
+    final ease = Curves.easeInOut.transform(frac.clamp(0.0, 1.0));
+    return _map(a.x + (b.x - a.x) * ease, a.y + (b.y - a.y) * ease, sz);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _drawBackground(canvas, size);
+    _drawSweep(canvas, size);
+    _drawConflictZone(canvas, size);
+    _drawActionMarker(canvas, size);
+    _drawTrails(canvas, size);
+    _drawBlips(canvas, size);
+  }
+
+  void _drawBackground(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = min(size.width, size.height) * 0.46;
+
+    // Dark fill
+    canvas.drawCircle(center, radius,
+        Paint()..color = const Color(0xFF050F0A));
+
+    // Range rings
+    final ringPaint = Paint()
+      ..color = AppTheme.primary.withValues(alpha: 0.10)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+    for (final r in [0.33, 0.66, 1.0]) {
+      canvas.drawCircle(center, radius * r, ringPaint);
+    }
+    // Cross lines
+    canvas.drawLine(Offset(center.dx - radius, center.dy),
+        Offset(center.dx + radius, center.dy), ringPaint);
+    canvas.drawLine(Offset(center.dx, center.dy - radius),
+        Offset(center.dx, center.dy + radius), ringPaint);
+  }
+
+  void _drawSweep(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = min(size.width, size.height) * 0.46;
+
+    // Glow layer
+    canvas.drawLine(
+      center,
+      Offset(center.dx + cos(sweepAngle) * radius,
+             center.dy + sin(sweepAngle) * radius),
+      Paint()
+        ..color = AppTheme.primary.withValues(alpha: 0.08)
+        ..strokeWidth = 12,
+    );
+    // Main beam
+    canvas.drawLine(
+      center,
+      Offset(center.dx + cos(sweepAngle) * radius,
+             center.dy + sin(sweepAngle) * radius),
+      Paint()
+        ..color = AppTheme.primary.withValues(alpha: 0.75)
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  void _drawConflictZone(Canvas canvas, Size size) {
+    // Show conflict marker when replay passes the conflict moment
+    if (t < conflictT * 0.8) return;
+
+    final pos = _map(data.closestPointPxX, data.closestPointPxY, size);
+    final isLOS = data.hadLOS;
+    final color = isLOS ? AppTheme.danger : AppTheme.warning;
+
+    // Pulsing outer ring
+    final outerRadius = 18.0 + pulseVal * (isLOS ? 12.0 : 7.0);
+    canvas.drawCircle(
+      pos, outerRadius,
+      Paint()
+        ..color = color.withValues(alpha: 0.15 + pulseVal * 0.20)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawCircle(
+      pos, outerRadius,
+      Paint()
+        ..color = color.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    // Inner dot
+    canvas.drawCircle(pos, 5,
+        Paint()..color = color.withValues(alpha: 0.8));
+
+    // Label
+    final label = isLOS ? 'LOS' : '⚠';
+    _drawLabel(canvas, pos + const Offset(0, -22), label,
+        color: color, fontSize: 9);
+    _drawLabel(canvas,
+        pos + const Offset(0, -32),
+        '${data.minHorizDist.toStringAsFixed(0)} px',
+        color: color.withValues(alpha: 0.7),
+        fontSize: 8);
+  }
+
+  void _drawActionMarker(Canvas canvas, Size size) {
+    if (actionT < 0 || t < actionT) return;
+
+    // Find the selected aircraft's interpolated position at action time
+    final selIdx = data.finalAircraft.indexWhere((a) => a.wasSelected);
+    if (selIdx < 0) return;
+
+    final pos = _lerp(data.initialAircraft[selIdx], data.finalAircraft[selIdx],
+        actionT, size);
+
+    // Yellow diamond marker
+    final path = Path()
+      ..moveTo(pos.dx, pos.dy - 12)
+      ..lineTo(pos.dx + 8, pos.dy)
+      ..lineTo(pos.dx, pos.dy + 12)
+      ..lineTo(pos.dx - 8, pos.dy)
+      ..close();
+    canvas.drawPath(path,
+        Paint()..color = Colors.yellowAccent.withValues(alpha: 0.25));
+    canvas.drawPath(path,
+        Paint()
+          ..color = Colors.yellowAccent.withValues(alpha: 0.7)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1);
+    _drawLabel(canvas, pos + const Offset(12, -8),
+        data.userCommandSummary.length > 20
+            ? '${data.userCommandSummary.substring(0, 20)}…'
+            : data.userCommandSummary,
+        color: Colors.yellowAccent.withValues(alpha: 0.8),
+        fontSize: 8);
+  }
+
+  void _drawTrails(Canvas canvas, Size size) {
+    for (int i = 0; i < data.initialAircraft.length; i++) {
+      if (i >= data.finalAircraft.length) continue;
+      final init  = data.initialAircraft[i];
+      final final_ = data.finalAircraft[i];
+      final isConflict = data.conflictPairCallsigns.contains(init.callsign);
+      final isSelected = final_.wasSelected;
+      final color = isConflict ? AppTheme.danger
+                  : isSelected ? Colors.yellowAccent
+                  : AppTheme.primary;
+
+      final startPt = _map(init.x, init.y, size);
+      final endPt   = _lerp(init, final_, t, size);
+
+      canvas.drawLine(
+        startPt, endPt,
+        Paint()
+          ..color = color.withValues(alpha: 0.35)
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  void _drawBlips(Canvas canvas, Size size) {
+    for (int i = 0; i < data.initialAircraft.length; i++) {
+      if (i >= data.finalAircraft.length) continue;
+      final init  = data.initialAircraft[i];
+      final final_ = data.finalAircraft[i];
+      final isConflict = data.conflictPairCallsigns.contains(init.callsign);
+      final isSelected = final_.wasSelected;
+
+      final color = isConflict ? AppTheme.danger
+                  : isSelected ? Colors.yellowAccent
+                  : AppTheme.primary;
+
+      final pos = _lerp(init, final_, t, size);
+
+      // Halo for conflict
+      if (isConflict && t >= conflictT * 0.7) {
+        canvas.drawCircle(pos, 10 + pulseVal * 5,
+            Paint()..color = AppTheme.danger.withValues(alpha: 0.15));
+      }
+
+      // Blip
+      canvas.drawCircle(pos, isConflict ? 7 : isSelected ? 6 : 5,
+          Paint()..color = color);
+
+      // Heading vector
+      final ease = Curves.easeInOut.transform(t.clamp(0.0, 1.0));
+      final heading = init.heading + (final_.heading - init.heading) * ease;
+      final rad = heading * pi / 180;
+      canvas.drawLine(
+        pos,
+        Offset(pos.dx + cos(rad) * 16, pos.dy + sin(rad) * 16),
+        Paint()
+          ..color = color.withValues(alpha: 0.55)
+          ..strokeWidth = 1.2,
+      );
+
+      // Label
+      _drawLabel(canvas, pos + const Offset(8, -8),
+          '${init.callsign}\nFL${final_.altitude}',
+          color: color, fontSize: 9);
+    }
+  }
+
+  void _drawLabel(Canvas canvas, Offset pos, String text,
+      {required Color color, double fontSize = 10}) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(color: color, fontSize: fontSize, height: 1.3),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, pos);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReplayPainter old) =>
+      old.t != t || old.sweepAngle != sweepAngle || old.pulseVal != pulseVal;
+}
+
+// ── Small reusable widgets ─────────────────────────────────────────────────
+
+class _Dot extends StatelessWidget {
+  final Color color;
+  const _Dot({required this.color});
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 8, height: 8,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color));
+}
+
+class _MetricRow extends StatelessWidget {
   final String label, value;
   final Color valueColor;
-  const _Row(this.label, this.value, this.valueColor);
-
+  const _MetricRow(this.label, this.value, this.valueColor);
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-            Text(value, style: TextStyle(color: valueColor, fontSize: 12, fontWeight: FontWeight.w600)),
+            Expanded(child: Text(label,
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11))),
+            Flexible(child: Text(value,
+                textAlign: TextAlign.right,
+                style: TextStyle(color: valueColor,
+                    fontSize: 11, fontWeight: FontWeight.w600))),
+          ],
+        ),
+      );
+}
+
+class _BreakdownSection extends StatelessWidget {
+  final IconData icon;
+  final Color    color;
+  final String   title;
+  final List<String> items;
+  const _BreakdownSection({
+    required this.icon, required this.color,
+    required this.title, required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(icon, color: color, size: 12),
+              const SizedBox(width: 5),
+              Text(title, style: TextStyle(
+                  color: color, fontSize: 10,
+                  fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+            ]),
+            const SizedBox(height: 6),
+            for (final s in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('• ', style: TextStyle(color: color, fontSize: 11)),
+                    Expanded(child: Text(s,
+                        style: TextStyle(color: color, fontSize: 11, height: 1.4))),
+                  ],
+                ),
+              ),
           ],
         ),
       );
