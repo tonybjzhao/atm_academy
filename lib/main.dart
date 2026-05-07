@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
@@ -13,6 +14,12 @@ final _languageService = LanguageService();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    statusBarColor: Colors.transparent,
+  ));
   RadarLevelConfig.setResolver((n) => allLevels[(n - 1).clamp(0, allLevels.length - 1)]);
   await _languageService.load();
   await DailyChallengeService.instance.load();

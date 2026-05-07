@@ -4,13 +4,16 @@ import '../core/models/scenario_result.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
+import '../models/scenario_result.dart' as detailed;
+import '../screens/scenario_result_screen.dart';
 import '../screens/unity_replay_screen.dart';
 
 class ScenarioFeedbackPanel extends StatelessWidget {
   final ScenarioResult result;
   final Scenario scenario;
   final String languageCode;
-  final ScenarioReplayData? replayData; // null = replay not available
+  final ScenarioReplayData? replayData;              // null = replay not available
+  final detailed.DetailedScenarioResult? detailedResult; // for full debrief screen
   final VoidCallback onRetry;
   final VoidCallback? onNext;
   final VoidCallback onDone;
@@ -21,6 +24,7 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     required this.scenario,
     required this.languageCode,
     required this.replayData,
+    this.detailedResult,
     required this.onRetry,
     required this.onNext,
     required this.onDone,
@@ -231,6 +235,30 @@ class ScenarioFeedbackPanel extends StatelessWidget {
                     icon: const Icon(Icons.arrow_forward, size: 15),
                     label: Text(l10n.scenarioNext),
                     onPressed: onNext,
+                  ),
+                ),
+              const SizedBox(height: 10),
+              // Full Debrief — animated replay + detailed explanation
+              if (detailedResult != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.analytics_outlined, size: 15),
+                    label: const Text('View Full Debrief'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ScenarioResultScreen(
+                          result: detailedResult!,
+                          onRetry: onRetry,
+                          onNextScenario: onNext,
+                        ),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.secondary,
+                      foregroundColor: AppTheme.background,
+                    ),
                   ),
                 ),
               const SizedBox(height: 10),

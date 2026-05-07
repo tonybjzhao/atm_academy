@@ -7,7 +7,10 @@ import '../core/theme/app_theme.dart';
 import '../data/scenario_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
+import '../models/scenario_result.dart' as detailed;
+import '../screens/scenario_result_screen.dart';
 import '../services/scenario_engine.dart';
+import '../services/scoring_engine.dart';
 import '../widgets/pressure_bar.dart';
 import '../widgets/radar_painter.dart';
 import '../widgets/scenario_feedback_panel.dart';
@@ -43,6 +46,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
 
   ScenarioResult? _result;
   ScenarioReplayData? _replayData;
+  detailed.DetailedScenarioResult? _detailedResult;
+  DateTime? _scenarioStartedAt;
 
   // Timers
   Timer? _countdownTimer;
@@ -58,6 +63,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     _cmdFeedback = null;
     _result = null;
     _replayData = null;
+    _detailedResult = null;
+    _scenarioStartedAt = DateTime.now();
     _screenState = _ScreenState.playing;
   }
 
@@ -152,9 +159,20 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
       bonusBreakdown:        result.bonusBreakdown,
     );
 
+    // Build rich detailed result for the debrief screen
+    final dr = ScoringEngine.fromExistingResult(
+      scenario:    _scenario,
+      result:      result,
+      replayData:  replay,
+      startedAt:   _scenarioStartedAt ?? DateTime.now().subtract(
+          Duration(seconds: _scenario.timeLimitSeconds - _timeLeft)),
+      completedAt: DateTime.now(),
+    );
+
     setState(() {
       _result = result;
       _replayData = replay;
+      _detailedResult = dr;
       _screenState = _ScreenState.result;
     });
   }
@@ -454,6 +472,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               scenario: _scenario,
               languageCode: locale,
               replayData: _replayData,
+              detailedResult: _detailedResult,
               onRetry: _retryScenario,
               onNext: _scenarioIndex < allScenarios.length - 1 ? _goToNext : null,
               onDone: () => Navigator.pop(context),
