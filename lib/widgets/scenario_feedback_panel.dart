@@ -12,8 +12,9 @@ class ScenarioFeedbackPanel extends StatelessWidget {
   final ScenarioResult result;
   final Scenario scenario;
   final String languageCode;
-  final ScenarioReplayData? replayData;              // null = replay not available
-  final detailed.DetailedScenarioResult? detailedResult; // for full debrief screen
+  final ScenarioReplayData? replayData;
+  final detailed.DetailedScenarioResult? detailedResult;
+  final int? scoreDelta; // positive = improved vs last attempt
   final VoidCallback onRetry;
   final VoidCallback? onNext;
   final VoidCallback onDone;
@@ -25,6 +26,7 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     required this.languageCode,
     required this.replayData,
     this.detailedResult,
+    this.scoreDelta,
     required this.onRetry,
     required this.onNext,
     required this.onDone,
@@ -150,6 +152,11 @@ class ScenarioFeedbackPanel extends StatelessWidget {
               const SizedBox(height: 12),
 
               // ── Conflict metrics ──────────────────────────────────────────
+              // ── Improvement banner ─────────────────────────────────────────
+              if (scoreDelta != null)
+                _ImprovementBanner(delta: scoreDelta!),
+              if (scoreDelta != null) const SizedBox(height: 10),
+
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
@@ -330,6 +337,53 @@ class ScenarioFeedbackPanel extends StatelessWidget {
           ],
         ),
       );
+}
+
+// ── Improvement banner ─────────────────────────────────────────────────────────
+
+class _ImprovementBanner extends StatelessWidget {
+  final int delta; // positive = better, negative = worse
+
+  const _ImprovementBanner({required this.delta});
+
+  @override
+  Widget build(BuildContext context) {
+    final improved = delta > 0;
+    final same     = delta == 0;
+    final color    = improved ? AppTheme.primary : same ? AppTheme.textSecondary : AppTheme.danger;
+    final icon     = improved ? Icons.trending_up : same ? Icons.trending_flat : Icons.trending_down;
+    final text     = improved
+        ? '↑ Improved vs last attempt  (+$delta pts)'
+        : same
+            ? 'Same score as last attempt'
+            : '↓ ${(-delta)} pts lower than last attempt  — keep practising';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Section widget ─────────────────────────────────────────────────────────────

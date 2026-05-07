@@ -71,6 +71,26 @@ class ProgressionService {
     await p.setInt(_keyXp, xpNotifier.value);
   }
 
+  // ── Per-scenario score history (for improvement tracking) ─────────────────
+  static String _keyScenarioScore(String scenarioId) =>
+      'scenario_last_score_$scenarioId';
+
+  /// Returns the score from the previous attempt, or null if first play.
+  Future<int?> getLastScenarioScore(String scenarioId) async {
+    final p = await SharedPreferences.getInstance();
+    final v = p.getInt(_keyScenarioScore(scenarioId));
+    return v;
+  }
+
+  /// Saves this attempt's score. Returns the delta vs last attempt
+  /// (positive = improvement, negative = regression, null = first play).
+  Future<int?> saveScenarioScore(String scenarioId, int score) async {
+    final p    = await SharedPreferences.getInstance();
+    final last = p.getInt(_keyScenarioScore(scenarioId));
+    await p.setInt(_keyScenarioScore(scenarioId), score);
+    return last != null ? score - last : null;
+  }
+
   /// Static helper: XP needed for each rank boundary.
   static const Map<String, int> rankThresholds = {
     'progRankCadet':      0,

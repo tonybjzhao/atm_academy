@@ -322,7 +322,7 @@ class ScoringEngine {
       // ── Loss of separation ────────────────────────────────────────────────
       if (lower.contains('loss of separation')) {
         final timeSaved   = 8.0;
-        final projSep     = (actualSep + 38.0)\.clamp(0.0, 300.0);
+        final projSep     = (actualSep + 38.0).clamp(0.0, 300.0);
         final idealAction = reactionSec > timeSaved
             ? reactionSec - timeSaved
             : max(0.0, reactionSec - 2);
@@ -345,7 +345,7 @@ class ScoringEngine {
       // ── Late command ──────────────────────────────────────────────────────
       else if (lower.contains('late command')) {
         final timeSaved = 5.0;
-        final projSep   = (actualSep + 22.0)\.clamp(0.0, 300.0);
+        final projSep   = (actualSep + 22.0).clamp(0.0, 300.0);
         final idealTs   = max(0.0, reactionSec - timeSaved);
         outcomes.add(ProjectedOutcome(
           timestampSeconds:          idealTs,
@@ -364,7 +364,7 @@ class ScoringEngine {
 
       // ── Wrong aircraft ────────────────────────────────────────────────────
       else if (lower.contains('wrong aircraft')) {
-        final projSep = (actualSep + 32.0)\.clamp(0.0, 300.0);
+        final projSep = (actualSep + 32.0).clamp(0.0, 300.0);
         outcomes.add(ProjectedOutcome(
           timestampSeconds:          reactionSec,
           aircraftId:                pairFirst,
@@ -382,7 +382,7 @@ class ScoringEngine {
 
       // ── No command ────────────────────────────────────────────────────────
       else if (lower.contains('no command')) {
-        final projSep = (actualSep + 45.0)\.clamp(0.0, 300.0);
+        final projSep = (actualSep + 45.0).clamp(0.0, 300.0);
         outcomes.add(ProjectedOutcome(
           timestampSeconds:          3.0,
           aircraftId:                pairFirst,
@@ -399,7 +399,7 @@ class ScoringEngine {
 
       // ── Ineffective command ───────────────────────────────────────────────
       else if (lower.contains('ineffective command')) {
-        final projSep = (actualSep + 28.0)\.clamp(0.0, 300.0);
+        final projSep = (actualSep + 28.0).clamp(0.0, 300.0);
         outcomes.add(ProjectedOutcome(
           timestampSeconds:          reactionSec,
           aircraftId:                pairFirst,

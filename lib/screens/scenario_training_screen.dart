@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
 import '../models/scenario_result.dart' as detailed;
 import '../screens/scenario_result_screen.dart';
+import '../services/progression_service.dart';
 import '../services/scenario_engine.dart';
 import '../services/scoring_engine.dart';
 import '../widgets/pressure_bar.dart';
@@ -48,6 +49,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   ScenarioReplayData? _replayData;
   detailed.DetailedScenarioResult? _detailedResult;
   DateTime? _scenarioStartedAt;
+  int? _scoreDelta; // positive = improved, negative = regressed, null = first
 
   // Timers
   Timer? _countdownTimer;
@@ -64,6 +66,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     _result = null;
     _replayData = null;
     _detailedResult = null;
+    _scoreDelta = null;
     _scenarioStartedAt = DateTime.now();
     _screenState = _ScreenState.playing;
   }
@@ -117,7 +120,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     _startTimers();
   }
 
-  void _endScenario({required bool timedOut}) {
+  Future<void> _endScenario({required bool timedOut}) async {
     if (_screenState != _ScreenState.playing) return;
     _stopTimers();
     final result = _engine.finalize(_timeLeft);
@@ -169,10 +172,15 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
       completedAt: DateTime.now(),
     );
 
+    // Save score and compute improvement delta
+    final delta = await ProgressionService.instance
+        .saveScenarioScore(_scenario.id, result.score);
+
     setState(() {
       _result = result;
       _replayData = replay;
       _detailedResult = dr;
+      _scoreDelta = delta;
       _screenState = _ScreenState.result;
     });
   }
@@ -473,6 +481,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               languageCode: locale,
               replayData: _replayData,
               detailedResult: _detailedResult,
+              scoreDelta: _scoreDelta,
               onRetry: _retryScenario,
               onNext: _scenarioIndex < allScenarios.length - 1 ? _goToNext : null,
               onDone: () => Navigator.pop(context),

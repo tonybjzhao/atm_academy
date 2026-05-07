@@ -8,9 +8,11 @@ import 'services/daily_challenge_service.dart';
 import 'services/language_service.dart';
 import 'data/radar_levels.dart';
 import 'models/radar_level_config.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/progression_service.dart';
 
-final _languageService = LanguageService();
+final _languageService  = LanguageService();
+final _navigatorKey     = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,11 +26,13 @@ Future<void> main() async {
   await _languageService.load();
   await DailyChallengeService.instance.load();
   await ProgressionService.instance.load();
-  runApp(const AtmAcademyApp());
+  final showOnboarding = !(await hasSeenOnboarding());
+  runApp(AtmAcademyApp(showOnboarding: showOnboarding));
 }
 
 class AtmAcademyApp extends StatelessWidget {
-  const AtmAcademyApp({super.key});
+  final bool showOnboarding;
+  const AtmAcademyApp({super.key, this.showOnboarding = false});
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +40,10 @@ class AtmAcademyApp extends StatelessWidget {
       valueListenable: _languageService.localeNotifier,
       builder: (context, locale, _) {
         final languageCode = locale?.languageCode ?? 'en';
+        final homeScreen = HomeScreen(
+          languageService: _languageService,
+          languageCode: languageCode,
+        );
         return MaterialApp(
           title: 'ATM Academy',
           locale: locale,
@@ -47,10 +55,18 @@ class AtmAcademyApp extends StatelessWidget {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           theme: AppTheme.dark,
-          home: HomeScreen(
-            languageService: _languageService,
-            languageCode: languageCode,
-          ),
+          home: showOnboarding
+              ? OnboardingScreen(
+                  onComplete: () => Navigator.of(
+                    // Use a global key or push replacement via the navigator
+                    // The simplest approach: replace via the root navigator
+                    _navigatorKey.currentContext!,
+                  ).pushReplacement(
+                    MaterialPageRoute(builder: (_) => homeScreen),
+                  ),
+                )
+              : homeScreen,
+          navigatorKey: _navigatorKey,
           debugShowCheckedModeBanner: false,
         );
       },
