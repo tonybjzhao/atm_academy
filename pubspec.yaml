@@ -36,3 +36,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/
+    - assets/scenarios/v2/
+    - assets/scenarios/v2/melbourne/

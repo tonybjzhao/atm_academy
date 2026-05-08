@@ -1,0 +1,48 @@
+{
+  "id": "melbourne_crossing_arrivals_001",
+  "title": "Crossing Arrivals",
+  "sectorId": "melbourne_approach",
+  "durationSeconds": 240,
+  "difficulty": 2,
+  "speedOptions": [1, 2, 4],
+  "aircraft": [
+    {
+      "id": "qfa214",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": -28, "yNm": 10 },
+      "altitudeFt": 9000,
+      "headingDeg": 105,
+      "groundSpeedKt": 270,
+      "route": ["MLB_WEST", "MLB_BASE", "RWY27"]
+    },
+    {
+      "id": "vja612",
+      "callsign": "VJA612",
+      "spawnAtSeconds": 10,
+      "position": { "xNm": 26, "yNm": -8 },
+      "altitudeFt": 9000,
+      "headingDeg": 285,
+      "groundSpeedKt": 265,
+      "route": ["MLB_EAST", "MLB_BASE", "RWY27"]
+    },
+    {
+      "id": "rex438",
+      "callsign": "REX438",
+      "spawnAtSeconds": 35,
+      "position": { "xNm": -6, "yNm": -32 },
+      "altitudeFt": 7000,
+      "headingDeg": 12,
+      "groundSpeedKt": 230,
+      "route": ["MLB_SOUTH", "MLB_FINAL", "RWY34"]
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}

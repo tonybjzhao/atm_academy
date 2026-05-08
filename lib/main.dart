@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'features/radar_v2/radar_v2_debug_screen.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'services/daily_challenge_service.dart';
@@ -76,6 +78,11 @@ class AtmAcademyApp extends StatelessWidget {
                   ),
                 )
               : homeScreen,
+          routes: kDebugMode
+              ? {
+                  '/debug/radar-v2': (_) => const RadarV2DebugScreen(),
+                }
+              : const {},
           navigatorKey: _navigatorKey,
           debugShowCheckedModeBanner: false,
         );
