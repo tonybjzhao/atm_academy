@@ -8,6 +8,9 @@ class ScenarioDefinition {
   final Duration duration;
   final int difficulty;
   final double radarRangeNm;
+  final String trafficDescription;
+  final List<String> objectives;
+  final List<String> expectedTechniques;
   final List<int> speedOptions;
   final List<AircraftSpawnDefinition> aircraft;
   final List<ScenarioCondition> winConditions;
@@ -20,6 +23,9 @@ class ScenarioDefinition {
     required this.duration,
     required this.difficulty,
     this.radarRangeNm = 42,
+    this.trafficDescription = '',
+    this.objectives = const [],
+    this.expectedTechniques = const [],
     required this.speedOptions,
     required this.aircraft,
     required this.winConditions,

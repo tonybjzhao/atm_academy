@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'commands/controller_command.dart';
@@ -19,7 +22,8 @@ class RadarV2DebugScreen extends StatefulWidget {
   State<RadarV2DebugScreen> createState() => _RadarV2DebugScreenState();
 }
 
-class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
+class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
+    with SingleTickerProviderStateMixin {
   static const Map<String, String> _scenarioAssets = {
     'Crossing Arrivals': 'assets/scenarios/v2/melbourne/crossing_arrivals.json',
     'Overtaking Traffic':
@@ -27,16 +31,25 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
   };
 
   ScenarioRuntime? _runtime;
+  SimulationSnapshot? _previousSnapshot;
   SimulationSnapshot? _snapshot;
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
-  Timer? _timer;
+  Ticker? _ticker;
+  Duration? _lastFrameTime;
+  double _simulationAccumulatorSeconds = 0;
+  double _renderInterpolation = 0;
+  double _sweepAngleRad = 0;
   int _speed = 1;
   bool _paused = false;
   bool _alertPulse = false;
+  bool _sweepEnabled = true;
+  bool _scenarioStarted = false;
+  bool _resultShown = false;
   String _scenarioName = 'Crossing Arrivals';
   String? _selectedAircraftId;
   String? _recentlyCommandedAircraftId;
   Timer? _commandHighlightTimer;
+  DateTime _lastAudioCue = DateTime.fromMillisecondsSinceEpoch(0);
   Object? _loadError;
 
   @override
@@ -44,6 +57,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
     super.initState();
     assert(() {
       _loadScenario(_scenarioName);
+      _ticker = createTicker(_onFrame)..start();
       return true;
     }());
   }
@@ -53,16 +67,18 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
       final assetPath = _scenarioAssets[scenarioName]!;
       final definition = await const ScenarioAssetLoader().load(assetPath);
       if (!mounted) return;
-      _timer?.cancel();
       _runtime = ScenarioRuntime(definition: definition);
       _scoreTracker = RadarV2ScoreTracker();
       _scenarioName = scenarioName;
       _selectedAircraftId = null;
       _recentlyCommandedAircraftId = null;
-      _snapshot = _runtime!.tick();
-      _scoreTracker.observe(_snapshot!);
-      _timer =
-          Timer.periodic(const Duration(milliseconds: 250), (_) => _onTimer());
+      _previousSnapshot = null;
+      _snapshot = _runtime!.snapshot;
+      _simulationAccumulatorSeconds = 0;
+      _renderInterpolation = 0;
+      _scenarioStarted = false;
+      _paused = true;
+      _resultShown = false;
       setState(() => _loadError = null);
     } catch (error) {
       if (!mounted) return;
@@ -70,18 +86,83 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
     }
   }
 
-  void _onTimer() {
+  void _onFrame(Duration frameTime) {
     final runtime = _runtime;
-    if (!mounted || runtime == null || _paused) return;
+    if (!mounted || runtime == null) return;
+    final lastFrameTime = _lastFrameTime;
+    _lastFrameTime = frameTime;
+    if (!_scenarioStarted || _paused) {
+      setState(() {
+        _sweepAngleRad = (_sweepAngleRad + 0.012) % (math.pi * 2);
+        _alertPulse = !_alertPulse;
+      });
+      return;
+    }
+
+    final deltaSeconds = lastFrameTime == null
+        ? 0.0
+        : (frameTime - lastFrameTime).inMicroseconds /
+            Duration.microsecondsPerSecond;
+    _simulationAccumulatorSeconds += deltaSeconds * _speed;
+
+    var advanced = false;
+    while (_simulationAccumulatorSeconds >= 1) {
+      _advanceSimulationStep();
+      _simulationAccumulatorSeconds -= 1;
+      advanced = true;
+    }
+
     setState(() {
-      _snapshot = runtime.tick(speedMultiplier: _speed);
-      _scoreTracker.observe(_snapshot!);
-      _alertPulse = !_alertPulse;
+      _renderInterpolation = _simulationAccumulatorSeconds.clamp(0, 1);
+      _sweepAngleRad = (_sweepAngleRad + deltaSeconds * 1.35) % (math.pi * 2);
+      if (advanced) _alertPulse = !_alertPulse;
     });
   }
 
   void _restartScenario() {
     _loadScenario(_scenarioName);
+  }
+
+  void _startScenario() {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    setState(() {
+      _scenarioStarted = true;
+      _paused = false;
+      _previousSnapshot = runtime.snapshot;
+      _snapshot = runtime.tick();
+      _scoreTracker.observe(_snapshot!);
+      _simulationAccumulatorSeconds = 0;
+      _renderInterpolation = 0;
+    });
+  }
+
+  void _stepScenario() {
+    if (!_scenarioStarted) {
+      _startScenario();
+      setState(() => _paused = true);
+      return;
+    }
+    _advanceSimulationStep();
+    setState(() {
+      _paused = true;
+      _renderInterpolation = 1;
+    });
+  }
+
+  void _advanceSimulationStep() {
+    final runtime = _runtime;
+    final snapshot = _snapshot;
+    if (runtime == null || snapshot == null) return;
+    _previousSnapshot = snapshot;
+    _snapshot = runtime.tick();
+    _scoreTracker.observe(_snapshot!);
+    _playConflictCue(_snapshot!);
+    final scenarioState = runtime.evaluate();
+    if (scenarioState.complete && !_resultShown) {
+      _paused = true;
+      _resultShown = true;
+    }
   }
 
   void _selectAircraft(TapUpDetails details, Size size) {
@@ -130,6 +211,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
     _commandHighlightTimer?.cancel();
     setState(() {
       _snapshot = runtime.snapshot;
+      _previousSnapshot = snapshot;
+      _renderInterpolation = 1;
       _recentlyCommandedAircraftId = command.aircraftId;
     });
     _commandHighlightTimer = Timer(const Duration(seconds: 2), () {
@@ -190,12 +273,40 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
     return normalized < 0 ? normalized + 360 : normalized;
   }
 
+  void _playConflictCue(SimulationSnapshot snapshot) {
+    var level = 0;
+    for (final result in snapshot.separation) {
+      if (result.isLossOfSeparation) {
+        level = 3;
+        break;
+      }
+      if (result.isPredictedConflict &&
+          (result.timeToConflict?.inSeconds ?? 999) <= 60) {
+        level = math.max(level, 2);
+      } else if (result.isPredictedConflict) {
+        level = math.max(level, 1);
+      }
+    }
+    if (level == 0) return;
+    final now = DateTime.now();
+    final cooldownMs = switch (level) {
+      3 => 450,
+      2 => 800,
+      _ => 2200,
+    };
+    if (now.difference(_lastAudioCue).inMilliseconds < cooldownMs) return;
+    _lastAudioCue = now;
+    SystemSound.play(
+        level == 1 ? SystemSoundType.click : SystemSoundType.alert);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!kDebugMode) {
       return const SizedBox.shrink();
     }
 
+    final runtime = _runtime;
     final snapshot = _snapshot;
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -224,29 +335,45 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
                         style: const TextStyle(color: AppTheme.danger),
                       ),
                     )
-                  : snapshot == null
+                  : snapshot == null || runtime == null
                       ? const Center(child: CircularProgressIndicator())
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final size = constraints.biggest;
-                            return GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTapUp: (details) =>
-                                  _selectAircraft(details, size),
-                              child: CustomPaint(
-                                painter: RadarV2Painter(
-                                  snapshot: snapshot,
-                                  rangeNm: _runtime!.definition.radarRangeNm,
-                                  selectedAircraftId: _selectedAircraftId,
-                                  recentlyCommandedAircraftId:
-                                      _recentlyCommandedAircraftId,
-                                  alertPulse: _alertPulse,
-                                ),
-                                child: const SizedBox.expand(),
-                              ),
-                            );
-                          },
-                        ),
+                      : !_scenarioStarted
+                          ? _BriefingView(
+                              scenarioName: _scenarioName,
+                              runtime: runtime,
+                              scenarioNames:
+                                  _scenarioAssets.keys.toList(growable: false),
+                              onScenarioChanged: (value) {
+                                if (value != null) _loadScenario(value);
+                              },
+                              onStart: _startScenario,
+                            )
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                final size = constraints.biggest;
+                                return GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTapUp: (details) =>
+                                      _selectAircraft(details, size),
+                                  child: CustomPaint(
+                                    painter: RadarV2Painter(
+                                      snapshot: snapshot,
+                                      previousSnapshot: _previousSnapshot,
+                                      interpolation: _renderInterpolation,
+                                      rangeNm:
+                                          _runtime!.definition.radarRangeNm,
+                                      selectedAircraftId: _selectedAircraftId,
+                                      recentlyCommandedAircraftId:
+                                          _recentlyCommandedAircraftId,
+                                      alertPulse: _alertPulse,
+                                      sweepEnabled: _sweepEnabled,
+                                      sweepAngleRad: _sweepAngleRad,
+                                    ),
+                                    child: const SizedBox.expand(),
+                                  ),
+                                );
+                              },
+                            ),
             ),
           ),
           if (snapshot != null)
@@ -256,6 +383,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
               score: _scoreTracker.snapshot,
               paused: _paused,
               speed: _speed,
+              sweepEnabled: _sweepEnabled,
+              scenarioStarted: _scenarioStarted,
+              resultShown: _resultShown,
               selectedAircraft: _selectedAircraftId == null
                   ? null
                   : snapshot.aircraftById(_selectedAircraftId!),
@@ -263,6 +393,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
               scenarioNames: _scenarioAssets.keys.toList(growable: false),
               onPauseChanged: (value) => setState(() => _paused = value),
               onSpeedChanged: (value) => setState(() => _speed = value),
+              onSweepChanged: (value) => setState(() => _sweepEnabled = value),
+              onStep: _stepScenario,
               onScenarioChanged: (value) {
                 if (value != null) _loadScenario(value);
               },
@@ -278,7 +410,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _ticker?.dispose();
     _commandHighlightTimer?.cancel();
     super.dispose();
   }
@@ -290,11 +422,16 @@ class _DebugControls extends StatelessWidget {
   final RadarV2ScoreSnapshot score;
   final bool paused;
   final int speed;
+  final bool sweepEnabled;
+  final bool scenarioStarted;
+  final bool resultShown;
   final AircraftState? selectedAircraft;
   final String scenarioName;
   final List<String> scenarioNames;
   final ValueChanged<bool> onPauseChanged;
   final ValueChanged<int> onSpeedChanged;
+  final ValueChanged<bool> onSweepChanged;
+  final VoidCallback onStep;
   final ValueChanged<String?> onScenarioChanged;
   final VoidCallback onRestart;
   final void Function(AircraftState aircraft, int deltaDeg) onHeading;
@@ -307,11 +444,16 @@ class _DebugControls extends StatelessWidget {
     required this.score,
     required this.paused,
     required this.speed,
+    required this.sweepEnabled,
+    required this.scenarioStarted,
+    required this.resultShown,
     required this.selectedAircraft,
     required this.scenarioName,
     required this.scenarioNames,
     required this.onPauseChanged,
     required this.onSpeedChanged,
+    required this.onSweepChanged,
+    required this.onStep,
     required this.onScenarioChanged,
     required this.onRestart,
     required this.onHeading,
@@ -360,8 +502,14 @@ class _DebugControls extends StatelessWidget {
                 ),
                 IconButton(
                   tooltip: paused ? 'Resume' : 'Pause',
-                  onPressed: () => onPauseChanged(!paused),
+                  onPressed:
+                      scenarioStarted ? () => onPauseChanged(!paused) : null,
                   icon: Icon(paused ? Icons.play_arrow : Icons.pause),
+                ),
+                IconButton(
+                  tooltip: 'Step one tick',
+                  onPressed: onStep,
+                  icon: const Icon(Icons.skip_next),
                 ),
               ],
             ),
@@ -394,6 +542,21 @@ class _DebugControls extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Sweep',
+                      style: TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 11),
+                    ),
+                    Switch(
+                      value: sweepEnabled,
+                      onChanged: onSweepChanged,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ],
+                ),
                 Text(
                   scenarioState.complete
                       ? (scenarioState.failed ? 'Failed' : 'Complete')
@@ -407,6 +570,14 @@ class _DebugControls extends StatelessWidget {
                 ),
               ],
             ),
+            if (resultShown || scenarioState.complete) ...[
+              const SizedBox(height: 10),
+              _ScenarioResultPanel(
+                score: score,
+                failed: scenarioState.failed,
+                reasons: scenarioState.reasons,
+              ),
+            ],
             if (selectedAircraft != null) ...[
               const SizedBox(height: 10),
               _SelectedAircraftPanel(
@@ -420,9 +591,18 @@ class _DebugControls extends StatelessWidget {
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  score.penalties.last,
-                  style: const TextStyle(color: AppTheme.warning, fontSize: 11),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: Text(
+                    '${score.lastReason ?? 'Score'} ${score.lastDelta}',
+                    key: ValueKey(
+                        '${score.lastReason}${score.lastDelta}${score.penalties.length}'),
+                    style: const TextStyle(
+                      color: AppTheme.warning,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -430,6 +610,247 @@ class _DebugControls extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _BriefingView extends StatelessWidget {
+  final String scenarioName;
+  final ScenarioRuntime runtime;
+  final List<String> scenarioNames;
+  final ValueChanged<String?> onScenarioChanged;
+  final VoidCallback onStart;
+
+  const _BriefingView({
+    required this.scenarioName,
+    required this.runtime,
+    required this.scenarioNames,
+    required this.onScenarioChanged,
+    required this.onStart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final definition = runtime.definition;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              border: Border.all(color: AppTheme.borderColor),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: scenarioName,
+                        isExpanded: true,
+                        dropdownColor: AppTheme.surface,
+                        underline: const SizedBox.shrink(),
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        items: [
+                          for (final name in scenarioNames)
+                            DropdownMenuItem(value: name, child: Text(name)),
+                        ],
+                        onChanged: onScenarioChanged,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _DifficultyPips(value: definition.difficulty),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  definition.trafficDescription,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _BriefingSection(
+                    title: 'Objectives', items: definition.objectives),
+                const SizedBox(height: 12),
+                _BriefingSection(
+                  title: 'Expected Techniques',
+                  items: definition.expectedTechniques,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onStart,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Start Scenario'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BriefingSection extends StatelessWidget {
+  final String title;
+  final List<String> items;
+
+  const _BriefingSection({
+    required this.title,
+    required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppTheme.primary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 6),
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              '- $item',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+                height: 1.3,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _DifficultyPips extends StatelessWidget {
+  final int value;
+
+  const _DifficultyPips({required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 1; i <= 5; i++)
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(left: 3),
+            decoration: BoxDecoration(
+              color: i <= value ? AppTheme.warning : AppTheme.borderColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ScenarioResultPanel extends StatelessWidget {
+  final RadarV2ScoreSnapshot score;
+  final bool failed;
+  final List<String> reasons;
+
+  const _ScenarioResultPanel({
+    required this.score,
+    required this.failed,
+    required this.reasons,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101923),
+        border: Border.all(
+          color: failed ? AppTheme.danger : AppTheme.primary,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            failed ? 'Scenario Failed' : 'Scenario Complete',
+            style: TextStyle(
+              color: failed ? AppTheme.danger : AppTheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Grade ${score.grade}  Score ${score.score}  '
+            'Losses ${score.separationLossCount}  Commands ${score.commandCount}',
+            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Efficiency ${_efficiencyLabel(score.commandCount)}',
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+          ),
+          if (score.penalties.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            const Text(
+              'Timeline Summary',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 3),
+            for (final penalty in score.penalties.take(4))
+              Text(
+                penalty,
+                style: const TextStyle(color: AppTheme.warning, fontSize: 11),
+              ),
+          ],
+          if (reasons.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              reasons.join(' / '),
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _efficiencyLabel(int commands) {
+    if (commands <= 4) return 'Excellent';
+    if (commands <= 8) return 'Good';
+    if (commands <= 12) return 'Busy';
+    return 'Over-controlled';
   }
 }
 

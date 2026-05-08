@@ -21,6 +21,9 @@ class ScenarioLoader {
       duration: Duration(seconds: _int(json, 'durationSeconds')),
       difficulty: _int(json, 'difficulty'),
       radarRangeNm: (json['radarRangeNm'] as num?)?.toDouble() ?? 42,
+      trafficDescription: (json['trafficDescription'] as String?) ?? '',
+      objectives: _optionalStringList(json['objectives']),
+      expectedTechniques: _optionalStringList(json['expectedTechniques']),
       speedOptions: _intList(json['speedOptions']),
       aircraft: _list(json['aircraft'])
           .map((item) => _parseAircraft(_map(item, 'aircraft item')))
@@ -97,6 +100,11 @@ class ScenarioLoader {
       if (item is num) return item.round();
       throw const FormatException('Expected numeric speed option');
     }).toList(growable: false);
+  }
+
+  List<String> _optionalStringList(Object? value) {
+    if (value == null) return const [];
+    return _list(value).map((item) => item.toString()).toList(growable: false);
   }
 
   Map<String, dynamic> _map(Object? value, String label) {

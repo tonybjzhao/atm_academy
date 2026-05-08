@@ -5,6 +5,17 @@
   "durationSeconds": 240,
   "difficulty": 2,
   "radarRangeNm": 42,
+  "trafficDescription": "Two same-level arrivals converge near the centre of the sector, followed by a lower southbound arrival.",
+  "objectives": [
+    "Resolve the crossing conflict before it becomes urgent",
+    "Keep all aircraft inside safe separation",
+    "Avoid over-controlling the lower arrival"
+  ],
+  "expectedTechniques": [
+    "Use early heading vectors",
+    "Use small speed reductions if the geometry tightens",
+    "Reserve altitude changes for late recoveries"
+  ],
   "speedOptions": [1, 2, 4],
   "aircraft": [
     {

@@ -8,17 +8,25 @@ import '../models/simulation_snapshot.dart';
 
 class RadarV2Painter extends CustomPainter {
   final SimulationSnapshot snapshot;
+  final SimulationSnapshot? previousSnapshot;
+  final double interpolation;
   final double rangeNm;
   final String? selectedAircraftId;
   final String? recentlyCommandedAircraftId;
   final bool alertPulse;
+  final bool sweepEnabled;
+  final double sweepAngleRad;
 
   const RadarV2Painter({
     required this.snapshot,
+    this.previousSnapshot,
+    this.interpolation = 1,
     this.rangeNm = 40,
     this.selectedAircraftId,
     this.recentlyCommandedAircraftId,
     this.alertPulse = false,
+    this.sweepEnabled = true,
+    this.sweepAngleRad = 0,
   });
 
   @override
@@ -43,6 +51,9 @@ class RadarV2Painter extends CustomPainter {
         center.translate(-radius, 0), center.translate(radius, 0), axisPaint);
     canvas.drawLine(
         center.translate(0, -radius), center.translate(0, radius), axisPaint);
+    if (sweepEnabled) {
+      _drawSweep(canvas, center, radius);
+    }
 
     for (final aircraft in snapshot.aircraft) {
       if (!aircraft.active) continue;
@@ -61,14 +72,16 @@ class RadarV2Painter extends CustomPainter {
 
     for (final aircraft in snapshot.aircraft) {
       if (!aircraft.active) continue;
+      final renderAircraft = _interpolatedAircraft(aircraft);
       _drawAircraft(
         canvas,
         center,
         scale,
-        aircraft,
+        renderAircraft,
         urgency: _urgencyForAircraft(aircraft.id),
         selected: selectedAircraftId == aircraft.id,
         recentlyCommanded: recentlyCommandedAircraftId == aircraft.id,
+        sweepPulse: sweepEnabled ? _sweepPulseFor(renderAircraft) : 0,
       );
     }
   }
@@ -77,7 +90,8 @@ class RadarV2Painter extends CustomPainter {
       Canvas canvas, Offset center, double scale, AircraftState aircraft,
       {required _ConflictUrgency urgency,
       required bool selected,
-      required bool recentlyCommanded}) {
+      required bool recentlyCommanded,
+      required double sweepPulse}) {
     final position = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
     final headingRad = aircraft.headingDeg * math.pi / 180;
     final vectorLength =
@@ -97,12 +111,12 @@ class RadarV2Painter extends CustomPainter {
       ..color = aircraftColor.withValues(alpha: 0.8);
     final labelPainter = TextPainter(
       text: TextSpan(
-        text:
-            '${aircraft.callsign}\n${aircraft.altitudeFt ~/ 100} ${aircraft.groundSpeedKt.round()}kt',
+        text: _datablockText(aircraft),
         style: const TextStyle(
           color: Color(0xFFE7FFF4),
-          fontSize: 10,
+          fontSize: 9,
           height: 1.1,
+          fontFamily: 'monospace',
           fontFeatures: [FontFeature.tabularFigures()],
         ),
       ),
@@ -114,6 +128,16 @@ class RadarV2Painter extends CustomPainter {
       _drawIntentVector(canvas, position, aircraft, selected ? 54 : 42);
     }
     canvas.drawCircle(position, 4, targetPaint);
+    if (sweepPulse > 0) {
+      canvas.drawCircle(
+        position,
+        11 + 8 * sweepPulse,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = aircraftColor.withValues(alpha: 0.18 + 0.35 * sweepPulse),
+      );
+    }
     canvas.drawCircle(
       position,
       selected ? 12 : 8,
@@ -159,6 +183,51 @@ class RadarV2Painter extends CustomPainter {
         ..strokeWidth = 1.5
         ..strokeCap = StrokeCap.round
         ..color = const Color(0x6646F5A7),
+    );
+  }
+
+  String _datablockText(AircraftState aircraft) {
+    final callsign = aircraft.callsign.padRight(6).substring(0, 6);
+    final heading = aircraft.headingDeg.round().toString().padLeft(3, '0');
+    final altitude = (aircraft.altitudeFt ~/ 100).toString().padLeft(3, '0');
+    final speed = aircraft.groundSpeedKt.round().toString().padLeft(3, '0');
+    final vertical = aircraft.verticalSpeedFpm > 100
+        ? '↑'
+        : aircraft.verticalSpeedFpm < -100
+            ? '↓'
+            : ' ';
+    return '$callsign HDG→$heading\nA$altitude$vertical  S$speed';
+  }
+
+  void _drawSweep(Canvas canvas, Offset center, double radius) {
+    final end = center.translate(
+      math.sin(sweepAngleRad) * radius,
+      -math.cos(sweepAngleRad) * radius,
+    );
+    canvas.drawLine(
+      center,
+      end,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0x8846F5A7),
+    );
+
+    final wedge = Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: radius),
+        sweepAngleRad - math.pi / 2 - 0.18,
+        0.36,
+        false,
+      )
+      ..close();
+    canvas.drawPath(
+      wedge,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = const Color(0x1246F5A7),
     );
   }
 
@@ -298,9 +367,50 @@ class RadarV2Painter extends CustomPainter {
     return center.translate(xNm * scale, -yNm * scale);
   }
 
+  AircraftState _interpolatedAircraft(AircraftState current) {
+    final previous = previousSnapshot?.aircraftById(current.id);
+    if (previous == null || !previous.active) return current;
+    final t = interpolation.clamp(0, 1).toDouble();
+    return current.copyWith(
+      xNm: _lerp(previous.xNm, current.xNm, t),
+      yNm: _lerp(previous.yNm, current.yNm, t),
+      altitudeFt: _lerp(previous.altitudeFt, current.altitudeFt, t).round(),
+      headingDeg: _lerpAngle(previous.headingDeg, current.headingDeg, t),
+      groundSpeedKt: _lerp(previous.groundSpeedKt, current.groundSpeedKt, t),
+    );
+  }
+
+  double _sweepPulseFor(AircraftState aircraft) {
+    final targetAngle = math.atan2(aircraft.xNm, aircraft.yNm);
+    final delta =
+        (((targetAngle - sweepAngleRad) + math.pi * 3) % (math.pi * 2)) -
+            math.pi;
+    final distance = delta.abs();
+    if (distance > 0.22) return 0;
+    return 1 - distance / 0.22;
+  }
+
+  double _lerp(num a, num b, double t) => a + (b - a) * t;
+
+  double _lerpAngle(double a, double b, double t) {
+    final delta = ((b - a + 540) % 360) - 180;
+    final value = a + delta * t;
+    final normalized = value % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
+  }
+
   @override
   bool shouldRepaint(covariant RadarV2Painter oldDelegate) {
-    return oldDelegate.snapshot != snapshot || oldDelegate.rangeNm != rangeNm;
+    return oldDelegate.snapshot != snapshot ||
+        oldDelegate.previousSnapshot != previousSnapshot ||
+        oldDelegate.interpolation != interpolation ||
+        oldDelegate.rangeNm != rangeNm ||
+        oldDelegate.selectedAircraftId != selectedAircraftId ||
+        oldDelegate.recentlyCommandedAircraftId !=
+            recentlyCommandedAircraftId ||
+        oldDelegate.alertPulse != alertPulse ||
+        oldDelegate.sweepEnabled != sweepEnabled ||
+        oldDelegate.sweepAngleRad != sweepAngleRad;
   }
 }
 
