@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../models/aircraft_performance_profile.dart';
+import '../models/aircraft_urgency.dart';
 import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
 import '../models/departure_flow.dart';
@@ -80,6 +81,19 @@ class ScenarioLoader {
             .map((item) => item.toString())
             .toList(growable: false);
     final isDeparture = json['isDeparture'] == true;
+
+    // Parse urgency fields
+    final urgency = json['urgency'] as Map<String, dynamic>?;
+    final priorityWeight = (urgency?['priorityWeight'] as num?)?.round() ?? 5;
+    final emergencyStateStr = urgency?['emergencyState'] as String? ?? 'normal';
+    final emergencyState = _parseEmergencyState(emergencyStateStr);
+    final fuelMinutesRemaining =
+        (urgency?['fuelMinutesRemaining'] as num?)?.round();
+    final medicalUrgency =
+        (urgency?['medicalUrgency'] as num?)?.round();
+    final unstableApproachSeverity =
+        (urgency?['unstableApproachSeverity'] as num?)?.round();
+
     final initialState = aircraftStateFromSpawn(
       id: id,
       callsign: callsign,
@@ -96,6 +110,11 @@ class ScenarioLoader {
       assignedRunwayId: json['runwayId'] as String?,
       assignedProcedureId: procedureId,
       isDeparture: isDeparture,
+      priorityWeight: priorityWeight,
+      emergencyState: emergencyState,
+      fuelMinutesRemaining: fuelMinutesRemaining,
+      medicalUrgency: medicalUrgency,
+      unstableApproachSeverity: unstableApproachSeverity,
     );
     return AircraftSpawnDefinition(
       id: id,
@@ -271,5 +290,20 @@ class ScenarioLoader {
   Map<String, dynamic> _map(Object? value, String label) {
     if (value is Map<String, dynamic>) return value;
     throw FormatException('Expected object for $label');
+  }
+
+  EmergencyState _parseEmergencyState(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'fuel_critical':
+      case 'fuelcritical':
+        return EmergencyState.fuelCritical;
+      case 'medical':
+        return EmergencyState.medical;
+      case 'unstable_approach':
+      case 'unstableapproach':
+        return EmergencyState.unstableApproach;
+      default:
+        return EmergencyState.normal;
+    }
   }
 }

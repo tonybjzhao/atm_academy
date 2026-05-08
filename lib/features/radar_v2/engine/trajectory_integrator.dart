@@ -19,6 +19,7 @@ class TrajectoryIntegrator {
     int climbRateFpm = defaultClimbRateFpm,
     int descentRateFpm = defaultDescentRateFpm,
     AircraftPerformanceProfile? performance,
+    double pressureIndex = 0,
   }) {
     final effectiveTurnRate =
         performance?.turnRateDegPerSecond ?? turnRateDegPerSecond;
@@ -26,16 +27,22 @@ class TrajectoryIntegrator {
         performance?.accelerationKtPerSecond ?? accelerationKtPerSecond;
     final effectiveClimbRate = performance?.climbRateFpm ?? climbRateFpm;
     final effectiveDescentRate = performance?.descentRateFpm ?? descentRateFpm;
+
+    // Under high pressure, reduce responsiveness (degraded command efficiency)
+    final pressureDegradation = _getResponsivenessDegradation(pressureIndex);
+    final degradedTurnRate = effectiveTurnRate * pressureDegradation;
+    final degradedAcceleration = effectiveAcceleration * pressureDegradation;
+
     final seconds = step.inMicroseconds / Duration.microsecondsPerSecond;
     final nextHeading = _approachAngle(
       aircraft.headingDeg,
       aircraft.intent.assignedHeadingDeg ?? aircraft.headingDeg,
-      effectiveTurnRate * seconds,
+      degradedTurnRate * seconds,
     );
     final nextSpeed = _approachDouble(
       aircraft.groundSpeedKt,
       aircraft.intent.assignedSpeedKt ?? aircraft.groundSpeedKt,
-      effectiveAcceleration * seconds,
+      degradedAcceleration * seconds,
     );
     final nextAltitude = _advanceAltitude(
       aircraft,
@@ -57,6 +64,17 @@ class TrajectoryIntegrator {
       groundSpeedKt: nextSpeed,
       verticalSpeedFpm: nextAltitude.$2,
     );
+  }
+
+  /// Returns a factor by which to multiply responsiveness under pressure.
+  /// At pressure 0–1.0: factor = 1.0 (normal responsiveness)
+  /// At pressure 1.0–2.0: factor = 0.85–0.7 (10–30% reduction)
+  /// At pressure 2.0–3.0: factor = 0.7–0.55 (30–45% reduction)
+  /// At pressure 3.0+: factor = 0.55 (45% reduction)
+  double _getResponsivenessDegradation(double pressureIndex) {
+    if (pressureIndex <= 1.0) return 1.0;
+    final excessPressure = (pressureIndex - 1.0).clamp(0, 2);
+    return 1.0 - (excessPressure * 0.225); // 0 to 0.45 reduction
   }
 
   (int, int) _advanceAltitude(

@@ -1,6 +1,7 @@
 import '../models/aircraft_intent.dart';
 import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
+import '../models/aircraft_urgency.dart';
 import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
 import '../models/departure_flow.dart';
@@ -133,6 +134,11 @@ AircraftState aircraftStateFromSpawn({
   String? assignedRunwayId,
   String? assignedProcedureId,
   bool isDeparture = false,
+  int priorityWeight = 5,
+  EmergencyState emergencyState = EmergencyState.normal,
+  int? fuelMinutesRemaining,
+  int? medicalUrgency,
+  int? unstableApproachSeverity,
 }) {
   return AircraftState(
     id: id,
@@ -151,5 +157,12 @@ AircraftState aircraftStateFromSpawn({
     ),
     routeWaypointIndex: routeWaypointIndex,
     performanceType: performanceType,
+    urgency: AircraftUrgency(
+      priorityWeight: priorityWeight,
+      emergencyState: emergencyState,
+      fuelMinutesRemaining: fuelMinutesRemaining,
+      medicalUrgency: medicalUrgency,
+      unstableApproachSeverity: unstableApproachSeverity,
+    ),
   );
 }

@@ -1,5 +1,6 @@
 import 'aircraft_intent.dart';
 import 'aircraft_performance_profile.dart';
+import 'aircraft_urgency.dart';
 
 class AircraftState {
   final String id;
@@ -17,6 +18,7 @@ class AircraftState {
   final int airborneSeconds;
   final int cumulativeHoldSeconds;
   final int cumulativeVectorSeconds;
+  final AircraftUrgency urgency;
   final bool active;
 
   const AircraftState({
@@ -35,6 +37,7 @@ class AircraftState {
     this.airborneSeconds = 0,
     this.cumulativeHoldSeconds = 0,
     this.cumulativeVectorSeconds = 0,
+    this.urgency = const AircraftUrgency(),
     this.active = true,
   });
 
@@ -54,6 +57,7 @@ class AircraftState {
     int? airborneSeconds,
     int? cumulativeHoldSeconds,
     int? cumulativeVectorSeconds,
+    AircraftUrgency? urgency,
     bool? active,
   }) {
     return AircraftState(
@@ -73,6 +77,7 @@ class AircraftState {
       cumulativeHoldSeconds: cumulativeHoldSeconds ?? this.cumulativeHoldSeconds,
       cumulativeVectorSeconds:
           cumulativeVectorSeconds ?? this.cumulativeVectorSeconds,
+      urgency: urgency ?? this.urgency,
       active: active ?? this.active,
     );
   }

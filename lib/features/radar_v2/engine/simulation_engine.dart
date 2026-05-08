@@ -85,6 +85,7 @@ class SimulationEngine {
           performance: AircraftPerformanceProfile.byType(
             guided.performanceType,
           ),
+          pressureIndex: _sectorPressureIndex,
         );
         if (original.intent.assignedHeadingDeg == null &&
             guided.intent.assignedHeadingDeg != null &&
@@ -136,10 +137,11 @@ class SimulationEngine {
 
   void applyCommand(ControllerCommand command) {
     _aircraftById(command.aircraftId);
+    final effectiveDelay = _getEffectiveAckDelay();
     _pendingCommands.add(
       _PendingCommand(
         command: command,
-        applyAt: _elapsed + commandAcknowledgementDelay,
+        applyAt: _elapsed + effectiveDelay,
       ),
     );
     _events.add(SimulationEvent(
@@ -148,6 +150,18 @@ class SimulationEngine {
       label: _commandIssuedLabel(command),
       aircraftId: command.aircraftId,
     ));
+  }
+
+  /// Calculates effective acknowledgement delay based on current sector pressure.
+  /// Under low pressure (0–1.0): base 3s
+  /// Under moderate pressure (1.0–2.0): 3s → 4.5s
+  /// Under high pressure (2.0–3.0): 4.5s → 6s
+  /// Under extreme pressure (3.0+): 6s+
+  Duration _getEffectiveAckDelay() {
+    final pressureRatio = (_sectorPressureIndex / 3.0).clamp(0, 2);
+    final extraDelaySeconds = pressureRatio * 3.0; // 0 to 6 extra seconds
+    return commandAcknowledgementDelay +
+        Duration(milliseconds: (extraDelaySeconds * 1000).round());
   }
 
   void recordEvent(SimulationEvent event) {
@@ -268,8 +282,14 @@ class SimulationEngine {
 
   SimulationSnapshot _buildSnapshot() {
     final aircraft = List<AircraftState>.unmodifiable(_aircraft);
-    final actual = separationCalculator.calculatePairs(aircraft);
-    final predicted = conflictPredictor.predictPairs(aircraft);
+    final actual = separationCalculator.calculatePairs(
+      aircraft,
+      pressureIndex: _sectorPressureIndex,
+    );
+    final predicted = conflictPredictor.predictPairs(
+      aircraft,
+      pressureIndex: _sectorPressureIndex,
+    );
     return SimulationSnapshot(
       tick: _tick,
       elapsed: _elapsed,
