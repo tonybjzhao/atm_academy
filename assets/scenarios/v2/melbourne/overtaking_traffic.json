@@ -1,0 +1,51 @@
+{
+  "id": "melbourne_overtaking_traffic_001",
+  "title": "Overtaking Traffic",
+  "sectorId": "melbourne_approach",
+  "durationSeconds": 210,
+  "difficulty": 3,
+  "radarRangeNm": 42,
+  "speedOptions": [1, 2, 4],
+  "aircraft": [
+    {
+      "id": "qfa302",
+      "callsign": "QFA302",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": -30, "yNm": -2 },
+      "altitudeFt": 8000,
+      "headingDeg": 90,
+      "groundSpeedKt": 230,
+      "route": ["MLB_WEST", "MLB_FINAL"]
+    },
+    {
+      "id": "jst771",
+      "callsign": "JST771",
+      "spawnAtSeconds": 8,
+      "position": { "xNm": -35, "yNm": -2 },
+      "altitudeFt": 8000,
+      "headingDeg": 90,
+      "groundSpeedKt": 330,
+      "route": ["MLB_WEST", "MLB_FINAL"]
+    },
+    {
+      "id": "vja454",
+      "callsign": "VJA454",
+      "spawnAtSeconds": 25,
+      "position": { "xNm": 12, "yNm": 28 },
+      "altitudeFt": 9000,
+      "headingDeg": 205,
+      "groundSpeedKt": 260,
+      "route": ["MLB_NORTH", "MLB_BASE"]
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "durationReached" },
+    { "type": "allAircraftExitedSafely" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}

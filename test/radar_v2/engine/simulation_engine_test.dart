@@ -42,6 +42,29 @@ void main() {
     expect(first.yNm, second.yNm);
   });
 
+  test('snapshots include bounded aircraft trail history', () {
+    final engine = SimulationEngine(
+      maxTrailPoints: 5,
+      aircraft: [
+        const AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 90,
+          groundSpeedKt: 360,
+        ),
+      ],
+    );
+
+    final snapshot = engine.tick(steps: 10);
+    final trail = snapshot.trailFor('a');
+
+    expect(trail, hasLength(5));
+    expect(trail.last.xNm, closeTo(1, 0.0001));
+  });
+
   test('heading speed and altitude assignments update gradually', () {
     final engine = SimulationEngine(
       aircraft: [

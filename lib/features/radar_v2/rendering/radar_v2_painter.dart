@@ -9,10 +9,16 @@ import '../models/simulation_snapshot.dart';
 class RadarV2Painter extends CustomPainter {
   final SimulationSnapshot snapshot;
   final double rangeNm;
+  final String? selectedAircraftId;
+  final String? recentlyCommandedAircraftId;
+  final bool alertPulse;
 
   const RadarV2Painter({
     required this.snapshot,
     this.rangeNm = 40,
+    this.selectedAircraftId,
+    this.recentlyCommandedAircraftId,
+    this.alertPulse = false,
   });
 
   @override
@@ -38,6 +44,11 @@ class RadarV2Painter extends CustomPainter {
     canvas.drawLine(
         center.translate(0, -radius), center.translate(0, radius), axisPaint);
 
+    for (final aircraft in snapshot.aircraft) {
+      if (!aircraft.active) continue;
+      _drawTrail(canvas, center, scale, aircraft);
+    }
+
     for (final loss
         in snapshot.separation.where((item) => item.isLossOfSeparation)) {
       _drawLoss(canvas, center, scale, loss);
@@ -55,14 +66,18 @@ class RadarV2Painter extends CustomPainter {
         center,
         scale,
         aircraft,
-        inLoss: _isAircraftInLoss(aircraft.id),
+        urgency: _urgencyForAircraft(aircraft.id),
+        selected: selectedAircraftId == aircraft.id,
+        recentlyCommanded: recentlyCommandedAircraftId == aircraft.id,
       );
     }
   }
 
   void _drawAircraft(
       Canvas canvas, Offset center, double scale, AircraftState aircraft,
-      {required bool inLoss}) {
+      {required _ConflictUrgency urgency,
+      required bool selected,
+      required bool recentlyCommanded}) {
     final position = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
     final headingRad = aircraft.headingDeg * math.pi / 180;
     final vectorLength =
@@ -71,8 +86,7 @@ class RadarV2Painter extends CustomPainter {
       math.sin(headingRad) * vectorLength,
       -math.cos(headingRad) * vectorLength,
     );
-    final aircraftColor =
-        inLoss ? const Color(0xFFFF4D4D) : const Color(0xFF46F5A7);
+    final aircraftColor = _colorForUrgency(urgency);
     final targetPaint = Paint()
       ..style = PaintingStyle.fill
       ..color = aircraftColor;
@@ -96,16 +110,80 @@ class RadarV2Painter extends CustomPainter {
     )..layout(maxWidth: 88);
 
     canvas.drawLine(position, vectorEnd, vectorPaint);
+    if (selected || recentlyCommanded) {
+      _drawIntentVector(canvas, position, aircraft, selected ? 54 : 42);
+    }
     canvas.drawCircle(position, 4, targetPaint);
     canvas.drawCircle(
       position,
-      8,
+      selected ? 12 : 8,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
+        ..strokeWidth = selected ? 2 : 1
         ..color = aircraftColor.withValues(alpha: 0.55),
     );
+    if (recentlyCommanded) {
+      canvas.drawCircle(
+        position,
+        17,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = const Color(0xFF62D2FF),
+      );
+    }
     labelPainter.paint(canvas, position.translate(8, -18));
+  }
+
+  void _drawTrail(
+    Canvas canvas,
+    Offset center,
+    double scale,
+    AircraftState aircraft,
+  ) {
+    final points = snapshot.trailFor(aircraft.id);
+    if (points.length < 2) return;
+    final path = Path()
+      ..moveTo(
+        _toCanvas(center, scale, points.first.xNm, points.first.yNm).dx,
+        _toCanvas(center, scale, points.first.xNm, points.first.yNm).dy,
+      );
+    for (final point in points.skip(1)) {
+      final offset = _toCanvas(center, scale, point.xNm, point.yNm);
+      path.lineTo(offset.dx, offset.dy);
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0x6646F5A7),
+    );
+  }
+
+  void _drawIntentVector(
+    Canvas canvas,
+    Offset position,
+    AircraftState aircraft,
+    double length,
+  ) {
+    final assignedHeading = aircraft.intent.assignedHeadingDeg;
+    if (assignedHeading == null) return;
+    final headingRad = assignedHeading * math.pi / 180;
+    final end = position.translate(
+      math.sin(headingRad) * length,
+      -math.cos(headingRad) * length,
+    );
+    canvas.drawLine(
+      position,
+      end,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0xFF62D2FF),
+    );
   }
 
   void _drawLoss(
@@ -145,7 +223,9 @@ class RadarV2Painter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = const Color(0xFFFFD166);
+      ..color = _isUrgent(conflict) && alertPulse
+          ? const Color(0xFFFF4D4D)
+          : const Color(0xFFFFD166);
     canvas.drawCircle(position, 10, paint);
     canvas.drawLine(
         position.translate(-8, -8), position.translate(8, 8), paint);
@@ -180,10 +260,38 @@ class RadarV2Painter extends CustomPainter {
     painter.paint(canvas, position);
   }
 
-  bool _isAircraftInLoss(String aircraftId) {
-    return snapshot.separation.any((result) =>
-        result.isLossOfSeparation &&
-        (result.aircraftAId == aircraftId || result.aircraftBId == aircraftId));
+  _ConflictUrgency _urgencyForAircraft(String aircraftId) {
+    var urgency = _ConflictUrgency.normal;
+    for (final result in snapshot.separation) {
+      final involved =
+          result.aircraftAId == aircraftId || result.aircraftBId == aircraftId;
+      if (!involved) continue;
+      if (result.isLossOfSeparation) return _ConflictUrgency.loss;
+      if (result.isPredictedConflict && _isUrgent(result)) {
+        urgency = _ConflictUrgency.urgent;
+      } else if (result.isPredictedConflict &&
+          urgency == _ConflictUrgency.normal) {
+        urgency = _ConflictUrgency.predicted;
+      }
+    }
+    return urgency;
+  }
+
+  bool _isUrgent(SeparationResult result) {
+    return (result.timeToConflict?.inSeconds ?? 999) <= 60;
+  }
+
+  Color _colorForUrgency(_ConflictUrgency urgency) {
+    switch (urgency) {
+      case _ConflictUrgency.normal:
+        return const Color(0xFF46F5A7);
+      case _ConflictUrgency.predicted:
+        return const Color(0xFFFFD166);
+      case _ConflictUrgency.urgent:
+        return alertPulse ? const Color(0xFFFF4D4D) : const Color(0xFFFFD166);
+      case _ConflictUrgency.loss:
+        return const Color(0xFFFF4D4D);
+    }
   }
 
   Offset _toCanvas(Offset center, double scale, double xNm, double yNm) {
@@ -194,4 +302,11 @@ class RadarV2Painter extends CustomPainter {
   bool shouldRepaint(covariant RadarV2Painter oldDelegate) {
     return oldDelegate.snapshot != snapshot || oldDelegate.rangeNm != rangeNm;
   }
+}
+
+enum _ConflictUrgency {
+  normal,
+  predicted,
+  urgent,
+  loss,
 }

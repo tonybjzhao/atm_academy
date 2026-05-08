@@ -2,6 +2,7 @@ import '../commands/controller_command.dart';
 import '../models/aircraft_state.dart';
 import '../models/separation_result.dart';
 import '../models/simulation_snapshot.dart';
+import '../models/trail_point.dart';
 import 'conflict_predictor.dart';
 import 'separation_calculator.dart';
 import 'trajectory_integrator.dart';
@@ -11,7 +12,10 @@ class SimulationEngine {
   final TrajectoryIntegrator trajectoryIntegrator;
   final SeparationCalculator separationCalculator;
   final ConflictPredictor conflictPredictor;
+  final int maxTrailPoints;
   final List<AircraftState> _aircraft;
+  final Map<String, List<TrailPoint>> _trailHistory =
+      <String, List<TrailPoint>>{};
   int _tick;
   Duration _elapsed;
 
@@ -21,11 +25,16 @@ class SimulationEngine {
     this.trajectoryIntegrator = const TrajectoryIntegrator(),
     this.separationCalculator = const SeparationCalculator(),
     this.conflictPredictor = const ConflictPredictor(),
+    this.maxTrailPoints = 28,
     int initialTick = 0,
     Duration initialElapsed = Duration.zero,
   })  : _aircraft = List<AircraftState>.from(aircraft, growable: true),
         _tick = initialTick,
-        _elapsed = initialElapsed;
+        _elapsed = initialElapsed {
+    for (final aircraft in _aircraft) {
+      _recordTrailPoint(aircraft);
+    }
+  }
 
   SimulationSnapshot get snapshot => _buildSnapshot();
 
@@ -36,6 +45,7 @@ class SimulationEngine {
         if (!_aircraft[index].active) continue;
         _aircraft[index] =
             trajectoryIntegrator.advance(_aircraft[index], fixedStep);
+        _recordTrailPoint(_aircraft[index]);
       }
       _tick += 1;
       _elapsed += fixedStep;
@@ -48,6 +58,7 @@ class SimulationEngine {
       throw ArgumentError('Duplicate aircraft id: ${aircraft.id}');
     }
     _aircraft.add(aircraft);
+    _recordTrailPoint(aircraft);
   }
 
   void updateAircraft(AircraftState aircraft) {
@@ -57,6 +68,7 @@ class SimulationEngine {
       throw ArgumentError('Unknown aircraft id: ${aircraft.id}');
     }
     _aircraft[index] = aircraft;
+    _recordTrailPoint(aircraft);
   }
 
   void deactivateAircraft(String aircraftId) {
@@ -120,6 +132,28 @@ class SimulationEngine {
       aircraft: aircraft,
       separation:
           List<SeparationResult>.unmodifiable([...actual, ...predicted]),
+      trails: Map<String, List<TrailPoint>>.unmodifiable(
+        _trailHistory.map(
+          (id, points) => MapEntry(id, List<TrailPoint>.unmodifiable(points)),
+        ),
+      ),
     );
+  }
+
+  void _recordTrailPoint(AircraftState aircraft) {
+    if (!aircraft.active) return;
+    final points = _trailHistory.putIfAbsent(aircraft.id, () => <TrailPoint>[]);
+    if (points.isNotEmpty) {
+      final last = points.last;
+      if (last.xNm == aircraft.xNm && last.yNm == aircraft.yNm) return;
+    }
+    points.add(TrailPoint(
+      xNm: aircraft.xNm,
+      yNm: aircraft.yNm,
+      elapsed: _elapsed,
+    ));
+    if (points.length > maxTrailPoints) {
+      points.removeRange(0, points.length - maxTrailPoints);
+    }
   }
 }
