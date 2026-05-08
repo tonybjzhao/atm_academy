@@ -7,7 +7,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../services/workload_audio_controller.dart';
 import 'commands/controller_command.dart';
+import 'core/alerts/operational_alert.dart';
 import 'core/cognitive_load/cognitive_load_level.dart';
 import 'models/aircraft_state.dart';
 import 'models/simulation_event.dart';
@@ -37,6 +39,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   SimulationSnapshot? _snapshot;
   final List<SimulationSnapshot> _replayHistory = <SimulationSnapshot>[];
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
+  final WorkloadAudioController _audioController = WorkloadAudioController();
   Ticker? _ticker;
   Duration? _lastFrameTime;
   double _simulationAccumulatorSeconds = 0;
@@ -153,7 +156,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         ..add(_snapshot!);
       _replayCursor = _replayHistory.length - 1;
       _scoreTracker.observe(_snapshot!);
-      _simulationAccumulatorSeconds = 0;
+      _scoreTracker.observeWorkload(_snapshot!);
       _renderInterpolation = 0;
     });
   }
@@ -180,6 +183,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     _reviewingReplay = false;
     _recordReplaySnapshot(_snapshot!);
     _scoreTracker.observe(_snapshot!);
+    _scoreTracker.observeWorkload(_snapshot!);
+    _audioController.tick(_snapshot!.cognitiveLoad.currentLevel);
     _playConflictCue(_snapshot!);
     final scenarioState = runtime.evaluate();
     if (scenarioState.complete && !_resultShown) {
@@ -230,7 +235,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final snapshot = _snapshot;
     if (runtime == null || snapshot == null) return;
     runtime.engine.applyCommand(command);
-    runtime.recordCommandTimestamp(snapshot.elapsed);
+    runtime.recordCommandTimestamp(snapshot.elapsed, aircraftId: command.aircraftId);
     _scoreTracker.recordCommand(command, snapshot);
     _commandHighlightTimer?.cancel();
     setState(() {
@@ -546,6 +551,26 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                         child: const SizedBox.expand(),
                                       ),
                                     ),
+                                    // Overload pulse border effect
+                                    _OverloadPulseEffect(
+                                      snapshot: snapshot,
+                                      alertPulse: _alertPulse,
+                                    ),
+                                    // Alert stack panel (left side)
+                                    Positioned(
+                                      top: 8,
+                                      left: 8,
+                                      bottom: 8,
+                                      width: 180,
+                                      child: _AlertStackPanel(
+                                        snapshot: snapshot,
+                                        onAcknowledge: (id) {
+                                          _runtime?.alertManager.acknowledge(id);
+                                          setState(() {});
+                                        },
+                                      ),
+                                    ),
+                                    // Workload overlay (top right)
                                     Positioned(
                                       top: 8,
                                       right: 8,
@@ -607,6 +632,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   void dispose() {
     _ticker?.dispose();
     _commandHighlightTimer?.cancel();
+    _audioController.dispose();
     super.dispose();
   }
 }
@@ -2202,4 +2228,292 @@ class _WorkloadOverlay extends StatelessWidget {
         'medium' => const Color(0xFFFFEB3B),
         _ => const Color(0xFF9E9E9E),
       };
+}
+
+// ── Overload Response System UI ───────────────────────────────────────────────
+
+/// Animated border pulse that intensifies with workload level.
+/// Renders a coloured border overlay on the radar view — no layout disruption.
+class _OverloadPulseEffect extends StatefulWidget {
+  const _OverloadPulseEffect({
+    required this.snapshot,
+    required this.alertPulse,
+  });
+
+  final SimulationSnapshot snapshot;
+  final bool alertPulse;
+
+  @override
+  State<_OverloadPulseEffect> createState() => _OverloadPulseEffectState();
+}
+
+class _OverloadPulseEffectState extends State<_OverloadPulseEffect>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final level = widget.snapshot.cognitiveLoad.currentLevel;
+    if (level == CognitiveLoadLevel.calm) return const SizedBox.shrink();
+
+    final (color, maxOpacity, speed) = switch (level) {
+      CognitiveLoadLevel.busy => (
+          const Color(0xFFFFEB3B),
+          0.12,
+          900,
+        ),
+      CognitiveLoadLevel.overloaded => (
+          const Color(0xFFFF9800),
+          0.22,
+          600,
+        ),
+      CognitiveLoadLevel.saturated => (
+          const Color(0xFFF44336),
+          0.38,
+          350,
+        ),
+      _ => (const Color(0xFFFFEB3B), 0.0, 900),
+    };
+
+    if (_controller.duration?.inMilliseconds != speed) {
+      _controller.duration = Duration(milliseconds: speed);
+    }
+
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (context, _) {
+          final opacity = maxOpacity * _pulse.value;
+          return Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: color.withOpacity(opacity + 0.1),
+                width: 3,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Scrollable panel showing all active operational alerts with priority badges
+/// and escalation countdown timers. Sits to the left of the radar view.
+class _AlertStackPanel extends StatelessWidget {
+  const _AlertStackPanel({
+    required this.snapshot,
+    required this.onAcknowledge,
+  });
+
+  final SimulationSnapshot snapshot;
+  final ValueChanged<String> onAcknowledge;
+
+  @override
+  Widget build(BuildContext context) {
+    final alerts = snapshot.operationalAlerts;
+    if (alerts.isEmpty) return const SizedBox.shrink();
+
+    return IgnorePointer(
+      ignoring: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.72),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(6)),
+              border: Border.all(color: const Color(0x33FFFFFF)),
+            ),
+            child: Row(
+              children: [
+                const Text(
+                  'ALERTS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: alerts.any((a) =>
+                                a.priority.name == 'critical' && !a.acknowledged)
+                            ? const Color(0xFFF44336).withOpacity(0.3)
+                            : Colors.transparent,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(
+                    '${alerts.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Alert list (max 6 visible)
+          ...alerts.take(6).map(
+                (alert) => _AlertRow(
+                  alert: alert,
+                  elapsed: snapshot.elapsed,
+                  onAcknowledge: () => onAcknowledge(alert.id),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlertRow extends StatelessWidget {
+  const _AlertRow({
+    required this.alert,
+    required this.elapsed,
+    required this.onAcknowledge,
+  });
+
+  final OperationalAlert alert;
+  final Duration elapsed;
+  final VoidCallback onAcknowledge;
+
+  static Color _priorityColor(String p) => switch (p) {
+        'critical' => const Color(0xFFF44336),
+        'high' => const Color(0xFFFF9800),
+        'medium' => const Color(0xFFFFEB3B),
+        _ => const Color(0xFF9E9E9E),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _priorityColor(alert.priority.name);
+    final age = elapsed - alert.createdAt;
+    final ageStr = age.inSeconds < 60
+        ? '${age.inSeconds}s'
+        : '${age.inMinutes}m';
+
+    // Escalation countdown: show time to expiry if set
+    String? countdownStr;
+    if (alert.expiresAt != null) {
+      final remaining = alert.expiresAt! - elapsed;
+      if (remaining.isNegative) {
+        countdownStr = 'EXP';
+      } else {
+        countdownStr = remaining.inSeconds < 60
+            ? '${remaining.inSeconds}s'
+            : '${remaining.inMinutes}m';
+      }
+    }
+
+    return GestureDetector(
+      onTap: alert.acknowledged ? null : onAcknowledge,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(alert.acknowledged ? 0.45 : 0.72),
+          border: Border(
+            left: BorderSide(color: color, width: 3),
+            bottom: const BorderSide(color: Color(0x1AFFFFFF)),
+            right: const BorderSide(color: Color(0x22FFFFFF)),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    alert.type.replaceAll('_', ' ').toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: alert.acknowledged
+                          ? Colors.white.withOpacity(0.45)
+                          : Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        alert.priority.label,
+                        style: TextStyle(
+                          color: color.withOpacity(
+                              alert.acknowledged ? 0.4 : 1.0),
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '  +$ageStr',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.35),
+                          fontSize: 8,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (countdownStr != null) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: color.withOpacity(0.5)),
+                ),
+                child: Text(
+                  countdownStr,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+            if (!alert.acknowledged) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.check, color: color.withOpacity(0.6), size: 11),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }

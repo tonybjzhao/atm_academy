@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import '../commands/controller_command.dart';
+import '../core/alerts/alert_priority.dart';
+import '../core/cognitive_load/cognitive_load_level.dart';
 import '../models/simulation_snapshot.dart';
 
 class RadarV2ScoreSnapshot {
@@ -16,6 +18,11 @@ class RadarV2ScoreSnapshot {
   final int lastDelta;
   final String? lastReason;
   final List<String> penalties;
+  // Workload-aware scoring additions
+  final Duration totalOverloadDuration;
+  final int commandBurstCount;
+  final int ignoredCriticalAlertCount;
+  final int proactiveStabilizationBonus;
 
   const RadarV2ScoreSnapshot({
     required this.score,
@@ -30,6 +37,10 @@ class RadarV2ScoreSnapshot {
     required this.lastDelta,
     required this.lastReason,
     required this.penalties,
+    this.totalOverloadDuration = Duration.zero,
+    this.commandBurstCount = 0,
+    this.ignoredCriticalAlertCount = 0,
+    this.proactiveStabilizationBonus = 0,
   });
 
   String get grade {
@@ -72,6 +83,18 @@ class RadarV2ScoreTracker {
   int _lastDelta = 0;
   String? _lastReason;
   final List<String> _penalties = <String>[];
+  // Workload-aware scoring state
+  Duration _totalOverloadDuration = Duration.zero;
+  Duration? _overloadEnteredAt;
+  int _commandBurstCount = 0;
+  int _ignoredCriticalAlertCount = 0;
+  int _proactiveStabilizationBonus = 0;
+  final Set<String> _commandBurstBuckets = <String>{};
+  final Set<String> _acknowledgedCriticalKeys = <String>{};
+  final List<Duration> _recentCommandTimestampsScore = [];
+  CognitiveLoadLevel _lastLoadLevel = CognitiveLoadLevel.calm;
+  // Proactive stabilization: consecutive calm-load ticks after busy entry
+  int _calmTicksAfterBusy = 0;
 
   RadarV2ScoreSnapshot get snapshot => RadarV2ScoreSnapshot(
         score: _score.clamp(0, 100),
@@ -87,6 +110,10 @@ class RadarV2ScoreTracker {
         lastDelta: _lastDelta,
         lastReason: _lastReason,
         penalties: List<String>.unmodifiable(_penalties),
+        totalOverloadDuration: _totalOverloadDuration,
+        commandBurstCount: _commandBurstCount,
+        ignoredCriticalAlertCount: _ignoredCriticalAlertCount,
+        proactiveStabilizationBonus: _proactiveStabilizationBonus,
       );
 
   /// Calculates controller anticipation score (0–100).
@@ -102,6 +129,7 @@ class RadarV2ScoreTracker {
 
   void recordCommand(ControllerCommand command, SimulationSnapshot snapshot) {
     _commandCount += 1;
+    _recentCommandTimestampsScore.add(snapshot.elapsed);
 
     // Apply distraction efficiency penalty to command scoring
     final commandEfficiencyMultiplier =
@@ -455,6 +483,88 @@ class RadarV2ScoreTracker {
     }
   }
 
+
+  /// Observes workload state each tick for workload-aware scoring.
+  ///
+  /// Call after [observe] with the latest snapshot's cognitive load level and
+  /// operational alerts.
+  void observeWorkload(SimulationSnapshot snapshot) {
+    final level = snapshot.cognitiveLoad.currentLevel;
+
+    // ── Overload duration tracking ────────────────────────────────────────
+    final isOverloaded = level == CognitiveLoadLevel.overloaded ||
+        level == CognitiveLoadLevel.saturated;
+    if (isOverloaded) {
+      _overloadEnteredAt ??= snapshot.elapsed;
+    } else if (_overloadEnteredAt != null) {
+      _totalOverloadDuration += snapshot.elapsed - _overloadEnteredAt!;
+      _overloadEnteredAt = null;
+      // Apply penalty: 2pts per 10 s of overload
+      final penaltySeconds = _totalOverloadDuration.inSeconds;
+      final bucket = penaltySeconds ~/ 10;
+      final key = 'overload_duration:$bucket';
+      if (_commandBurstBuckets.add(key)) {
+        _penalize(2, 'Sustained overload');
+      }
+    }
+
+    // Saturation is extra punishing
+    if (level == CognitiveLoadLevel.saturated) {
+      final satKey = 'saturated:${snapshot.elapsed.inSeconds ~/ 5}';
+      if (_commandBurstBuckets.add(satKey)) {
+        _penalize(3, 'Saturation: cascading risk');
+      }
+    }
+
+    // ── Proactive stabilization bonus ─────────────────────────────────────
+    // Reward returning to calm from busy within a short window
+    if (_lastLoadLevel == CognitiveLoadLevel.busy &&
+        level == CognitiveLoadLevel.calm) {
+      _calmTicksAfterBusy += 1;
+      if (_calmTicksAfterBusy == 5) {
+        // ~5 ticks of calm = proactive stabilization
+        _proactiveStabilizationBonus += 1;
+        _reward(3, 'Proactive workload stabilization');
+      }
+    } else if (level != CognitiveLoadLevel.calm) {
+      _calmTicksAfterBusy = 0;
+    }
+    _lastLoadLevel = level;
+
+    // ── Command burst detection ───────────────────────────────────────────
+    _recentCommandTimestampsScore
+        .removeWhere((t) => snapshot.elapsed - t > const Duration(seconds: 15));
+    if (_recentCommandTimestampsScore.length >= 4) {
+      final burstKey =
+          'burst:${snapshot.elapsed.inSeconds ~/ 15}';
+      if (_commandBurstBuckets.add(burstKey)) {
+        _commandBurstCount += 1;
+        _penalize(4, 'Command burst (reactive intervention)');
+      }
+    }
+
+    // ── Ignored critical alerts ───────────────────────────────────────────
+    for (final alert in snapshot.operationalAlerts) {
+      if (alert.priority != AlertPriority.critical) continue;
+      final age = snapshot.elapsed - alert.createdAt;
+      if (!alert.acknowledged && age >= const Duration(seconds: 20)) {
+        if (_acknowledgedCriticalKeys.add(alert.id)) {
+          _ignoredCriticalAlertCount += 1;
+          _penalize(6, 'Critical alert ignored >20s');
+        }
+      }
+    }
+  }
+
+  void _reward(int points, String reason) {
+    _score += points;
+    _lastDelta = points;
+    _lastReason = reason;
+    _penalties.add('+$points $reason');
+    if (_penalties.length > 5) {
+      _penalties.removeAt(0);
+    }
+  }
 
   void _penalize(int points, String reason) {
     _score -= points;

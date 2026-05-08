@@ -5,6 +5,11 @@ import '../core/alerts/alert_priority.dart';
 import '../core/alerts/operational_alert.dart';
 import '../core/cognitive_load/cognitive_load_engine.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
+import '../core/pressure/attention_competition_engine.dart';
+import '../core/pressure/tunnel_vision_engine.dart';
+import '../core/pressure/workload_degradation.dart';
+import '../core/replay/cognition_analytics.dart';
+import '../core/replay/replay_workload_frame.dart';
 import '../engine/simulation_engine.dart';
 import '../models/aircraft_state.dart';
 import '../models/arrival_flow.dart';
@@ -38,6 +43,13 @@ class ScenarioRuntime {
   // Decision Pressure Engine V1
   final CognitiveLoadEngine _cognitiveLoadEngine = CognitiveLoadEngine();
   final AlertManager _alertManager = AlertManager();
+  // Overload Response System
+  final AttentionCompetitionEngine _attentionEngine = AttentionCompetitionEngine();
+  final TunnelVisionEngine _tunnelVisionEngine = TunnelVisionEngine();
+  final CognitionAnalyticsTracker _analyticsTracker = CognitionAnalyticsTracker();
+  WorkloadDegradation _currentDegradation = WorkloadDegradation.none;
+  AttentionCompetitionResult _lastAttentionResult = AttentionCompetitionResult.idle;
+  TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
   // Rolling command timestamps for recent-command-density tracking
   final List<Duration> _recentCommandTimestamps = [];
   int _totalGoAroundCount = 0;
@@ -111,6 +123,29 @@ class ScenarioRuntime {
     // Sync alert manager: expire stale alerts, then sync from legacy alerts
     _alertManager.tick(baseSnapshot.elapsed);
     _syncOperationalAlerts(baseSnapshot);
+
+    // Overload Response System — run each tick
+    _currentDegradation = WorkloadDegradation.fromLoadScore(cognitiveLoad.totalLoadScore);
+    _lastAttentionResult = _attentionEngine.evaluate(
+      activeAlerts: _alertManager.activeAlerts,
+      recentCommandCount: _recentCommandTimestamps.length,
+    );
+    _lastTunnelVisionState = _tunnelVisionEngine.tick(baseSnapshot.elapsed);
+
+    // Feed analytics tracker
+    _analyticsTracker.recordTick(ReplayWorkloadFrame(
+      elapsed: baseSnapshot.elapsed,
+      workloadScore: cognitiveLoad.totalLoadScore,
+      loadLevel: cognitiveLoad.currentLevel,
+      activeAlerts: _alertManager.activeAlerts,
+      activeStressors: cognitiveLoad.activeStressors,
+    ));
+    _analyticsTracker.recordFixationState(
+      fixatedObjectId: _lastTunnelVisionState.fixatedObjectId,
+      elapsed: baseSnapshot.elapsed,
+      detectionLatencySeconds: _lastTunnelVisionState.detectionLatencySeconds,
+      ignoredAlertDuration: _lastTunnelVisionState.ignoredAlertDuration,
+    );
 
     return SimulationSnapshot(
       tick: baseSnapshot.tick,
@@ -215,12 +250,39 @@ class ScenarioRuntime {
   /// Records a command timestamp for recent-command-density tracking.
   /// Call this when the controller issues a command so the cognitive load
   /// engine can detect command bursts.
-  void recordCommandTimestamp(Duration elapsed) {
+  void recordCommandTimestamp(Duration elapsed, {
+    String? aircraftId,
+    String? runwayId,
+  }) {
     _recentCommandTimestamps.add(elapsed);
+    _analyticsTracker.recordCommand(
+      elapsed: elapsed,
+      aircraftId: aircraftId ?? '',
+    );
+    if (aircraftId != null) {
+      _tunnelVisionEngine.recordInteraction(
+        aircraftId: aircraftId,
+        runwayId: runwayId,
+        elapsed: elapsed,
+      );
+    }
   }
 
   /// Exposes the [AlertManager] for acknowledgements from the UI layer.
   AlertManager get alertManager => _alertManager;
+
+  /// Current workload degradation parameters driven by cognitive load.
+  WorkloadDegradation get currentDegradation => _currentDegradation;
+
+  /// Last attention competition evaluation result.
+  AttentionCompetitionResult get lastAttentionResult => _lastAttentionResult;
+
+  /// Last tunnel-vision state snapshot.
+  TunnelVisionState get lastTunnelVisionState => _lastTunnelVisionState;
+
+  /// Generates the full cognition analytics report for the completed scenario.
+  CognitionAnalyticsReport generateCognitionReport() =>
+      _analyticsTracker.generateReport(engine.snapshot.elapsed);
 
   /// Returns the current sector pressure index (0–5 scale).
   double get currentSectorPressure => _currentSectorPressure;
