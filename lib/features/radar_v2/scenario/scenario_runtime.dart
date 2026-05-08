@@ -23,6 +23,11 @@ class ScenarioRuntime {
   final Set<String> _alertsEscalatedThisTick = <String>{};
   final Map<String, Duration> _activeDistractionUntil = <String, Duration>{};
   final Set<String> _distractionsProcessedThisTick = <String>{};
+  // Dynamic pacing: tracks spawn holds and their deadlines
+  final Map<String, Duration> _spawnHeldUntil = <String, Duration>{};
+  double _currentSectorPressure = 0;
+  static const double _spawnHoldPressureThreshold = 2.5;
+  static const Duration _maxSpawnHoldDuration = Duration(seconds: 25);
   int _separationLossCount = 0;
   double _pressureCarryOver = 0;
 
@@ -110,6 +115,35 @@ class ScenarioRuntime {
     );
   }
 
+  /// Returns the number of aircraft currently held from spawning due to high pressure.
+  int get heldSpawnCount => _spawnHeldUntil.length;
+
+  /// Returns the current sector pressure index (0–5 scale).
+  double get currentSectorPressure => _currentSectorPressure;
+
+  /// Returns upcoming spawn times within the next [lookAheadSeconds], sorted ascending.
+  /// Useful for UI to show imminent traffic load forecast.
+  List<Duration> upcomingSpawnTimes({
+    Duration? fromElapsed,
+    int lookAheadSeconds = 120,
+  }) {
+    final elapsed = fromElapsed ?? engine.snapshot.elapsed;
+    final horizon = elapsed + Duration(seconds: lookAheadSeconds);
+    final results = <Duration>[];
+    for (final spawn in definition.aircraft) {
+      if (_spawnedIds.contains(spawn.id)) continue;
+      final scaledSpawnAt = Duration(
+        milliseconds:
+            (spawn.spawnAt.inMilliseconds / definition.densityScale).round(),
+      );
+      if (scaledSpawnAt >= elapsed && scaledSpawnAt <= horizon) {
+        results.add(scaledSpawnAt);
+      }
+    }
+    results.sort();
+    return results;
+  }
+
   ScenarioResultState evaluate() {
     final snapshot = engine.snapshot;
     final reasons = <String>[];
@@ -172,26 +206,47 @@ class ScenarioRuntime {
       _spawnedIds.isNotEmpty && _spawnedIds.every(_exitedIds.contains);
 
   void _spawnDueAircraft(Duration elapsed) {
+    // Release any hold expirations first
+    _spawnHeldUntil.removeWhere((_, deadline) => elapsed >= deadline);
+    
     for (final spawn in definition.aircraft) {
       if (_spawnedIds.contains(spawn.id)) continue;
       final scaledSpawnAt = Duration(
         milliseconds:
             (spawn.spawnAt.inMilliseconds / definition.densityScale).round(),
       );
-      if (scaledSpawnAt <= elapsed) {
-        if (spawn.isDeparture) {
-          _queuedDepartures[spawn.id] = spawn;
-          _spawnedIds.add(spawn.id);
-          engine.recordEvent(SimulationEvent(
-            elapsed: elapsed,
-            type: 'departureQueued',
-            label: '${spawn.callsign} queued for departure',
-            aircraftId: spawn.id,
-          ));
+      if (scaledSpawnAt > elapsed) continue;
+      
+      // Apply dynamic pacing hold if pressure is too high
+      if (_spawnHeldUntil.containsKey(spawn.id)) {
+        // Still held - skip this tick
+        continue;
+      }
+      
+      // Check if this is a fresh spawn during high pressure
+      if (_currentSectorPressure >= _spawnHoldPressureThreshold) {
+        // Hold spawning if deadline hasn't passed yet
+        final deadline = scaledSpawnAt + _maxSpawnHoldDuration;
+        if (elapsed < deadline) {
+          _spawnHeldUntil[spawn.id] = deadline;
           continue;
         }
-        _spawnAndActivate(spawn, elapsed, releasedAsDeparture: false);
+        // Deadline passed - spawn regardless of pressure
+        _spawnHeldUntil.remove(spawn.id);
       }
+      
+      if (spawn.isDeparture) {
+        _queuedDepartures[spawn.id] = spawn;
+        _spawnedIds.add(spawn.id);
+        engine.recordEvent(SimulationEvent(
+          elapsed: elapsed,
+          type: 'departureQueued',
+          label: '${spawn.callsign} queued for departure',
+          aircraftId: spawn.id,
+        ));
+        continue;
+      }
+      _spawnAndActivate(spawn, elapsed, releasedAsDeparture: false);
     }
   }
 
@@ -462,6 +517,7 @@ class ScenarioRuntime {
     pressure *= definition.workloadPressureMultiplier;
     pressure = pressure.clamp(0, 5.0);
     _pressureCarryOver = (_pressureCarryOver * 0.92).clamp(0, 2.0);
+    _currentSectorPressure = pressure;
 
     final dynamicLoad =
         (definition.maxControllerLoad - pressure.round()).clamp(3, 9);
