@@ -81,6 +81,7 @@ class ReplayWorkloadTimeline {
   /// Average workload score across all frames, or 0.0 if empty.
   double get averageWorkloadScore {
     if (_frames.isEmpty) return 0;
-    return _frames.fold(0.0, (sum, f) => sum + f.workloadScore) / _frames.length;
+    return _frames.fold(0.0, (sum, f) => sum + f.workloadScore) /
+        _frames.length;
   }
 }

@@ -37,10 +37,10 @@ class ScenarioLoader {
       objectives: _optionalStringList(json['objectives']),
       expectedTechniques: _optionalStringList(json['expectedTechniques']),
       waypoints: _parseWaypoints(json['waypoints']),
-        routeProcedures: _parseRouteProcedures(json['routeProcedures']),
+      routeProcedures: _parseRouteProcedures(json['routeProcedures']),
       weatherZones: _parseWeatherZones(json['weatherZones']),
       arrivalFlows: _parseArrivalFlows(json['arrivalFlows']),
-        departureFlows: _parseDepartureFlows(json['departureFlows']),
+      departureFlows: _parseDepartureFlows(json['departureFlows']),
       holdPatterns: _parseHoldPatterns(json['holdPatterns']),
       altitudeRestrictions:
           _parseAltitudeRestrictions(json['altitudeRestrictions']),
@@ -48,14 +48,14 @@ class ScenarioLoader {
       runwayOccupancyDuration: Duration(
         seconds: (json['runwayOccupancySeconds'] as num?)?.round() ?? 45,
       ),
-        weatherMode: (json['weatherMode'] as String?) ?? 'normal',
-        lowVisibilitySpacingMultiplier:
+      weatherMode: (json['weatherMode'] as String?) ?? 'normal',
+      lowVisibilitySpacingMultiplier:
           (json['lowVisibilitySpacingMultiplier'] as num?)?.toDouble() ?? 1,
-        lowVisibilityRunwayOccupancyMultiplier:
+      lowVisibilityRunwayOccupancyMultiplier:
           (json['lowVisibilityRunwayOccupancyMultiplier'] as num?)
-              ?.toDouble() ??
-            1,
-        workloadPressureMultiplier:
+                  ?.toDouble() ??
+              1,
+      workloadPressureMultiplier:
           (json['workloadPressureMultiplier'] as num?)?.toDouble() ?? 1,
       densityScale: (json['densityScale'] as num?)?.toDouble() ?? 1,
       speedOptions: _intList(json['speedOptions']),
@@ -68,7 +68,8 @@ class ScenarioLoader {
       failConditions: _list(json['failConditions'])
           .map((item) => _parseCondition(_map(item, 'fail condition')))
           .toList(growable: false),
-      attentionManagementEvents: _parseAttentionEvents(json['attentionManagementEvents']),
+      attentionManagementEvents:
+          _parseAttentionEvents(json['attentionManagementEvents']),
     );
   }
 
@@ -91,8 +92,7 @@ class ScenarioLoader {
     final emergencyState = _parseEmergencyState(emergencyStateStr);
     final fuelMinutesRemaining =
         (urgency?['fuelMinutesRemaining'] as num?)?.round();
-    final medicalUrgency =
-        (urgency?['medicalUrgency'] as num?)?.round();
+    final medicalUrgency = (urgency?['medicalUrgency'] as num?)?.round();
     final unstableApproachSeverity =
         (urgency?['unstableApproachSeverity'] as num?)?.round();
 

@@ -76,7 +76,6 @@ class RadarV2ScoreTracker {
   int _earlyResolutionCount = 0;
   int _proactiveSequencingCount = 0;
   int _stabilizedFinalsCount = 0;
-  double _totalDistractionEfficiencyPenalty = 1.0;
   int _score = 100;
   int _commandCount = 0;
   int _altitudeCommandCount = 0;
@@ -91,6 +90,7 @@ class RadarV2ScoreTracker {
   int _proactiveStabilizationBonus = 0;
   final Set<String> _commandBurstBuckets = <String>{};
   final Set<String> _acknowledgedCriticalKeys = <String>{};
+  final Set<String> _ignoredAttentionKeys = <String>{};
   final List<Duration> _recentCommandTimestampsScore = [];
   CognitiveLoadLevel _lastLoadLevel = CognitiveLoadLevel.calm;
   // Proactive stabilization: consecutive calm-load ticks after busy entry
@@ -161,17 +161,16 @@ class RadarV2ScoreTracker {
     _ticksObserved += 1;
     var spacingStableThisTick = true;
     var weatherIncursionThisTick = false;
-    
+
     // Track distraction effects on controller performance
     if (snapshot.activeDistractions.isNotEmpty) {
-      _totalDistractionEfficiencyPenalty *= snapshot.distractionEfficiencyPenalty;
       for (final distractionId in snapshot.activeDistractions) {
         if (_distractionPenaltyKeys.add(distractionId)) {
           _penalize(1, 'Distraction event');
         }
       }
     }
-    
+
     for (final result in snapshot.separation) {
       final key = _pairKey(result.aircraftAId, result.aircraftBId);
       if (result.isLossOfSeparation && _separationLossKeys.add(key)) {
@@ -319,7 +318,8 @@ class RadarV2ScoreTracker {
       if (aircraft.intent.isDeparture) continue;
       final runwayId = aircraft.intent.assignedRunwayId;
       if (runwayId == null) continue;
-      final flow = snapshot.arrivalFlows.where((item) => item.runwayId == runwayId);
+      final flow =
+          snapshot.arrivalFlows.where((item) => item.runwayId == runwayId);
       if (flow.isEmpty) continue;
       final threshold = snapshot.waypoints[flow.first.thresholdWaypointId];
       if (threshold == null) continue;
@@ -355,34 +355,35 @@ class RadarV2ScoreTracker {
 
   void _observeAnticipation(SimulationSnapshot snapshot) {
     // Track early vs late conflict resolutions
-    for (final result in snapshot.separation.where((r) => r.isPredictedConflict)) {
+    for (final result
+        in snapshot.separation.where((r) => r.isPredictedConflict)) {
       final key = _pairKey(result.aircraftAId, result.aircraftBId);
-      
+
       // Mark as first seen if not already
       _conflictFirstSeen.putIfAbsent(key, () => snapshot.elapsed);
-      
+
       // Check if conflict was resolved (no longer predicted)
       if (_conflictWasResolved[key] != true) {
         final timeToConflict = result.timeToConflict?.inSeconds ?? 999;
-        
+
         // Early resolution: >30s warning time (bonus)
         if (timeToConflict > 30 && _earlyResolutionBonusKeys.add(key)) {
           _earlyResolutionCount += 1;
         }
       }
     }
-    
+
     // Check for conflicts that no longer exist (were resolved)
     final currentConflictKeys = snapshot.separation
         .where((r) => r.isPredictedConflict)
         .map((r) => _pairKey(r.aircraftAId, r.aircraftBId))
         .toSet();
-    
+
     for (final previousKey in _conflictFirstSeen.keys) {
-      if (!currentConflictKeys.contains(previousKey) && 
+      if (!currentConflictKeys.contains(previousKey) &&
           _conflictWasResolved[previousKey] != true) {
         _conflictWasResolved[previousKey] = true;
-        
+
         // Check if it was resolved late (less than 5s warning)
         final wasLateResolution = _lateConflictKeys.contains(previousKey);
         if (wasLateResolution && _lateResolutionPenaltyKeys.add(previousKey)) {
@@ -390,7 +391,7 @@ class RadarV2ScoreTracker {
         }
       }
     }
-    
+
     // Track stabilized finals (≥8NM on final at proper speed/altitude)
     for (final flow in snapshot.arrivalFlows) {
       final arrivals = snapshot.aircraft
@@ -399,26 +400,32 @@ class RadarV2ScoreTracker {
               !aircraft.intent.isDeparture &&
               aircraft.intent.assignedRunwayId == flow.runwayId)
           .toList(growable: false);
-      
+
       for (final aircraft in arrivals) {
         final threshold = snapshot.waypoints[flow.thresholdWaypointId];
         if (threshold == null) continue;
-        
+
         final distance = _distance(
           aircraft.xNm,
           aircraft.yNm,
           threshold.xNm,
           threshold.yNm,
         );
-        
+
         // On approach, ≥8NM distance, at target speed ±15kt, at target alt ±500ft
         final isStabilized = distance >= 8 &&
             distance <= 25 &&
-            (aircraft.groundSpeedKt - 
-              (aircraft.intent.assignedSpeedKt ?? aircraft.groundSpeedKt)).abs() <= 15 &&
-            (aircraft.altitudeFt - 
-              (aircraft.intent.assignedAltitudeFt ?? aircraft.altitudeFt)).abs() <= 500;
-        
+            (aircraft.groundSpeedKt -
+                        (aircraft.intent.assignedSpeedKt ??
+                            aircraft.groundSpeedKt))
+                    .abs() <=
+                15 &&
+            (aircraft.altitudeFt -
+                        (aircraft.intent.assignedAltitudeFt ??
+                            aircraft.altitudeFt))
+                    .abs() <=
+                500;
+
         if (isStabilized) {
           final key = '${flow.runwayId}:${aircraft.id}';
           if (_stabilizedFinalKeys.add(key)) {
@@ -427,7 +434,7 @@ class RadarV2ScoreTracker {
         }
       }
     }
-    
+
     // Track proactive sequencing (aircraft on short final in correct order)
     for (final flow in snapshot.arrivalFlows) {
       final arrivals = snapshot.aircraft
@@ -437,43 +444,57 @@ class RadarV2ScoreTracker {
               aircraft.intent.assignedRunwayId == flow.runwayId)
           .toList(growable: false);
       if (arrivals.length < 2) continue;
-      
+
       final finalFix = snapshot.waypoints[flow.finalFixWaypointId];
       final threshold = snapshot.waypoints[flow.thresholdWaypointId];
       if (finalFix == null || threshold == null) continue;
-      
+
       arrivals.sort((a, b) {
         final aDistance = _distanceToThresholdAlongFinal(
-          a.xNm, a.yNm, finalFix.xNm, finalFix.yNm, 
-          threshold.xNm, threshold.yNm,
+          a.xNm,
+          a.yNm,
+          finalFix.xNm,
+          finalFix.yNm,
+          threshold.xNm,
+          threshold.yNm,
         );
         final bDistance = _distanceToThresholdAlongFinal(
-          b.xNm, b.yNm, finalFix.xNm, finalFix.yNm,
-          threshold.xNm, threshold.yNm,
+          b.xNm,
+          b.yNm,
+          finalFix.xNm,
+          finalFix.yNm,
+          threshold.xNm,
+          threshold.yNm,
         );
         return aDistance.compareTo(bDistance);
       });
-      
+
       // Check if sequence is maintained with proper spacing
       var sequencedCount = 0;
       for (var i = 0; i < arrivals.length - 1; i++) {
         final leading = arrivals[i];
         final trailing = arrivals[i + 1];
         final distance = _distance(
-          leading.xNm, leading.yNm, trailing.xNm, trailing.yNm,
+          leading.xNm,
+          leading.yNm,
+          trailing.xNm,
+          trailing.yNm,
         );
-        
+
         // Short final: within 10NM of threshold with proper spacing
         final leadingToThreshold = _distance(
-          leading.xNm, leading.yNm, threshold.xNm, threshold.yNm,
+          leading.xNm,
+          leading.yNm,
+          threshold.xNm,
+          threshold.yNm,
         );
-        
-        if (leadingToThreshold < 10 && 
-            distance >= flow.spacingTargetNm * 0.7) {  // 70% of target = good sequencing
+
+        if (leadingToThreshold < 10 && distance >= flow.spacingTargetNm * 0.7) {
+          // 70% of target = good sequencing
           sequencedCount += 1;
         }
       }
-      
+
       if (sequencedCount > 0) {
         final key = '${flow.id}:sequence:${snapshot.elapsed.inSeconds ~/ 10}';
         if (_sequencingBonusKeys.add(key)) {
@@ -482,7 +503,6 @@ class RadarV2ScoreTracker {
       }
     }
   }
-
 
   /// Observes workload state each tick for workload-aware scoring.
   ///
@@ -535,8 +555,7 @@ class RadarV2ScoreTracker {
     _recentCommandTimestampsScore
         .removeWhere((t) => snapshot.elapsed - t > const Duration(seconds: 15));
     if (_recentCommandTimestampsScore.length >= 4) {
-      final burstKey =
-          'burst:${snapshot.elapsed.inSeconds ~/ 15}';
+      final burstKey = 'burst:${snapshot.elapsed.inSeconds ~/ 15}';
       if (_commandBurstBuckets.add(burstKey)) {
         _commandBurstCount += 1;
         _penalize(4, 'Command burst (reactive intervention)');
@@ -552,6 +571,16 @@ class RadarV2ScoreTracker {
           _ignoredCriticalAlertCount += 1;
           _penalize(6, 'Critical alert ignored >20s');
         }
+      }
+    }
+    for (final alert in snapshot.attentionFocus.ignoredAlerts) {
+      if (!alert.isCritical) continue;
+      if (alert.ignoredFor < const Duration(seconds: 20)) continue;
+      final key =
+          'attention:${alert.alertId}:${alert.ignoredFor.inSeconds ~/ 20}';
+      if (_ignoredAttentionKeys.add(key)) {
+        _ignoredCriticalAlertCount += 1;
+        _penalize(4, 'Ignored critical attention cue');
       }
     }
   }

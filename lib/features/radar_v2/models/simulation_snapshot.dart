@@ -9,6 +9,7 @@ import 'simulation_event.dart';
 import 'trail_point.dart';
 import 'weather_zone.dart';
 import 'waypoint.dart';
+import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/alerts/operational_alert.dart';
 
@@ -33,6 +34,8 @@ class SimulationSnapshot {
   // Decision Pressure Engine V1 fields
   final CognitiveLoadState cognitiveLoad;
   final List<OperationalAlert> operationalAlerts;
+  final AttentionFocusState attentionFocus;
+  final List<String> attentionReportLines;
 
   const SimulationSnapshot({
     required this.tick,
@@ -54,6 +57,8 @@ class SimulationSnapshot {
     this.distractionEfficiencyPenalty = 1.0,
     this.cognitiveLoad = CognitiveLoadState.idle,
     this.operationalAlerts = const [],
+    this.attentionFocus = AttentionFocusState.idle,
+    this.attentionReportLines = const [],
   });
 
   AircraftState? aircraftById(String id) {

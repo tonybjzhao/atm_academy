@@ -74,7 +74,8 @@ class AircraftState {
       performanceType: performanceType ?? this.performanceType,
       holdElapsedSeconds: holdElapsedSeconds ?? this.holdElapsedSeconds,
       airborneSeconds: airborneSeconds ?? this.airborneSeconds,
-      cumulativeHoldSeconds: cumulativeHoldSeconds ?? this.cumulativeHoldSeconds,
+      cumulativeHoldSeconds:
+          cumulativeHoldSeconds ?? this.cumulativeHoldSeconds,
       cumulativeVectorSeconds:
           cumulativeVectorSeconds ?? this.cumulativeVectorSeconds,
       urgency: urgency ?? this.urgency,

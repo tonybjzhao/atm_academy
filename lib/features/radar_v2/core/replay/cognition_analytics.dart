@@ -148,7 +148,6 @@ class CognitionAnalyticsTracker {
   final List<FixationPeriod> _fixationPeriods = [];
   String? _currentFixationId;
   Duration? _currentFixationStart;
-  Duration? _currentFixationIgnoredAlertStart;
   double _currentFixationMaxLatency = 0;
 
   CognitionAnalyticsTracker({ReplayWorkloadTimeline? timeline})
@@ -171,8 +170,7 @@ class CognitionAnalyticsTracker {
     _commands.add((elapsed: elapsed, aircraftId: aircraftId));
     // Mark any related alert as responded to
     for (final entry in _alertLifecycles.values) {
-      if (!entry.responded &&
-          entry.relatedAircraftIds.contains(aircraftId)) {
+      if (!entry.responded && entry.relatedAircraftIds.contains(aircraftId)) {
         entry.respondedAt = elapsed;
         entry.responded = true;
       }
@@ -388,8 +386,8 @@ class CognitionAnalyticsTracker {
 
     final longestOverload = overloadPeriods.isEmpty
         ? null
-        : overloadPeriods.reduce((a, b) =>
-            (a.end - a.start) > (b.end - b.start) ? a : b);
+        : overloadPeriods
+            .reduce((a, b) => (a.end - a.start) > (b.end - b.start) ? a : b);
 
     if (longestOverload != null &&
         (longestOverload.end - longestOverload.start).inSeconds >= 20) {
@@ -399,9 +397,8 @@ class CognitionAnalyticsTracker {
       );
     }
 
-    final criticalIgnored = ignored
-        .where((i) => i.priority == AlertPriority.critical)
-        .toList();
+    final criticalIgnored =
+        ignored.where((i) => i.priority == AlertPriority.critical).toList();
     if (criticalIgnored.isNotEmpty) {
       collapseAt ??= criticalIgnored.first.firedAt;
       factors.add(

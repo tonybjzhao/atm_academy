@@ -60,8 +60,8 @@ class SimulationEngine {
     this.maxControllerLoad = 6,
     int initialTick = 0,
     Duration initialElapsed = Duration.zero,
-    })  : _aircraft = List<AircraftState>.from(aircraft, growable: true),
-      _dynamicControllerLoad = maxControllerLoad,
+  })  : _aircraft = List<AircraftState>.from(aircraft, growable: true),
+        _dynamicControllerLoad = maxControllerLoad,
         _tick = initialTick,
         _elapsed = initialElapsed {
     for (final aircraft in _aircraft) {

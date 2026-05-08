@@ -55,11 +55,13 @@ void main() {
 
     test('forLevel maps levels to expected presets', () {
       expect(
-        WorkloadDegradation.forLevel(CognitiveLoadLevel.calm).pilotAckDelayFactor,
+        WorkloadDegradation.forLevel(CognitiveLoadLevel.calm)
+            .pilotAckDelayFactor,
         closeTo(1.0, 0.01),
       );
       expect(
-        WorkloadDegradation.forLevel(CognitiveLoadLevel.saturated).alertEscalationBias,
+        WorkloadDegradation.forLevel(CognitiveLoadLevel.saturated)
+            .alertEscalationBias,
         greaterThan(0.2),
       );
     });

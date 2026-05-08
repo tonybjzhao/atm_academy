@@ -244,10 +244,6 @@ class RadarV2Painter extends CustomPainter {
   }
 
   void _drawArrivalFlows(Canvas canvas, Offset center, double scale) {
-    final funnelPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = const Color(0x6655D6BE);
     final boundaryPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
@@ -275,7 +271,8 @@ class RadarV2Painter extends CustomPainter {
                 ? const Color(0xFF62D2FF)
                 : const Color(0x6655D6BE));
       canvas.drawLine(finalPoint, thresholdPoint, centerlinePaint);
-      _drawCenterlineExtension(canvas, finalPoint, thresholdPoint, centerlinePaint);
+      _drawCenterlineExtension(
+          canvas, finalPoint, thresholdPoint, centerlinePaint);
 
       final dx = thresholdPoint.dx - finalPoint.dx;
       final dy = thresholdPoint.dy - finalPoint.dy;
@@ -305,9 +302,7 @@ class RadarV2Painter extends CustomPainter {
         thresholdPoint.translate(8, -10),
         _runwayLabel(flow.runwayId),
         occupied
-            ? (alertPulse
-                ? const Color(0xFFFF4D4D)
-                : const Color(0xFFFFD166))
+            ? (alertPulse ? const Color(0xFFFF4D4D) : const Color(0xFFFFD166))
             : const Color(0xFF55D6BE),
       );
     }
@@ -381,7 +376,8 @@ class RadarV2Painter extends CustomPainter {
     }
   }
 
-  bool _crossingConflictRisk(String departureRunwayId, String crossingRunwayId) {
+  bool _crossingConflictRisk(
+      String departureRunwayId, String crossingRunwayId) {
     final departureOccupied = _runwayOccupied(departureRunwayId);
     final crossingOccupied = _runwayOccupied(crossingRunwayId);
     if (departureOccupied && crossingOccupied) return true;
@@ -395,7 +391,8 @@ class RadarV2Painter extends CustomPainter {
       if (threshold != null) {
         final shortFinalArrival = snapshot.aircraft.any((aircraft) {
           if (!aircraft.active || aircraft.intent.isDeparture) return false;
-          if (aircraft.intent.assignedRunwayId != crossingRunwayId) return false;
+          if (aircraft.intent.assignedRunwayId != crossingRunwayId)
+            return false;
           final dx = aircraft.xNm - threshold.xNm;
           final dy = aircraft.yNm - threshold.yNm;
           return dx * dx + dy * dy < 7 * 7;

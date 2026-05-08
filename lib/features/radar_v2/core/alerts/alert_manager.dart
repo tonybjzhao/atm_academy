@@ -40,8 +40,8 @@ class AlertManager {
       _alerts.values.where((a) => a.priority == AlertPriority.critical).length;
 
   /// Whether any critical alert is currently unacknowledged.
-  bool get hasCriticalUnacknowledged => _alerts.values.any(
-      (a) => a.priority == AlertPriority.critical && !a.acknowledged);
+  bool get hasCriticalUnacknowledged => _alerts.values
+      .any((a) => a.priority == AlertPriority.critical && !a.acknowledged);
 
   /// Registers a new alert. Replaces any existing alert with the same id.
   void register(OperationalAlert alert) {
@@ -71,8 +71,8 @@ class AlertManager {
       _alerts.removeWhere((_, a) => a.type == type);
 
   /// Removes all alerts related to a specific aircraft.
-  void dismissForAircraft(String aircraftId) => _alerts.removeWhere(
-      (_, a) => a.relatedAircraftIds.contains(aircraftId));
+  void dismissForAircraft(String aircraftId) =>
+      _alerts.removeWhere((_, a) => a.relatedAircraftIds.contains(aircraftId));
 
   /// Advances the alert clock: removes all expired alerts.
   /// Should be called once per simulation tick.
@@ -81,8 +81,8 @@ class AlertManager {
   }
 
   /// Returns true if any active alert involves the given aircraft.
-  bool hasAlertForAircraft(String aircraftId) => _alerts.values
-      .any((a) => a.relatedAircraftIds.contains(aircraftId));
+  bool hasAlertForAircraft(String aircraftId) =>
+      _alerts.values.any((a) => a.relatedAircraftIds.contains(aircraftId));
 
   /// Clears all alerts (e.g., on scenario reset).
   void reset() => _alerts.clear();

@@ -53,8 +53,10 @@ class ControllerAlert {
     priority += severity; // 1–10 points for severity
     if (timeToLoss != null) {
       final seconds = timeToLoss!.inSeconds;
-      if (seconds < 30) priority += 50; // Imminent
-      else if (seconds < 60) priority += 30; // Soon
+      if (seconds < 30)
+        priority += 50; // Imminent
+      else if (seconds < 60)
+        priority += 30; // Soon
       else if (seconds < 120) priority += 15; // Moderate urgency
     }
     if (!acknowledged) priority += 10; // Unacknowledged adds urgency

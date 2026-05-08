@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:atm_flutter/features/radar_v2/commands/controller_command.dart';
-import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
 import 'package:atm_flutter/features/radar_v2/models/attention_management_event.dart';
 import 'package:atm_flutter/features/radar_v2/models/controller_alert.dart';
 import 'package:atm_flutter/features/radar_v2/models/simulation_snapshot.dart';
@@ -77,7 +76,8 @@ void main() {
         severity: 9,
         createdAt: Duration.zero,
       );
-      expect(medical.effectivePriority, greaterThan(distraction.effectivePriority));
+      expect(medical.effectivePriority,
+          greaterThan(distraction.effectivePriority));
     });
   });
 
@@ -108,7 +108,8 @@ void main() {
 
     test('no distraction at session start gives penalty of 1.0', () {
       final runtime = ScenarioRuntime(definition: def);
-      expect(runtime.getDistractionEfficiencyPenalty(Duration.zero), equals(1.0));
+      expect(
+          runtime.getDistractionEfficiencyPenalty(Duration.zero), equals(1.0));
     });
 
     test('active distraction reduces efficiency to 0.8', () {
@@ -280,8 +281,7 @@ void main() {
       // Alert got a response so should not be unaddressed
       expect(report.unaddressedAlerts, isZero);
       // Reaction latency should be around 8 seconds
-      expect(report.averageReactionLatencySeconds,
-          closeTo(8.0, 2.0));
+      expect(report.averageReactionLatencySeconds, closeTo(8.0, 2.0));
     });
 
     test('composite score is lower when alerts are ignored', () {
@@ -329,8 +329,8 @@ void main() {
       final reportWith = withResponse.generateReport();
       final reportWithout = withoutResponse.generateReport();
 
-      expect(reportWith.compositeScore,
-          greaterThan(reportWithout.compositeScore));
+      expect(
+          reportWith.compositeScore, greaterThan(reportWithout.compositeScore));
     });
   });
 }

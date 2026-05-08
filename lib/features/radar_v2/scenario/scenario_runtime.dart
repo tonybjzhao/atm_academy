@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import '../core/alerts/alert_manager.dart';
 import '../core/alerts/alert_priority.dart';
 import '../core/alerts/operational_alert.dart';
+import '../core/attention/attention_competition_engine.dart' as attention_v1;
+import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_engine.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
-import '../core/pressure/attention_competition_engine.dart';
+import '../core/pressure/attention_competition_engine.dart' as pressure;
 import '../core/pressure/tunnel_vision_engine.dart';
 import '../core/pressure/workload_degradation.dart';
 import '../core/replay/cognition_analytics.dart';
@@ -29,7 +31,8 @@ class ScenarioRuntime {
   final Map<String, Duration> _lastDepartureReleaseByRunway =
       <String, Duration>{};
   final Set<String> _goAroundIssued = <String>{};
-  final Map<String, ControllerAlert> _activeAlerts = <String, ControllerAlert>{};
+  final Map<String, ControllerAlert> _activeAlerts =
+      <String, ControllerAlert>{};
   final Set<String> _alertsEscalatedThisTick = <String>{};
   final Map<String, Duration> _activeDistractionUntil = <String, Duration>{};
   final Set<String> _distractionsProcessedThisTick = <String>{};
@@ -44,11 +47,21 @@ class ScenarioRuntime {
   final CognitiveLoadEngine _cognitiveLoadEngine = CognitiveLoadEngine();
   final AlertManager _alertManager = AlertManager();
   // Overload Response System
-  final AttentionCompetitionEngine _attentionEngine = AttentionCompetitionEngine();
+  final pressure.AttentionCompetitionEngine _attentionEngine =
+      pressure.AttentionCompetitionEngine();
   final TunnelVisionEngine _tunnelVisionEngine = TunnelVisionEngine();
-  final CognitionAnalyticsTracker _analyticsTracker = CognitionAnalyticsTracker();
+  final attention_v1.AttentionCompetitionEngine _attentionV1Engine =
+      attention_v1.AttentionCompetitionEngine();
+  final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
+  String? _selectedAircraftIdForAttention;
+  String? _selectedRunwayIdForAttention;
+  String? _selectedAlertIdForAttention;
+  final CognitionAnalyticsTracker _analyticsTracker =
+      CognitionAnalyticsTracker();
   WorkloadDegradation _currentDegradation = WorkloadDegradation.none;
-  AttentionCompetitionResult _lastAttentionResult = AttentionCompetitionResult.idle;
+  pressure.AttentionCompetitionResult _lastAttentionResult =
+      pressure.AttentionCompetitionResult.idle;
+  AttentionFocusState _lastAttentionFocusState = AttentionFocusState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
   // Rolling command timestamps for recent-command-density tracking
   final List<Duration> _recentCommandTimestamps = [];
@@ -125,12 +138,28 @@ class ScenarioRuntime {
     _syncOperationalAlerts(baseSnapshot);
 
     // Overload Response System — run each tick
-    _currentDegradation = WorkloadDegradation.fromLoadScore(cognitiveLoad.totalLoadScore);
+    _currentDegradation =
+        WorkloadDegradation.fromLoadScore(cognitiveLoad.totalLoadScore);
     _lastAttentionResult = _attentionEngine.evaluate(
       activeAlerts: _alertManager.activeAlerts,
       recentCommandCount: _recentCommandTimestamps.length,
     );
     _lastTunnelVisionState = _tunnelVisionEngine.tick(baseSnapshot.elapsed);
+    _lastAttentionFocusState = _attentionV1Engine.evaluate(
+      snapshot: baseSnapshot,
+      selectedAircraftId: _selectedAircraftIdForAttention,
+      selectedRunwayId: _selectedRunwayIdForAttention,
+      selectedAlertId: _selectedAlertIdForAttention,
+      cognitiveLoad: cognitiveLoad,
+      operationalAlerts: _alertManager.activeAlerts,
+    );
+    _attentionHistory.add(_lastAttentionFocusState);
+    if (_attentionHistory.length > 240) {
+      _attentionHistory.removeAt(0);
+    }
+    final attentionReport =
+        attention_v1.AttentionReplayAnalytics(states: _attentionHistory)
+            .generate();
 
     // Feed analytics tracker
     _analyticsTracker.recordTick(ReplayWorkloadFrame(
@@ -164,9 +193,15 @@ class ScenarioRuntime {
       events: baseSnapshot.events,
       activeAlerts: List<ControllerAlert>.from(_activeAlerts.values),
       activeDistractions: Set<String>.from(_activeDistractionUntil.keys),
-      distractionEfficiencyPenalty: getDistractionEfficiencyPenalty(baseSnapshot.elapsed),
+      distractionEfficiencyPenalty:
+          getDistractionEfficiencyPenalty(baseSnapshot.elapsed),
       cognitiveLoad: cognitiveLoad,
       operationalAlerts: _alertManager.activeAlerts,
+      attentionFocus: _lastAttentionFocusState,
+      attentionReportLines: [
+        ..._lastAttentionFocusState.reportLines,
+        ...attentionReport.reportLines,
+      ].take(5).toList(growable: false),
     );
   }
 
@@ -179,8 +214,8 @@ class ScenarioRuntime {
     final occupiedRunways = snapshot.runwayStates
         .where((r) => r.isOccupiedAt(snapshot.elapsed))
         .length;
-    final weatherSeverity = snapshot.weatherZones
-        .fold<int>(0, (sum, z) => sum + z.severity);
+    final weatherSeverity =
+        snapshot.weatherZones.fold<int>(0, (sum, z) => sum + z.severity);
     final escalationCount =
         _activeAlerts.values.fold<int>(0, (sum, a) => sum + a.escalationCount);
 
@@ -192,7 +227,8 @@ class ScenarioRuntime {
 
     final inputs = CognitiveLoadInputs(
       unresolvedConflicts: unresolvedConflicts,
-      simultaneousAlerts: _activeAlerts.length + _alertManager.activeAlerts.length,
+      simultaneousAlerts:
+          _activeAlerts.length + _alertManager.activeAlerts.length,
       activeAircraftCount: activeAircraft,
       departureQueueSize: _queuedDepartures.length,
       occupiedRunwayCount: occupiedRunways,
@@ -224,7 +260,8 @@ class ScenarioRuntime {
 
     // Dismiss manager entries whose legacy counterpart no longer exists
     final legacyIds = _activeAlerts.keys.map((k) => 'legacy:$k').toSet();
-    for (final alert in List<OperationalAlert>.from(_alertManager.activeAlerts)) {
+    for (final alert
+        in List<OperationalAlert>.from(_alertManager.activeAlerts)) {
       if (alert.id.startsWith('legacy:') && !legacyIds.contains(alert.id)) {
         _alertManager.dismiss(alert.id);
       }
@@ -238,7 +275,8 @@ class ScenarioRuntime {
         AlertType.unstableApproach => OperationalAlertType.unstableSpacing,
         AlertType.weatherEscalation => OperationalAlertType.weatherEscalation,
         AlertType.runwayOccupancy => OperationalAlertType.runwayOccupancy,
-        AlertType.departureQueueBacklog => OperationalAlertType.departureQueueSaturation,
+        AlertType.departureQueueBacklog =>
+          OperationalAlertType.departureQueueSaturation,
         AlertType.lowFuelWarning => OperationalAlertType.lowFuel,
         AlertType.medicalEmergency => OperationalAlertType.medicalEmergency,
         AlertType.distractionEvent => OperationalAlertType.runwayChange,
@@ -250,7 +288,8 @@ class ScenarioRuntime {
   /// Records a command timestamp for recent-command-density tracking.
   /// Call this when the controller issues a command so the cognitive load
   /// engine can detect command bursts.
-  void recordCommandTimestamp(Duration elapsed, {
+  void recordCommandTimestamp(
+    Duration elapsed, {
     String? aircraftId,
     String? runwayId,
   }) {
@@ -275,7 +314,9 @@ class ScenarioRuntime {
   WorkloadDegradation get currentDegradation => _currentDegradation;
 
   /// Last attention competition evaluation result.
-  AttentionCompetitionResult get lastAttentionResult => _lastAttentionResult;
+  pressure.AttentionCompetitionResult get lastAttentionResult =>
+      _lastAttentionResult;
+  AttentionFocusState get lastAttentionFocusState => _lastAttentionFocusState;
 
   /// Last tunnel-vision state snapshot.
   TunnelVisionState get lastTunnelVisionState => _lastTunnelVisionState;
@@ -283,6 +324,20 @@ class ScenarioRuntime {
   /// Generates the full cognition analytics report for the completed scenario.
   CognitionAnalyticsReport generateCognitionReport() =>
       _analyticsTracker.generateReport(engine.snapshot.elapsed);
+
+  attention_v1.AttentionReplaySummary generateAttentionReport() =>
+      attention_v1.AttentionReplayAnalytics(states: _attentionHistory)
+          .generate();
+
+  void updateAttentionFocus({
+    String? selectedAircraftId,
+    String? selectedRunwayId,
+    String? selectedAlertId,
+  }) {
+    _selectedAircraftIdForAttention = selectedAircraftId;
+    _selectedRunwayIdForAttention = selectedRunwayId;
+    _selectedAlertIdForAttention = selectedAlertId;
+  }
 
   /// Returns the current sector pressure index (0–5 scale).
   double get currentSectorPressure => _currentSectorPressure;
@@ -374,7 +429,7 @@ class ScenarioRuntime {
   void _spawnDueAircraft(Duration elapsed) {
     // Release any hold expirations first
     _spawnHeldUntil.removeWhere((_, deadline) => elapsed >= deadline);
-    
+
     for (final spawn in definition.aircraft) {
       if (_spawnedIds.contains(spawn.id)) continue;
       final scaledSpawnAt = Duration(
@@ -382,13 +437,13 @@ class ScenarioRuntime {
             (spawn.spawnAt.inMilliseconds / definition.densityScale).round(),
       );
       if (scaledSpawnAt > elapsed) continue;
-      
+
       // Apply dynamic pacing hold if pressure is too high
       if (_spawnHeldUntil.containsKey(spawn.id)) {
         // Still held - skip this tick
         continue;
       }
-      
+
       // Check if this is a fresh spawn during high pressure
       if (_currentSectorPressure >= _spawnHoldPressureThreshold) {
         // Hold spawning if deadline hasn't passed yet
@@ -400,7 +455,7 @@ class ScenarioRuntime {
         // Deadline passed - spawn regardless of pressure
         _spawnHeldUntil.remove(spawn.id);
       }
-      
+
       if (spawn.isDeparture) {
         _queuedDepartures[spawn.id] = spawn;
         _spawnedIds.add(spawn.id);
@@ -486,7 +541,8 @@ class ScenarioRuntime {
     }
     final lastRelease = _lastDepartureReleaseByRunway[flow.runwayId];
     if (lastRelease != null &&
-        elapsed - lastRelease < Duration(seconds: flow.releaseIntervalSeconds)) {
+        elapsed - lastRelease <
+            Duration(seconds: flow.releaseIntervalSeconds)) {
       return false;
     }
     return !_arrivalOnShortFinal(flow.runwayId);
@@ -580,13 +636,12 @@ class ScenarioRuntime {
           candidate.intent.assignedRunwayId == flow.runwayId;
     }).toList(growable: false);
     sameRunway.sort((a, b) {
-      final ad =
-          _distance(a.xNm, a.yNm, threshold.xNm, threshold.yNm);
-      final bd =
-          _distance(b.xNm, b.yNm, threshold.xNm, threshold.yNm);
+      final ad = _distance(a.xNm, a.yNm, threshold.xNm, threshold.yNm);
+      final bd = _distance(b.xNm, b.yNm, threshold.xNm, threshold.yNm);
       return ad.compareTo(bd);
     });
-    final index = sameRunway.indexWhere((candidate) => candidate.id == aircraft.id);
+    final index =
+        sameRunway.indexWhere((candidate) => candidate.id == aircraft.id);
     if (index <= 0) return false;
     final leader = sameRunway[index - 1];
     final spacing =
@@ -630,15 +685,17 @@ class ScenarioRuntime {
 
   void _executeGoAround(
     AircraftState aircraft,
-    ArrivalFlow flow,
-    {
+    ArrivalFlow flow, {
     required String reason,
     required Duration elapsed,
-  }
-  ) {
+  }) {
     final goAroundRoute = flow.goAroundRouteWaypointIds.isNotEmpty
         ? flow.goAroundRouteWaypointIds
-        : <String>[flow.mergeWaypointId, flow.finalFixWaypointId, flow.thresholdWaypointId];
+        : <String>[
+            flow.mergeWaypointId,
+            flow.finalFixWaypointId,
+            flow.thresholdWaypointId
+          ];
     final targetAltitude = flow.stabilizedAltitudeFt + 3000;
     final updated = aircraft.copyWith(
       routeWaypointIndex: 0,
@@ -820,18 +877,20 @@ class ScenarioRuntime {
   void _evaluateDistractionEvents(Duration elapsed) {
     // Clear processed tracking from previous tick
     _distractionsProcessedThisTick.clear();
-    
+
     // Fire any new attention management events due at this elapsed time
     for (final event in definition.attentionManagementEvents) {
       if (_distractionsProcessedThisTick.contains(event.id)) continue;
-      if (elapsed < event.scheduledAt || elapsed >= event.scheduledAt + const Duration(seconds: 1)) {
+      if (elapsed < event.scheduledAt ||
+          elapsed >= event.scheduledAt + const Duration(seconds: 1)) {
         continue;
       }
-      
+
       switch (event.type) {
         case 'distraction':
           final durationSecs = (event.duration?.inSeconds ?? 30);
-          _activeDistractionUntil[event.id] = elapsed + Duration(seconds: durationSecs);
+          _activeDistractionUntil[event.id] =
+              elapsed + Duration(seconds: durationSecs);
           _distractionsProcessedThisTick.add(event.id);
 
         case 'medical_emergency':
@@ -875,22 +934,26 @@ class ScenarioRuntime {
           _distractionsProcessedThisTick.add(event.id);
       }
     }
-    
+
     // Expire old distractions
-    _activeDistractionUntil.removeWhere((_, expiryTime) => elapsed >= expiryTime);
+    _activeDistractionUntil
+        .removeWhere((_, expiryTime) => elapsed >= expiryTime);
   }
 
   /// Checks if a distraction is currently active that impacts controller performance.
-  bool hasActiveDistraction(Duration elapsed) => _activeDistractionUntil.isNotEmpty &&
+  bool hasActiveDistraction(Duration elapsed) =>
+      _activeDistractionUntil.isNotEmpty &&
       _activeDistractionUntil.values.any((expiry) => elapsed < expiry);
 
   /// Returns penalty multiplier applied to controller efficiency during active distractions.
   /// Values < 1.0 reduce efficiency; values > 1.0 (not used here) would increase it.
   double getDistractionEfficiencyPenalty(Duration elapsed) {
     if (!hasActiveDistraction(elapsed)) return 1.0;
-    
+
     // Multiple active distractions compound the penalty (non-linearly)
-    final activeCount = _activeDistractionUntil.values.where((expiry) => elapsed < expiry).length;
+    final activeCount = _activeDistractionUntil.values
+        .where((expiry) => elapsed < expiry)
+        .length;
     if (activeCount == 0) return 1.0;
     if (activeCount == 1) return 0.8; // 20% efficiency loss
     if (activeCount == 2) return 0.6; // 40% efficiency loss
@@ -976,8 +1039,8 @@ class ScenarioRuntime {
 
     // Generate departure queue backlog alerts
     if (_queuedDepartures.isNotEmpty) {
-      final oldestQueued = _queuedDepartures.values.reduce((a, b) =>
-          a.spawnAt.compareTo(b.spawnAt) < 0 ? a : b);
+      final oldestQueued = _queuedDepartures.values
+          .reduce((a, b) => a.spawnAt.compareTo(b.spawnAt) < 0 ? a : b);
       final queueAge = snapshot.elapsed - oldestQueued.spawnAt;
       if (queueAge.inSeconds > 30) {
         const key = 'departure_queue:backlog';

@@ -31,18 +31,21 @@ void main() {
     });
 
     test('register adds an alert', () {
-      manager.register(_makeAlert(id: 'a1', type: OperationalAlertType.separationLoss));
+      manager.register(
+          _makeAlert(id: 'a1', type: OperationalAlertType.separationLoss));
       expect(manager.activeAlerts.length, 1);
     });
 
     test('dismiss removes alert by id', () {
-      manager.register(_makeAlert(id: 'a1', type: OperationalAlertType.separationLoss));
+      manager.register(
+          _makeAlert(id: 'a1', type: OperationalAlertType.separationLoss));
       manager.dismiss('a1');
       expect(manager.activeAlerts, isEmpty);
     });
 
     test('acknowledge sets acknowledged flag', () {
-      manager.register(_makeAlert(id: 'a1', type: OperationalAlertType.goAround));
+      manager
+          .register(_makeAlert(id: 'a1', type: OperationalAlertType.goAround));
       manager.acknowledge('a1');
       expect(manager.activeAlerts.first.acknowledged, isTrue);
     });
@@ -76,17 +79,23 @@ void main() {
     });
 
     test('dismissByType removes all alerts of that type', () {
-      manager.register(_makeAlert(id: '1', type: OperationalAlertType.goAround));
-      manager.register(_makeAlert(id: '2', type: OperationalAlertType.goAround));
-      manager.register(_makeAlert(id: '3', type: OperationalAlertType.separationLoss));
+      manager
+          .register(_makeAlert(id: '1', type: OperationalAlertType.goAround));
+      manager
+          .register(_makeAlert(id: '2', type: OperationalAlertType.goAround));
+      manager.register(
+          _makeAlert(id: '3', type: OperationalAlertType.separationLoss));
       manager.dismissByType(OperationalAlertType.goAround);
       expect(manager.activeAlerts.length, 1);
-      expect(manager.activeAlerts.first.type, OperationalAlertType.separationLoss);
+      expect(
+          manager.activeAlerts.first.type, OperationalAlertType.separationLoss);
     });
 
     test('reset clears all alerts', () {
-      manager.register(_makeAlert(id: 'r1', type: OperationalAlertType.separationLoss));
-      manager.register(_makeAlert(id: 'r2', type: OperationalAlertType.goAround));
+      manager.register(
+          _makeAlert(id: 'r1', type: OperationalAlertType.separationLoss));
+      manager
+          .register(_makeAlert(id: 'r2', type: OperationalAlertType.goAround));
       manager.reset();
       expect(manager.activeAlerts, isEmpty);
     });
@@ -99,11 +108,13 @@ void main() {
 
     test('critical alert ranks before medium', () {
       manager.register(_makeAlert(
-        id: 'med', type: OperationalAlertType.runwayOccupancy,
+        id: 'med',
+        type: OperationalAlertType.runwayOccupancy,
         priority: AlertPriority.medium,
       ));
       manager.register(_makeAlert(
-        id: 'crit', type: OperationalAlertType.separationLoss,
+        id: 'crit',
+        type: OperationalAlertType.separationLoss,
         priority: AlertPriority.critical,
       ));
       expect(manager.activeAlerts.first.id, 'crit');
@@ -111,13 +122,15 @@ void main() {
 
     test('topAlerts returns at most N alerts', () {
       for (var i = 0; i < 5; i++) {
-        manager.register(_makeAlert(id: 'a$i', type: OperationalAlertType.goAround));
+        manager.register(
+            _makeAlert(id: 'a$i', type: OperationalAlertType.goAround));
       }
       expect(manager.topAlerts(3).length, 3);
     });
 
     test('topAlerts returns all when fewer than N', () {
-      manager.register(_makeAlert(id: 'x1', type: OperationalAlertType.goAround));
+      manager
+          .register(_makeAlert(id: 'x1', type: OperationalAlertType.goAround));
       expect(manager.topAlerts(5).length, 1);
     });
   });
@@ -129,8 +142,10 @@ void main() {
 
     test('single critical alert contributes positive workload', () {
       manager.register(_makeAlert(
-        id: 'c1', type: OperationalAlertType.separationLoss,
-        priority: AlertPriority.critical, workloadImpact: 9,
+        id: 'c1',
+        type: OperationalAlertType.separationLoss,
+        priority: AlertPriority.critical,
+        workloadImpact: 9,
       ));
       expect(manager.workloadContribution, greaterThan(0));
     });
@@ -138,8 +153,10 @@ void main() {
     test('workload contribution is capped at 10', () {
       for (var i = 0; i < 20; i++) {
         manager.register(_makeAlert(
-          id: 'f$i', type: OperationalAlertType.separationLoss,
-          priority: AlertPriority.critical, workloadImpact: 10,
+          id: 'f$i',
+          type: OperationalAlertType.separationLoss,
+          priority: AlertPriority.critical,
+          workloadImpact: 10,
         ));
       }
       expect(manager.workloadContribution, lessThanOrEqualTo(10.0));
@@ -147,11 +164,13 @@ void main() {
 
     test('criticalCount tracks unacknowledged critical alerts', () {
       manager.register(_makeAlert(
-        id: 'crit1', type: OperationalAlertType.separationLoss,
+        id: 'crit1',
+        type: OperationalAlertType.separationLoss,
         priority: AlertPriority.critical,
       ));
       manager.register(_makeAlert(
-        id: 'crit2', type: OperationalAlertType.medicalEmergency,
+        id: 'crit2',
+        type: OperationalAlertType.medicalEmergency,
         priority: AlertPriority.critical,
       ));
       expect(manager.criticalCount, 2);

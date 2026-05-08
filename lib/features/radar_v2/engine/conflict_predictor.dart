@@ -26,7 +26,8 @@ class ConflictPredictor {
     final results = <SeparationResult>[];
     for (var i = 0; i < active.length; i++) {
       for (var j = i + 1; j < active.length; j++) {
-        final prediction = predict(active[i], active[j], pressureIndex: pressureIndex);
+        final prediction =
+            predict(active[i], active[j], pressureIndex: pressureIndex);
         if (prediction != null) results.add(prediction);
       }
     }
@@ -70,7 +71,8 @@ class ConflictPredictor {
     final effectiveMinLateral = minimumLateralNm * pressureFactor;
     final effectiveMinVertical = minimumVerticalFt * pressureFactor;
 
-    if (lateral >= effectiveMinLateral || vertical.abs() >= effectiveMinVertical) {
+    if (lateral >= effectiveMinLateral ||
+        vertical.abs() >= effectiveMinVertical) {
       return null;
     }
 

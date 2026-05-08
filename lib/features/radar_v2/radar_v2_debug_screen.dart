@@ -149,6 +149,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _scenarioStarted = true;
       _paused = false;
       _previousSnapshot = runtime.snapshot;
+      runtime.updateAttentionFocus(selectedAircraftId: _selectedAircraftId);
       _snapshot = runtime.tick();
       _replayHistory
         ..clear()
@@ -178,6 +179,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final runtime = _runtime;
     final snapshot = _snapshot;
     if (runtime == null || snapshot == null) return;
+    runtime.updateAttentionFocus(selectedAircraftId: _selectedAircraftId);
     _previousSnapshot = snapshot;
     _snapshot = runtime.tick();
     _reviewingReplay = false;
@@ -203,6 +205,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       size,
       runtime.definition.radarRangeNm,
     );
+    runtime.updateAttentionFocus(selectedAircraftId: selected?.id);
     setState(() => _selectedAircraftId = selected?.id);
   }
 
@@ -235,7 +238,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final snapshot = _snapshot;
     if (runtime == null || snapshot == null) return;
     runtime.engine.applyCommand(command);
-    runtime.recordCommandTimestamp(snapshot.elapsed, aircraftId: command.aircraftId);
+    runtime.recordCommandTimestamp(snapshot.elapsed,
+        aircraftId: command.aircraftId);
     _scoreTracker.recordCommand(command, snapshot);
     _commandHighlightTimer?.cancel();
     setState(() {
@@ -541,7 +545,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                           interpolation: _renderInterpolation,
                                           rangeNm:
                                               _runtime!.definition.radarRangeNm,
-                                          selectedAircraftId: _selectedAircraftId,
+                                          selectedAircraftId:
+                                              _selectedAircraftId,
                                           recentlyCommandedAircraftId:
                                               _recentlyCommandedAircraftId,
                                           alertPulse: _alertPulse,
@@ -565,7 +570,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                       child: _AlertStackPanel(
                                         snapshot: snapshot,
                                         onAcknowledge: (id) {
-                                          _runtime?.alertManager.acknowledge(id);
+                                          _runtime?.updateAttentionFocus(
+                                            selectedAircraftId:
+                                                _selectedAircraftId,
+                                            selectedAlertId: id,
+                                          );
+                                          _runtime?.alertManager
+                                              .acknowledge(id);
                                           setState(() {});
                                         },
                                       ),
@@ -574,7 +585,14 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                     Positioned(
                                       top: 8,
                                       right: 8,
-                                      child: _WorkloadOverlay(snapshot: snapshot),
+                                      child:
+                                          _WorkloadOverlay(snapshot: snapshot),
+                                    ),
+                                    Positioned(
+                                      top: 112,
+                                      right: 8,
+                                      child:
+                                          _AttentionOverlay(snapshot: snapshot),
                                     ),
                                   ],
                                 );
@@ -1072,16 +1090,16 @@ class _CommandReviewPanel extends StatelessWidget {
       ..sort();
 
     final filtered = commandEvents.where((event) {
-      if (selectedAircraftId != null && event.aircraftId != selectedAircraftId) {
+      if (selectedAircraftId != null &&
+          event.aircraftId != selectedAircraftId) {
         return false;
       }
       if (selectedType == 'all') return true;
       return _commandTypeToken(event.label) == selectedType;
     }).toList(growable: false);
 
-    final visible = filtered.length > 6
-        ? filtered.sublist(filtered.length - 6)
-        : filtered;
+    final visible =
+        filtered.length > 6 ? filtered.sublist(filtered.length - 6) : filtered;
 
     return Container(
       width: double.infinity,
@@ -1147,7 +1165,8 @@ class _CommandReviewPanel extends StatelessWidget {
                     DropdownMenuItem(value: 'all', child: Text('All Types')),
                     DropdownMenuItem(value: 'heading', child: Text('Heading')),
                     DropdownMenuItem(value: 'speed', child: Text('Speed')),
-                    DropdownMenuItem(value: 'altitude', child: Text('Altitude')),
+                    DropdownMenuItem(
+                        value: 'altitude', child: Text('Altitude')),
                     DropdownMenuItem(value: 'direct', child: Text('Direct')),
                     DropdownMenuItem(value: 'hold', child: Text('Hold')),
                     DropdownMenuItem(value: 'other', child: Text('Other')),
@@ -1346,10 +1365,9 @@ class _PairedCommandLane extends StatelessWidget {
     required double width,
     required Color color,
   }) {
-    final x = ((event.elapsed.inSeconds - minSeconds) / span)
-        .clamp(0, 1)
-        .toDouble() *
-        (width - 26);
+    final x =
+        ((event.elapsed.inSeconds - minSeconds) / span).clamp(0, 1).toDouble() *
+            (width - 26);
     return Positioned(
       left: x,
       top: y,
@@ -1689,9 +1707,7 @@ class _OperationalTrendPanel extends StatelessWidget {
         occupied += 1;
       }
     }
-    return occupied == 0
-        ? ('flowing', false)
-        : ('$occupied blocked', true);
+    return occupied == 0 ? ('flowing', false) : ('$occupied blocked', true);
   }
 }
 
@@ -2139,7 +2155,8 @@ class _WorkloadOverlay extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: levelColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(3),
@@ -2228,6 +2245,104 @@ class _WorkloadOverlay extends StatelessWidget {
         'medium' => const Color(0xFFFFEB3B),
         _ => const Color(0xFF9E9E9E),
       };
+}
+
+class _AttentionOverlay extends StatelessWidget {
+  const _AttentionOverlay({required this.snapshot});
+
+  final SimulationSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final attention = snapshot.attentionFocus;
+    final topIgnored = attention.topIgnoredAlert;
+    final borderColor = _riskColor(attention.riskLabel);
+    return IgnorePointer(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 220),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.72),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: borderColor.withOpacity(0.65)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'ATTENTION',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.58),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  attention.riskLabel.toUpperCase(),
+                  style: TextStyle(
+                    color: borderColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Focus ${_shortFocus(attention.currentFocusTarget)} '
+              '${attention.focusDuration.inSeconds}s',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Ignored ${attention.ignoredAlerts.length}  '
+              'Compete ${attention.competingHighPriorityAlertCount}  '
+              'Overload ${attention.overloadDuration.inSeconds}s',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.62),
+                fontSize: 9,
+              ),
+            ),
+            if (topIgnored != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Top ignored ${topIgnored.alertType.replaceAll('_', ' ')} '
+                '${topIgnored.ignoredFor.inSeconds}s',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: topIgnored.isCritical
+                      ? const Color(0xFFFF4D4D)
+                      : const Color(0xFFFFD166),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _riskColor(String riskLabel) {
+    if (riskLabel == 'critical fixation') return const Color(0xFFFF4D4D);
+    if (riskLabel == 'tunnel vision') return const Color(0xFFFF9800);
+    if (riskLabel == 'fixation risk') return const Color(0xFFFFD166);
+    return const Color(0xFF46F5A7);
+  }
+
+  String _shortFocus(String? target) {
+    if (target == null) return 'none';
+    return target.replaceFirst(':', ' ');
+  }
 }
 
 // ── Overload Response System UI ───────────────────────────────────────────────
@@ -2328,7 +2443,13 @@ class _AlertStackPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alerts = snapshot.operationalAlerts;
+    final alerts = snapshot.attentionFocus.suppressLowPriorityAlerts
+        ? snapshot.operationalAlerts
+            .where((alert) =>
+                alert.priority.name == 'critical' ||
+                alert.priority.name == 'high')
+            .toList(growable: false)
+        : snapshot.operationalAlerts;
     if (alerts.isEmpty) return const SizedBox.shrink();
 
     return IgnorePointer(
@@ -2363,9 +2484,9 @@ class _AlertStackPanel extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
                     color: alerts.any((a) =>
-                                a.priority.name == 'critical' && !a.acknowledged)
-                            ? const Color(0xFFF44336).withOpacity(0.3)
-                            : Colors.transparent,
+                            a.priority.name == 'critical' && !a.acknowledged)
+                        ? const Color(0xFFF44336).withOpacity(0.3)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(
@@ -2416,9 +2537,8 @@ class _AlertRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _priorityColor(alert.priority.name);
     final age = elapsed - alert.createdAt;
-    final ageStr = age.inSeconds < 60
-        ? '${age.inSeconds}s'
-        : '${age.inMinutes}m';
+    final ageStr =
+        age.inSeconds < 60 ? '${age.inSeconds}s' : '${age.inMinutes}m';
 
     // Escalation countdown: show time to expiry if set
     String? countdownStr;
@@ -2469,8 +2589,8 @@ class _AlertRow extends StatelessWidget {
                       Text(
                         alert.priority.label,
                         style: TextStyle(
-                          color: color.withOpacity(
-                              alert.acknowledged ? 0.4 : 1.0),
+                          color:
+                              color.withOpacity(alert.acknowledged ? 0.4 : 1.0),
                           fontSize: 8,
                           fontWeight: FontWeight.bold,
                         ),
@@ -2490,8 +2610,7 @@ class _AlertRow extends StatelessWidget {
             if (countdownStr != null) ...[
               const SizedBox(width: 4),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(3),

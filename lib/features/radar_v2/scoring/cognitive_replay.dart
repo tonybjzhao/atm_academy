@@ -199,8 +199,8 @@ class CognitiveReplayTracker {
 
     // Proactive resolutions (resolved within 45 seconds of firing)
     final proactive = lifecycles
-        .where((l) =>
-            l.wasResolved && (l.activeDuration?.inSeconds ?? 999) <= 45)
+        .where(
+            (l) => l.wasResolved && (l.activeDuration?.inSeconds ?? 999) <= 45)
         .length;
 
     // Peak command rate (60-second sliding window)
@@ -225,8 +225,8 @@ class CognitiveReplayTracker {
     final pressureSpikes = _detectPressureSpikes();
 
     // Composite score
-    final compositeScore =
-        _calculateCompositeScore(avgReactionSecs, unaddressed, proactive, peakRate);
+    final compositeScore = _calculateCompositeScore(
+        avgReactionSecs, unaddressed, proactive, peakRate);
 
     return CognitiveReplayReport(
       totalCommands: totalCommands,
@@ -266,11 +266,11 @@ class CognitiveReplayTracker {
       final prev = _commandTimestamps[i - 1];
       final curr = _commandTimestamps[i];
       final gapMs = (curr - prev).inMilliseconds;
-      
+
       // Only count gaps where there were active alerts during the period
       final alertsActiveDuringGap = _alertLifecycles.values.any((l) =>
           l.firedAt <= curr && (l.resolvedAt == null || l.resolvedAt! >= prev));
-      
+
       if (alertsActiveDuringGap && gapMs > longestMs) {
         longestMs = gapMs;
       }
@@ -315,7 +315,9 @@ class CognitiveReplayTracker {
         if (_commandTimestamps[j] > windowEnd) break;
         count++;
       }
-      if (count >= 5 && (spikes.isEmpty || windowStart - spikes.last > const Duration(seconds: 30))) {
+      if (count >= 5 &&
+          (spikes.isEmpty ||
+              windowStart - spikes.last > const Duration(seconds: 30))) {
         spikes.add(windowStart);
       }
     }

@@ -23,7 +23,8 @@ class SeparationCalculator {
     final results = <SeparationResult>[];
     for (var i = 0; i < active.length; i++) {
       for (var j = i + 1; j < active.length; j++) {
-        results.add(calculate(active[i], active[j], pressureIndex: pressureIndex));
+        results
+            .add(calculate(active[i], active[j], pressureIndex: pressureIndex));
       }
     }
     return results;

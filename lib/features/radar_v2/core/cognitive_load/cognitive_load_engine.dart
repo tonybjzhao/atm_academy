@@ -141,7 +141,8 @@ class CognitiveLoadEngine {
     }
 
     // Command burst indicates reactive scrambling, not proactive management
-    final commandBurstScore = (inputs.recentCommandCount - 3).clamp(0, 5) * 0.35;
+    final commandBurstScore =
+        (inputs.recentCommandCount - 3).clamp(0, 5) * 0.35;
     if (commandBurstScore > 0) {
       score += commandBurstScore;
       stressors.add('${inputs.recentCommandCount} recent commands (burst)');
@@ -151,7 +152,8 @@ class CognitiveLoadEngine {
     final escalationScore = inputs.alertEscalationCount * 0.4;
     if (escalationScore > 0) {
       score += escalationScore;
-      stressors.add('${inputs.alertEscalationCount} alert escalation${inputs.alertEscalationCount > 1 ? 's' : ''}');
+      stressors.add(
+          '${inputs.alertEscalationCount} alert escalation${inputs.alertEscalationCount > 1 ? 's' : ''}');
     }
 
     score = score.clamp(0.0, 10.0);
@@ -169,8 +171,8 @@ class CognitiveLoadEngine {
     final cutoff = elapsed > _spikeRetentionWindow
         ? elapsed - _spikeRetentionWindow
         : Duration.zero;
-    while (_spikeHistory.isNotEmpty &&
-        _spikeHistory.first.occurredAt < cutoff) {
+    while (
+        _spikeHistory.isNotEmpty && _spikeHistory.first.occurredAt < cutoff) {
       _spikeHistory.removeFirst();
     }
 
@@ -198,8 +200,8 @@ class CognitiveLoadEngine {
         return;
       }
     }
-    _spikeHistory.addLast(
-        CognitiveLoadSpike(occurredAt: elapsed, peakScore: score, level: level));
+    _spikeHistory.addLast(CognitiveLoadSpike(
+        occurredAt: elapsed, peakScore: score, level: level));
     if (_spikeHistory.length > _maxSpikes) _spikeHistory.removeFirst();
   }
 
