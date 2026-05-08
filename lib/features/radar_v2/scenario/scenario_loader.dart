@@ -4,6 +4,7 @@ import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_urgency.dart';
 import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
+import '../models/attention_management_event.dart';
 import '../models/departure_flow.dart';
 import '../models/hold_pattern.dart';
 import '../models/route_procedure.dart';
@@ -67,6 +68,7 @@ class ScenarioLoader {
       failConditions: _list(json['failConditions'])
           .map((item) => _parseCondition(_map(item, 'fail condition')))
           .toList(growable: false),
+      attentionManagementEvents: _parseAttentionEvents(json['attentionManagementEvents']),
     );
   }
 
@@ -248,6 +250,24 @@ class ScenarioLoader {
         waypointId: _string(json, 'waypointId'),
         altitudeFt: _int(json, 'altitudeFt'),
         type: AltitudeRestriction.parseType(json['type']),
+      );
+    }).toList(growable: false);
+  }
+
+  List<AttentionManagementEvent> _parseAttentionEvents(Object? value) {
+    if (value == null) return const [];
+    return _list(value).map((item) {
+      final json = _map(item, 'attention management event');
+      return AttentionManagementEvent(
+        id: _string(json, 'id'),
+        type: _string(json, 'type'),
+        scheduledAt: Duration(seconds: _int(json, 'scheduledAtSeconds')),
+        duration: json['durationSeconds'] == null
+            ? null
+            : Duration(seconds: (json['durationSeconds'] as num).round()),
+        targetRunwayId: json['targetRunwayId'] as String?,
+        severityIncrease: (json['severityIncrease'] as num?)?.round(),
+        description: (json['description'] as String?) ?? '',
       );
     }).toList(growable: false);
   }

@@ -4,6 +4,7 @@ import '../models/aircraft_state.dart';
 import '../models/aircraft_urgency.dart';
 import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
+import '../models/attention_management_event.dart';
 import '../models/departure_flow.dart';
 import '../models/hold_pattern.dart';
 import '../models/route_procedure.dart';
@@ -39,6 +40,7 @@ class ScenarioDefinition {
   final List<AircraftSpawnDefinition> aircraft;
   final List<ScenarioCondition> winConditions;
   final List<ScenarioCondition> failConditions;
+  final List<AttentionManagementEvent> attentionManagementEvents;
 
   const ScenarioDefinition({
     required this.id,
@@ -69,6 +71,7 @@ class ScenarioDefinition {
     required this.aircraft,
     required this.winConditions,
     required this.failConditions,
+    this.attentionManagementEvents = const [],
   });
 }
 
