@@ -654,15 +654,58 @@ class ScenarioRuntime {
     // Clear processed tracking from previous tick
     _distractionsProcessedThisTick.clear();
     
-    // Fire any new distraction events due at this elapsed time
+    // Fire any new attention management events due at this elapsed time
     for (final event in definition.attentionManagementEvents) {
-      if (event.type == 'distraction' && !_distractionsProcessedThisTick.contains(event.id)) {
-        if (elapsed >= event.scheduledAt && elapsed < event.scheduledAt + const Duration(seconds: 1)) {
-          // Event fires this tick - apply distraction effect
+      if (_distractionsProcessedThisTick.contains(event.id)) continue;
+      if (elapsed < event.scheduledAt || elapsed >= event.scheduledAt + const Duration(seconds: 1)) {
+        continue;
+      }
+      
+      switch (event.type) {
+        case 'distraction':
           final durationSecs = (event.duration?.inSeconds ?? 30);
           _activeDistractionUntil[event.id] = elapsed + Duration(seconds: durationSecs);
           _distractionsProcessedThisTick.add(event.id);
-        }
+
+        case 'medical_emergency':
+          if (event.targetRunwayId != null) {
+            // Target runway is overloaded with the emergency callsign
+            _activeAlerts[event.id] = ControllerAlert(
+              id: event.id,
+              type: AlertType.medicalEmergency,
+              severity: 9,
+              createdAt: elapsed,
+              runwayId: event.targetRunwayId,
+            );
+          }
+          _distractionsProcessedThisTick.add(event.id);
+
+        case 'low_fuel':
+          if (event.targetRunwayId != null) {
+            _activeAlerts[event.id] = ControllerAlert(
+              id: event.id,
+              type: AlertType.lowFuelWarning,
+              severity: 8,
+              createdAt: elapsed,
+              runwayId: event.targetRunwayId,
+            );
+          }
+          _distractionsProcessedThisTick.add(event.id);
+
+        case 'engine_failure':
+          if (event.targetRunwayId != null) {
+            _activeAlerts[event.id] = ControllerAlert(
+              id: event.id,
+              type: AlertType.medicalEmergency, // Highest priority class
+              severity: 10,
+              createdAt: elapsed,
+              runwayId: event.targetRunwayId,
+            );
+          }
+          _distractionsProcessedThisTick.add(event.id);
+
+        default:
+          _distractionsProcessedThisTick.add(event.id);
       }
     }
     

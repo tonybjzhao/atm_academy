@@ -48,4 +48,7 @@ class AttentionEventTypes {
   static const String simultaneousAlerts = 'simultaneous_alerts';
   static const String runwayChange = 'runway_change';
   static const String weatherEscalation = 'weather_escalation';
+  static const String medicalEmergency = 'medical_emergency';
+  static const String lowFuel = 'low_fuel';
+  static const String engineFailure = 'engine_failure';
 }
