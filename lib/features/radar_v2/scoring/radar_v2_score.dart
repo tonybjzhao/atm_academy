@@ -107,7 +107,7 @@ class RadarV2ScoreTracker {
     final commandEfficiencyMultiplier =
         math.min(1.0, snapshot.distractionEfficiencyPenalty);
     if (commandEfficiencyMultiplier < 1.0) {
-      final penalty = ((1.0 - commandEfficiencyMultiplier) * 2).toInt();
+      final penalty = ((1.0 - commandEfficiencyMultiplier) * 5).ceil();
       _penalize(penalty, 'Distraction reduces command efficiency');
     }
 
