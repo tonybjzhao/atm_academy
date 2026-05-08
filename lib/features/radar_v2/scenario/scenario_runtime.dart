@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../engine/simulation_engine.dart';
 import '../models/aircraft_state.dart';
 import '../models/arrival_flow.dart';
+import '../models/controller_alert.dart';
 import '../models/departure_flow.dart';
 import '../models/simulation_event.dart';
 import '../models/simulation_snapshot.dart';
@@ -13,13 +14,15 @@ class ScenarioRuntime {
   final SimulationEngine engine;
   final Set<String> _spawnedIds = <String>{};
   final Set<String> _exitedIds = <String>{};
-    final Map<String, AircraftSpawnDefinition> _queuedDepartures =
+  final Map<String, AircraftSpawnDefinition> _queuedDepartures =
       <String, AircraftSpawnDefinition>{};
-    final Map<String, Duration> _lastDepartureReleaseByRunway =
+  final Map<String, Duration> _lastDepartureReleaseByRunway =
       <String, Duration>{};
-    final Set<String> _goAroundIssued = <String>{};
+  final Set<String> _goAroundIssued = <String>{};
+  final Map<String, ControllerAlert> _activeAlerts = <String, ControllerAlert>{};
+  final Set<String> _alertsEscalatedThisTick = <String>{};
   int _separationLossCount = 0;
-    double _pressureCarryOver = 0;
+  double _pressureCarryOver = 0;
 
   ScenarioRuntime({
     required this.definition,
@@ -67,6 +70,7 @@ class ScenarioRuntime {
       _releaseQueuedDepartures(engine.snapshot.elapsed);
       _updateAdaptivePressure(engine.snapshot);
       final snapshot = engine.tick();
+      _generateAndEscalateAlerts(snapshot);
       _evaluateGoAroundTriggers(snapshot);
       _recordSeparationLosses(snapshot);
       _markLandedAircraft(snapshot);
@@ -75,7 +79,29 @@ class ScenarioRuntime {
     _spawnDueAircraft(engine.snapshot.elapsed);
     _releaseQueuedDepartures(engine.snapshot.elapsed);
     _updateAdaptivePressure(engine.snapshot);
-    return engine.snapshot;
+    _generateAndEscalateAlerts(engine.snapshot);
+    return _buildSnapshotWithAlerts(engine.snapshot);
+  }
+
+  /// Builds a new snapshot including active alerts.
+  SimulationSnapshot _buildSnapshotWithAlerts(SimulationSnapshot baseSnapshot) {
+    return SimulationSnapshot(
+      tick: baseSnapshot.tick,
+      elapsed: baseSnapshot.elapsed,
+      aircraft: baseSnapshot.aircraft,
+      separation: baseSnapshot.separation,
+      trails: baseSnapshot.trails,
+      waypoints: baseSnapshot.waypoints,
+      weatherZones: baseSnapshot.weatherZones,
+      arrivalFlows: baseSnapshot.arrivalFlows,
+      departureFlows: baseSnapshot.departureFlows,
+      holdPatterns: baseSnapshot.holdPatterns,
+      runwayStates: baseSnapshot.runwayStates,
+      maxControllerLoad: baseSnapshot.maxControllerLoad,
+      sectorPressureIndex: baseSnapshot.sectorPressureIndex,
+      events: baseSnapshot.events,
+      activeAlerts: List<ControllerAlert>.from(_activeAlerts.values),
+    );
   }
 
   ScenarioResultState evaluate() {
@@ -558,5 +584,131 @@ class ScenarioRuntime {
     final dx = ax - bx;
     final dy = ay - by;
     return math.sqrt(dx * dx + dy * dy);
+  }
+
+  /// Generates and escalates active alerts based on current snapshot conditions.
+  /// Alerts compete for controller attention based on urgency hierarchy.
+  void _generateAndEscalateAlerts(SimulationSnapshot snapshot) {
+    _alertsEscalatedThisTick.clear();
+
+    // Generate separation loss alerts
+    for (final result in snapshot.separation) {
+      if (!result.isLossOfSeparation && !result.isPredictedConflict) continue;
+      final key = _alertKeyForPair(result.aircraftAId, result.aircraftBId);
+      if (_activeAlerts.containsKey(key)) {
+        // Update existing alert with escalation
+        final existing = _activeAlerts[key]!;
+        if (existing.timeToLoss != null &&
+            result.timeToConflict != null &&
+            result.timeToConflict!.inSeconds < existing.timeToLoss!.inSeconds) {
+          final newSeverity = (existing.severity + 1).clamp(1, 10);
+          _activeAlerts[key] = existing.copyWith(
+            severity: newSeverity,
+            timeToLoss: result.timeToConflict,
+            escalationCount: existing.escalationCount + 1,
+          );
+          _alertsEscalatedThisTick.add(key);
+        }
+      } else {
+        // Create new alert
+        final alertType = result.isLossOfSeparation
+            ? AlertType.separationLoss
+            : AlertType.separationLoss; // Can refine for predicted vs actual
+        _activeAlerts[key] = ControllerAlert(
+          id: key,
+          type: alertType,
+          severity: result.isLossOfSeparation ? 10 : 5,
+          createdAt: snapshot.elapsed,
+          timeToLoss: result.timeToConflict,
+          aircraftIds: [result.aircraftAId, result.aircraftBId],
+        );
+      }
+    }
+
+    // Generate runway occupancy alerts
+    for (final runway in snapshot.runwayStates) {
+      if (!runway.isOccupiedAt(snapshot.elapsed)) continue;
+      for (final flow in definition.arrivalFlows) {
+        if (flow.runwayId != runway.runwayId) continue;
+        final threshold = definition.waypoints[flow.thresholdWaypointId];
+        if (threshold == null) continue;
+        for (final aircraft in snapshot.aircraft) {
+          if (!aircraft.active ||
+              aircraft.intent.isDeparture ||
+              aircraft.intent.assignedRunwayId != runway.runwayId) {
+            continue;
+          }
+          final distance = _distance(
+            aircraft.xNm,
+            aircraft.yNm,
+            threshold.xNm,
+            threshold.yNm,
+          );
+          if (distance >= 10) continue; // Not approaching actively
+
+          final key = 'runway_occupancy:${runway.runwayId}:${aircraft.id}';
+          if (!_activeAlerts.containsKey(key)) {
+            final ttl = runway.occupiedUntil - snapshot.elapsed;
+            _activeAlerts[key] = ControllerAlert(
+              id: key,
+              type: AlertType.runwayOccupancy,
+              severity: 7,
+              createdAt: snapshot.elapsed,
+              timeToLoss: ttl.inSeconds > 0 ? ttl : Duration.zero,
+              aircraftIds: [aircraft.id],
+              runwayId: runway.runwayId,
+            );
+          }
+        }
+      }
+    }
+
+    // Generate departure queue backlog alerts
+    if (_queuedDepartures.isNotEmpty) {
+      final oldestQueued = _queuedDepartures.values.reduce((a, b) =>
+          a.spawnAt.compareTo(b.spawnAt) < 0 ? a : b);
+      final queueAge = snapshot.elapsed - oldestQueued.spawnAt;
+      if (queueAge.inSeconds > 30) {
+        final key = 'departure_queue:backlog';
+        if (!_activeAlerts.containsKey(key)) {
+          _activeAlerts[key] = ControllerAlert(
+            id: key,
+            type: AlertType.departureQueueBacklog,
+            severity: (queueAge.inSeconds ~/ 30).clamp(1, 10),
+            createdAt: snapshot.elapsed,
+            aircraftIds: _queuedDepartures.keys.toList(),
+          );
+        } else {
+          final existing = _activeAlerts[key]!;
+          final newSeverity = (queueAge.inSeconds ~/ 30).clamp(1, 10);
+          if (newSeverity > existing.severity) {
+            _activeAlerts[key] = existing.copyWith(
+              severity: newSeverity,
+              escalationCount: existing.escalationCount + 1,
+            );
+            _alertsEscalatedThisTick.add(key);
+          }
+        }
+      }
+    }
+
+    // Remove old/resolved alerts
+    _activeAlerts.removeWhere((key, alert) {
+      // Remove if no longer predicted/actual conflict
+      if (alert.type == AlertType.separationLoss) {
+        final pair = key.split(':');
+        if (pair.length != 2) return true;
+        return !snapshot.separation.any((result) =>
+            (result.aircraftAId == pair[0] && result.aircraftBId == pair[1]) ||
+            (result.aircraftAId == pair[1] && result.aircraftBId == pair[0]));
+      }
+      // Keep other alerts for now
+      return false;
+    });
+  }
+
+  String _alertKeyForPair(String a, String b) {
+    final ids = [a, b]..sort();
+    return '${ids[0]}:${ids[1]}';
   }
 }

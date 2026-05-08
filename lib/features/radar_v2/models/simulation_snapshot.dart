@@ -1,5 +1,6 @@
 import 'arrival_flow.dart';
 import 'aircraft_state.dart';
+import 'controller_alert.dart';
 import 'departure_flow.dart';
 import 'hold_pattern.dart';
 import 'runway_state.dart';
@@ -24,6 +25,7 @@ class SimulationSnapshot {
   final int maxControllerLoad;
   final double sectorPressureIndex;
   final List<SimulationEvent> events;
+  final List<ControllerAlert> activeAlerts;
 
   const SimulationSnapshot({
     required this.tick,
@@ -40,6 +42,7 @@ class SimulationSnapshot {
     this.maxControllerLoad = 6,
     this.sectorPressureIndex = 0,
     this.events = const [],
+    this.activeAlerts = const [],
   });
 
   AircraftState? aircraftById(String id) {
