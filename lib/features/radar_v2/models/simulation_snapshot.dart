@@ -12,6 +12,7 @@ import 'waypoint.dart';
 import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/alerts/operational_alert.dart';
+import '../core/psychology/scenario_pressure_phase.dart';
 
 class SimulationSnapshot {
   final int tick;
@@ -36,6 +37,7 @@ class SimulationSnapshot {
   final List<OperationalAlert> operationalAlerts;
   final AttentionFocusState attentionFocus;
   final List<String> attentionReportLines;
+  final ScenarioPsychologyState psychologyState;
 
   const SimulationSnapshot({
     required this.tick,
@@ -59,6 +61,7 @@ class SimulationSnapshot {
     this.operationalAlerts = const [],
     this.attentionFocus = AttentionFocusState.idle,
     this.attentionReportLines = const [],
+    this.psychologyState = ScenarioPsychologyState.idle,
   });
 
   AircraftState? aircraftById(String id) {

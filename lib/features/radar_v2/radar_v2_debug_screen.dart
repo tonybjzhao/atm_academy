@@ -594,6 +594,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                       child:
                                           _AttentionOverlay(snapshot: snapshot),
                                     ),
+                                    Positioned(
+                                      top: 218,
+                                      right: 8,
+                                      child: _PsychologyOverlay(
+                                          snapshot: snapshot),
+                                    ),
                                   ],
                                 );
                               },
@@ -2342,6 +2348,104 @@ class _AttentionOverlay extends StatelessWidget {
   String _shortFocus(String? target) {
     if (target == null) return 'none';
     return target.replaceFirst(':', ' ');
+  }
+}
+
+class _PsychologyOverlay extends StatelessWidget {
+  const _PsychologyOverlay({required this.snapshot});
+
+  final SimulationSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = snapshot.psychologyState;
+    final color = _phaseColor(state.phaseLabel);
+    return IgnorePointer(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 220),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.65)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'PSYCHOLOGY',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.58),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  state.phaseLabel.toUpperCase(),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              state.audioLayer,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Density ${state.eventDensityFactor.toStringAsFixed(1)}  '
+              'Alerts ${state.alertTimingFactor.toStringAsFixed(1)}  '
+              'Spacing ${(state.spacingInstabilityProbability * 100).round()}%',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.62),
+                fontSize: 9,
+              ),
+            ),
+            if (state.deceptiveCalmActive ||
+                state.escalationChainActive ||
+                state.attentionTrapActive) ...[
+              const SizedBox(height: 4),
+              Text(
+                [
+                  if (state.deceptiveCalmActive) 'false stability',
+                  if (state.escalationChainActive) 'chain',
+                  if (state.attentionTrapActive) 'attention trap',
+                ].join(' / '),
+                style: TextStyle(
+                  color: state.deceptiveCalmActive
+                      ? const Color(0xFF62D2FF)
+                      : const Color(0xFFFFD166),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _phaseColor(String phase) {
+    return switch (phase) {
+      'calm' => const Color(0xFF46F5A7),
+      'building' => const Color(0xFF62D2FF),
+      'busy' => const Color(0xFFFFD166),
+      'unstable' => const Color(0xFFFF9800),
+      'overload' => const Color(0xFFFF4D4D),
+      _ => const Color(0xFF9B8CFF),
+    };
   }
 }
 

@@ -10,6 +10,8 @@ import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/pressure/attention_competition_engine.dart' as pressure;
 import '../core/pressure/tunnel_vision_engine.dart';
 import '../core/pressure/workload_degradation.dart';
+import '../core/psychology/pressure_pacing_engine.dart';
+import '../core/psychology/scenario_pressure_phase.dart';
 import '../core/replay/cognition_analytics.dart';
 import '../core/replay/replay_workload_frame.dart';
 import '../engine/simulation_engine.dart';
@@ -52,6 +54,7 @@ class ScenarioRuntime {
   final TunnelVisionEngine _tunnelVisionEngine = TunnelVisionEngine();
   final attention_v1.AttentionCompetitionEngine _attentionV1Engine =
       attention_v1.AttentionCompetitionEngine();
+  final PressurePacingEngine _pressurePacingEngine = PressurePacingEngine();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
   String? _selectedRunwayIdForAttention;
@@ -62,6 +65,7 @@ class ScenarioRuntime {
   pressure.AttentionCompetitionResult _lastAttentionResult =
       pressure.AttentionCompetitionResult.idle;
   AttentionFocusState _lastAttentionFocusState = AttentionFocusState.idle;
+  ScenarioPsychologyState _lastPsychologyState = ScenarioPsychologyState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
   // Rolling command timestamps for recent-command-density tracking
   final List<Duration> _recentCommandTimestamps = [];
@@ -160,6 +164,10 @@ class ScenarioRuntime {
     final attentionReport =
         attention_v1.AttentionReplayAnalytics(states: _attentionHistory)
             .generate();
+    _lastPsychologyState = _pressurePacingEngine.evaluate(
+      _snapshotForPsychology(baseSnapshot, cognitiveLoad),
+    );
+    _syncPsychologyTrapAlert(baseSnapshot.elapsed, _lastPsychologyState);
 
     // Feed analytics tracker
     _analyticsTracker.recordTick(ReplayWorkloadFrame(
@@ -201,8 +209,58 @@ class ScenarioRuntime {
       attentionReportLines: [
         ..._lastAttentionFocusState.reportLines,
         ...attentionReport.reportLines,
+        ..._lastPsychologyState.reportLines,
       ].take(5).toList(growable: false),
+      psychologyState: _lastPsychologyState,
     );
+  }
+
+  SimulationSnapshot _snapshotForPsychology(
+    SimulationSnapshot base,
+    CognitiveLoadState cognitiveLoad,
+  ) {
+    return SimulationSnapshot(
+      tick: base.tick,
+      elapsed: base.elapsed,
+      aircraft: base.aircraft,
+      separation: base.separation,
+      trails: base.trails,
+      waypoints: base.waypoints,
+      weatherZones: base.weatherZones,
+      arrivalFlows: base.arrivalFlows,
+      departureFlows: base.departureFlows,
+      holdPatterns: base.holdPatterns,
+      runwayStates: base.runwayStates,
+      maxControllerLoad: base.maxControllerLoad,
+      sectorPressureIndex: base.sectorPressureIndex,
+      events: base.events,
+      activeAlerts: List<ControllerAlert>.from(_activeAlerts.values),
+      activeDistractions: Set<String>.from(_activeDistractionUntil.keys),
+      distractionEfficiencyPenalty:
+          getDistractionEfficiencyPenalty(base.elapsed),
+      cognitiveLoad: cognitiveLoad,
+      operationalAlerts: _alertManager.activeAlerts,
+      attentionFocus: _lastAttentionFocusState,
+    );
+  }
+
+  void _syncPsychologyTrapAlert(
+    Duration elapsed,
+    ScenarioPsychologyState state,
+  ) {
+    const id = 'psychology:attention_trap';
+    if (!state.attentionTrapActive) {
+      _alertManager.dismiss(id);
+      return;
+    }
+    _alertManager.registerOnce(OperationalAlert(
+      id: id,
+      type: OperationalAlertType.runwayChange,
+      priority: AlertPriority.low,
+      createdAt: elapsed,
+      expiresAt: elapsed + const Duration(seconds: 12),
+      workloadImpact: 2,
+    ));
   }
 
   /// Calculates cognitive load from current snapshot state.
@@ -341,6 +399,7 @@ class ScenarioRuntime {
 
   /// Returns the current sector pressure index (0–5 scale).
   double get currentSectorPressure => _currentSectorPressure;
+  ScenarioPsychologyState get lastPsychologyState => _lastPsychologyState;
 
   /// Returns upcoming spawn times within the next [lookAheadSeconds], sorted ascending.
   /// Useful for UI to show imminent traffic load forecast.
@@ -445,6 +504,12 @@ class ScenarioRuntime {
       }
 
       // Check if this is a fresh spawn during high pressure
+      if (_lastPsychologyState.deceptiveCalmActive &&
+          elapsed < scaledSpawnAt + const Duration(seconds: 12)) {
+        _spawnHeldUntil[spawn.id] = scaledSpawnAt + const Duration(seconds: 12);
+        continue;
+      }
+
       if (_currentSectorPressure >= _spawnHoldPressureThreshold) {
         // Hold spawning if deadline hasn't passed yet
         final deadline = scaledSpawnAt + _maxSpawnHoldDuration;
@@ -646,7 +711,9 @@ class ScenarioRuntime {
     final leader = sameRunway[index - 1];
     final spacing =
         _distance(aircraft.xNm, aircraft.yNm, leader.xNm, leader.yNm);
-    return spacing < flow.spacingTargetNm * 0.72;
+    final instability =
+        0.72 + _lastPsychologyState.spacingInstabilityProbability * 0.45;
+    return spacing < flow.spacingTargetNm * instability.clamp(0.72, 0.95);
   }
 
   bool _hasCloseFinalPair(
@@ -739,6 +806,7 @@ class ScenarioRuntime {
     pressure += queuePressure * 0.18;
     pressure += _pressureCarryOver;
     pressure *= definition.workloadPressureMultiplier;
+    pressure *= _lastPsychologyState.pressureMultiplier;
     pressure = pressure.clamp(0, 5.0);
     _pressureCarryOver = (_pressureCarryOver * 0.92).clamp(0, 2.0);
     _currentSectorPressure = pressure;
@@ -975,7 +1043,9 @@ class ScenarioRuntime {
         if (existing.timeToLoss != null &&
             result.timeToConflict != null &&
             result.timeToConflict!.inSeconds < existing.timeToLoss!.inSeconds) {
-          final newSeverity = (existing.severity + 1).clamp(1, 10);
+          final escalationStep =
+              _lastPsychologyState.alertTimingFactor < 0.85 ? 2 : 1;
+          final newSeverity = (existing.severity + escalationStep).clamp(1, 10);
           _activeAlerts[key] = existing.copyWith(
             severity: newSeverity,
             timeToLoss: result.timeToConflict,
