@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../models/weather_zone.dart';
+import '../models/waypoint.dart';
 import 'scenario_definition.dart';
 
 class ScenarioLoader {
@@ -24,6 +26,9 @@ class ScenarioLoader {
       trafficDescription: (json['trafficDescription'] as String?) ?? '',
       objectives: _optionalStringList(json['objectives']),
       expectedTechniques: _optionalStringList(json['expectedTechniques']),
+      waypoints: _parseWaypoints(json['waypoints']),
+      weatherZones: _parseWeatherZones(json['weatherZones']),
+      densityScale: (json['densityScale'] as num?)?.toDouble() ?? 1,
       speedOptions: _intList(json['speedOptions']),
       aircraft: _list(json['aircraft'])
           .map((item) => _parseAircraft(_map(item, 'aircraft item')))
@@ -56,6 +61,7 @@ class ScenarioLoader {
       groundSpeedKt: _number(json, 'groundSpeedKt'),
       verticalSpeedFpm: (json['verticalSpeedFpm'] as num?)?.round() ?? 0,
       route: route,
+      routeWaypointIndex: (json['routeWaypointIndex'] as num?)?.round() ?? 0,
     );
     return AircraftSpawnDefinition(
       id: id,
@@ -70,6 +76,35 @@ class ScenarioLoader {
       type: _string(json, 'type'),
       value: (json['value'] as num?)?.round(),
     );
+  }
+
+  Map<String, Waypoint> _parseWaypoints(Object? value) {
+    if (value == null) return const {};
+    final waypoints = <String, Waypoint>{};
+    for (final item in _list(value)) {
+      final json = _map(item, 'waypoint');
+      final waypoint = Waypoint(
+        id: _string(json, 'id'),
+        xNm: _number(json, 'xNm'),
+        yNm: _number(json, 'yNm'),
+      );
+      waypoints[waypoint.id] = waypoint;
+    }
+    return waypoints;
+  }
+
+  List<WeatherZone> _parseWeatherZones(Object? value) {
+    if (value == null) return const [];
+    return _list(value).map((item) {
+      final json = _map(item, 'weather zone');
+      return WeatherZone(
+        id: _string(json, 'id'),
+        xNm: _number(json, 'xNm'),
+        yNm: _number(json, 'yNm'),
+        radiusNm: _number(json, 'radiusNm'),
+        severity: (json['severity'] as num?)?.round() ?? 1,
+      );
+    }).toList(growable: false);
   }
 
   String _string(Map<String, dynamic> json, String key) {

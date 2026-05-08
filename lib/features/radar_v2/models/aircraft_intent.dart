@@ -30,12 +30,20 @@ class AircraftIntent {
     List<String>? route,
     String? directToWaypointId,
     bool? hold,
+    bool clearAssignedHeading = false,
+    bool clearAssignedSpeed = false,
+    bool clearAssignedAltitude = false,
     bool clearDirectTo = false,
   }) {
     return AircraftIntent(
-      assignedHeadingDeg: assignedHeadingDeg ?? this.assignedHeadingDeg,
-      assignedSpeedKt: assignedSpeedKt ?? this.assignedSpeedKt,
-      assignedAltitudeFt: assignedAltitudeFt ?? this.assignedAltitudeFt,
+      assignedHeadingDeg: clearAssignedHeading
+          ? null
+          : assignedHeadingDeg ?? this.assignedHeadingDeg,
+      assignedSpeedKt:
+          clearAssignedSpeed ? null : assignedSpeedKt ?? this.assignedSpeedKt,
+      assignedAltitudeFt: clearAssignedAltitude
+          ? null
+          : assignedAltitudeFt ?? this.assignedAltitudeFt,
       route: route ?? this.route,
       directToWaypointId:
           clearDirectTo ? null : directToWaypointId ?? this.directToWaypointId,

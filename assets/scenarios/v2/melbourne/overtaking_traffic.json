@@ -16,6 +16,16 @@
     "Use altitude only if speed/heading is too late",
     "Watch closure rate, not just current distance"
   ],
+  "waypoints": [
+    { "id": "MLB_WEST", "xNm": -20, "yNm": -2 },
+    { "id": "MLB_FINAL", "xNm": 20, "yNm": -2 },
+    { "id": "MLB_NORTH", "xNm": 8, "yNm": 20 },
+    { "id": "MLB_BASE", "xNm": 8, "yNm": 2 }
+  ],
+  "weatherZones": [
+    { "id": "WX2", "xNm": -4, "yNm": 8, "radiusNm": 4.5, "severity": 1 }
+  ],
+  "densityScale": 1.12,
   "speedOptions": [1, 2, 4],
   "aircraft": [
     {

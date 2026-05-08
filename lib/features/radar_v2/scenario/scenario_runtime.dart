@@ -13,7 +13,12 @@ class ScenarioRuntime {
   ScenarioRuntime({
     required this.definition,
     SimulationEngine? engine,
-  }) : engine = engine ?? SimulationEngine(aircraft: const []);
+  }) : engine = engine ??
+            SimulationEngine(
+              aircraft: const [],
+              waypoints: definition.waypoints,
+              weatherZones: definition.weatherZones,
+            );
 
   SimulationSnapshot get snapshot => engine.snapshot;
 
@@ -93,11 +98,21 @@ class ScenarioRuntime {
   void _spawnDueAircraft(Duration elapsed) {
     for (final spawn in definition.aircraft) {
       if (_spawnedIds.contains(spawn.id)) continue;
-      if (spawn.spawnAt <= elapsed) {
-        engine.addAircraft(spawn.initialState);
+      final scaledSpawnAt = Duration(
+        milliseconds:
+            (spawn.spawnAt.inMilliseconds / definition.densityScale).round(),
+      );
+      if (scaledSpawnAt <= elapsed) {
+        engine.addAircraft(_scaledAircraft(spawn.initialState));
         _spawnedIds.add(spawn.id);
       }
     }
+  }
+
+  AircraftState _scaledAircraft(AircraftState aircraft) {
+    final speedBoost = 1 + (definition.difficulty.clamp(1, 5) - 1) * 0.035;
+    return aircraft.copyWith(
+        groundSpeedKt: aircraft.groundSpeedKt * speedBoost);
   }
 
   void _recordSeparationLosses(SimulationSnapshot snapshot) {

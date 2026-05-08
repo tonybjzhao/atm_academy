@@ -31,6 +31,7 @@ class RadarV2ScoreSnapshot {
 class RadarV2ScoreTracker {
   final Set<String> _separationLossKeys = <String>{};
   final Set<String> _lateConflictKeys = <String>{};
+  final Set<String> _weatherKeys = <String>{};
   int _score = 100;
   int _commandCount = 0;
   int _altitudeCommandCount = 0;
@@ -79,6 +80,19 @@ class RadarV2ScoreTracker {
           (result.timeToConflict?.inSeconds ?? 999) <= 45 &&
           _lateConflictKeys.add(key)) {
         _penalize(5, 'Late resolution');
+      }
+    }
+    for (final aircraft in snapshot.aircraft) {
+      if (!aircraft.active) continue;
+      for (final zone in snapshot.weatherZones) {
+        final dx = aircraft.xNm - zone.xNm;
+        final dy = aircraft.yNm - zone.yNm;
+        final key = '${aircraft.id}:${zone.id}';
+        if (dx * dx + dy * dy < zone.radiusNm * zone.radiusNm &&
+            _weatherKeys.add(key)) {
+          _penalize(2 * zone.severity, 'Weather penetration');
+          return;
+        }
       }
     }
   }

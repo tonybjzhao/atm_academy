@@ -10,6 +10,14 @@ void main() {
   "sectorId": "test_sector",
   "durationSeconds": 120,
   "difficulty": 3,
+  "radarRangeNm": 42,
+  "waypoints": [
+    { "id": "FIXA", "xNm": 0, "yNm": 10 }
+  ],
+  "weatherZones": [
+    { "id": "WX", "xNm": 2, "yNm": 3, "radiusNm": 4, "severity": 2 }
+  ],
+  "densityScale": 1.2,
   "speedOptions": [1, 2, 4],
   "aircraft": [
     {
@@ -48,6 +56,9 @@ void main() {
     expect(scenario.id, 'test_scenario');
     expect(scenario.difficulty, 3);
     expect(scenario.speedOptions, [1, 2, 4]);
+    expect(scenario.waypoints['FIXA']?.yNm, 10);
+    expect(scenario.weatherZones.single.id, 'WX');
+    expect(scenario.densityScale, 1.2);
     expect(scenario.aircraft, hasLength(2));
     expect(scenario.aircraft.last.spawnAt, const Duration(seconds: 5));
   });

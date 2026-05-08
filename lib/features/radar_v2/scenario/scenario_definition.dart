@@ -1,5 +1,7 @@
 import '../models/aircraft_intent.dart';
 import '../models/aircraft_state.dart';
+import '../models/weather_zone.dart';
+import '../models/waypoint.dart';
 
 class ScenarioDefinition {
   final String id;
@@ -11,6 +13,9 @@ class ScenarioDefinition {
   final String trafficDescription;
   final List<String> objectives;
   final List<String> expectedTechniques;
+  final Map<String, Waypoint> waypoints;
+  final List<WeatherZone> weatherZones;
+  final double densityScale;
   final List<int> speedOptions;
   final List<AircraftSpawnDefinition> aircraft;
   final List<ScenarioCondition> winConditions;
@@ -26,6 +31,9 @@ class ScenarioDefinition {
     this.trafficDescription = '',
     this.objectives = const [],
     this.expectedTechniques = const [],
+    this.waypoints = const {},
+    this.weatherZones = const [],
+    this.densityScale = 1,
     required this.speedOptions,
     required this.aircraft,
     required this.winConditions,
@@ -84,6 +92,7 @@ AircraftState aircraftStateFromSpawn({
   required double groundSpeedKt,
   int verticalSpeedFpm = 0,
   List<String> route = const [],
+  int routeWaypointIndex = 0,
 }) {
   return AircraftState(
     id: id,
@@ -95,5 +104,6 @@ AircraftState aircraftStateFromSpawn({
     groundSpeedKt: groundSpeedKt,
     verticalSpeedFpm: verticalSpeedFpm,
     intent: AircraftIntent(route: route),
+    routeWaypointIndex: routeWaypointIndex,
   );
 }

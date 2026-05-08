@@ -37,3 +37,13 @@ class AssignSpeed extends ControllerCommand {
     required this.speedKt,
   });
 }
+
+class DirectToWaypoint extends ControllerCommand {
+  final String waypointId;
+
+  const DirectToWaypoint({
+    required super.aircraftId,
+    required super.issuedAt,
+    required this.waypointId,
+  });
+}

@@ -578,6 +578,10 @@ class _DebugControls extends StatelessWidget {
                 reasons: scenarioState.reasons,
               ),
             ],
+            if (snapshot.events.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _TimelineStrip(snapshot: snapshot),
+            ],
             if (selectedAircraft != null) ...[
               const SizedBox(height: 10),
               _SelectedAircraftPanel(
@@ -609,6 +613,65 @@ class _DebugControls extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TimelineStrip extends StatelessWidget {
+  final SimulationSnapshot snapshot;
+
+  const _TimelineStrip({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    final durationSeconds = snapshot.elapsed.inSeconds.clamp(1, 9999);
+    final recentEvents = snapshot.events.length > 8
+        ? snapshot.events.sublist(snapshot.events.length - 8)
+        : snapshot.events;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 2,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+          ),
+          child: Slider(
+            value: snapshot.elapsed.inSeconds.toDouble(),
+            min: 0,
+            max: durationSeconds.toDouble(),
+            onChanged: (_) {},
+          ),
+        ),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            for (final event in recentEvents)
+              Tooltip(
+                message: event.label,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: event.type == 'commandAcknowledged'
+                        ? const Color(0x2236D399)
+                        : const Color(0x2246A3FF),
+                    border: Border.all(color: AppTheme.borderColor),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${event.elapsed.inSeconds}s ${event.type == 'commandAcknowledged' ? 'ACK' : 'CMD'}',
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

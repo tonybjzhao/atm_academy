@@ -51,6 +51,8 @@ class RadarV2Painter extends CustomPainter {
         center.translate(-radius, 0), center.translate(radius, 0), axisPaint);
     canvas.drawLine(
         center.translate(0, -radius), center.translate(0, radius), axisPaint);
+    _drawWeather(canvas, center, scale);
+    _drawWaypoints(canvas, center, scale);
     if (sweepEnabled) {
       _drawSweep(canvas, center, radius);
     }
@@ -124,6 +126,14 @@ class RadarV2Painter extends CustomPainter {
     )..layout(maxWidth: 88);
 
     canvas.drawLine(position, vectorEnd, vectorPaint);
+    canvas.drawLine(
+      position.translate(7, -12),
+      position.translate(31, -24),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = aircraftColor.withValues(alpha: 0.45),
+    );
     if (selected || recentlyCommanded) {
       _drawIntentVector(canvas, position, aircraft, selected ? 54 : 42);
     }
@@ -197,6 +207,84 @@ class RadarV2Painter extends CustomPainter {
             ? '↓'
             : ' ';
     return '$callsign HDG→$heading\nA$altitude$vertical  S$speed';
+  }
+
+  void _drawWeather(Canvas canvas, Offset center, double scale) {
+    for (final zone in snapshot.weatherZones) {
+      final position = _toCanvas(center, scale, zone.xNm, zone.yNm);
+      final radius = zone.radiusNm * scale;
+      final color = zone.severity >= 2
+          ? const Color(0xFFFF4D4D)
+          : const Color(0xFFFFD166);
+      canvas.drawCircle(
+        position,
+        radius,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = color.withValues(alpha: 0.12),
+      );
+      canvas.drawCircle(
+        position,
+        radius,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = color.withValues(alpha: 0.7),
+      );
+      _drawAlertLabel(
+        canvas,
+        position.translate(radius + 4, -8),
+        zone.id,
+        color,
+      );
+    }
+  }
+
+  void _drawWaypoints(Canvas canvas, Offset center, double scale) {
+    final routePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = const Color(0x4446F5A7);
+    for (final aircraft in snapshot.aircraft) {
+      if (!aircraft.active || aircraft.intent.route.length < 2) continue;
+      final routePath = Path();
+      var started = false;
+      for (final waypointId in aircraft.intent.route) {
+        final waypoint = snapshot.waypoints[waypointId];
+        if (waypoint == null) continue;
+        final point = _toCanvas(center, scale, waypoint.xNm, waypoint.yNm);
+        if (!started) {
+          routePath.moveTo(point.dx, point.dy);
+          started = true;
+        } else {
+          routePath.lineTo(point.dx, point.dy);
+        }
+      }
+      if (started) canvas.drawPath(routePath, routePaint);
+    }
+
+    for (final waypoint in snapshot.waypoints.values) {
+      final position = _toCanvas(center, scale, waypoint.xNm, waypoint.yNm);
+      canvas.drawRect(
+        Rect.fromCenter(center: position, width: 4, height: 4),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = const Color(0xAA46F5A7),
+      );
+      final painter = TextPainter(
+        text: TextSpan(
+          text: waypoint.id,
+          style: const TextStyle(
+            color: Color(0x9946F5A7),
+            fontSize: 8,
+            fontFamily: 'monospace',
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: 70);
+      painter.paint(canvas, position.translate(5, -5));
+    }
   }
 
   void _drawSweep(Canvas canvas, Offset center, double radius) {

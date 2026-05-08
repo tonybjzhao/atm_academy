@@ -10,6 +10,7 @@ class AircraftState {
   final double groundSpeedKt;
   final int verticalSpeedFpm;
   final AircraftIntent intent;
+  final int routeWaypointIndex;
   final bool active;
 
   const AircraftState({
@@ -22,6 +23,7 @@ class AircraftState {
     required this.groundSpeedKt,
     this.verticalSpeedFpm = 0,
     this.intent = const AircraftIntent.empty(),
+    this.routeWaypointIndex = 0,
     this.active = true,
   });
 
@@ -35,6 +37,7 @@ class AircraftState {
     double? groundSpeedKt,
     int? verticalSpeedFpm,
     AircraftIntent? intent,
+    int? routeWaypointIndex,
     bool? active,
   }) {
     return AircraftState(
@@ -47,6 +50,7 @@ class AircraftState {
       groundSpeedKt: groundSpeedKt ?? this.groundSpeedKt,
       verticalSpeedFpm: verticalSpeedFpm ?? this.verticalSpeedFpm,
       intent: intent ?? this.intent,
+      routeWaypointIndex: routeWaypointIndex ?? this.routeWaypointIndex,
       active: active ?? this.active,
     );
   }

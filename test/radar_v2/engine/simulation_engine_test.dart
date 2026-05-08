@@ -3,6 +3,7 @@ import 'package:atm_flutter/features/radar_v2/commands/controller_command.dart';
 import 'package:atm_flutter/features/radar_v2/engine/simulation_engine.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_intent.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
+import 'package:atm_flutter/features/radar_v2/models/waypoint.dart';
 
 void main() {
   test('fixed timestep moves aircraft deterministically', () {
@@ -195,13 +196,44 @@ void main() {
       );
 
     final intent = engine.snapshot.aircraftById('a')!.intent;
-    expect(intent.assignedHeadingDeg, 90);
-    expect(intent.assignedAltitudeFt, 12000);
-    expect(intent.assignedSpeedKt, 300);
+    expect(intent.assignedHeadingDeg, isNull);
+    expect(intent.assignedAltitudeFt, isNull);
+    expect(intent.assignedSpeedKt, isNull);
+
+    final acknowledged = engine.tick(steps: 3).aircraftById('a')!;
+    expect(acknowledged.intent.assignedHeadingDeg, 90);
+    expect(acknowledged.intent.assignedAltitudeFt, 12000);
+    expect(acknowledged.intent.assignedSpeedKt, 300);
 
     final aircraft = engine.tick(steps: 10).aircraftById('a')!;
-    expect(aircraft.headingDeg, closeTo(30, 0.001));
-    expect(aircraft.groundSpeedKt, closeTo(270, 0.001));
-    expect(aircraft.altitudeFt, 9300);
+    expect(aircraft.headingDeg, closeTo(33, 0.001));
+    expect(aircraft.groundSpeedKt, closeTo(273, 0.001));
+    expect(aircraft.altitudeFt, 9330);
+  });
+
+  test('aircraft follows waypoint route when not being vectored', () {
+    final engine = SimulationEngine(
+      waypoints: const {
+        'FIX1': Waypoint(id: 'FIX1', xNm: 0, yNm: 10),
+        'FIX2': Waypoint(id: 'FIX2', xNm: 10, yNm: 10),
+      },
+      aircraft: [
+        const AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 270,
+          groundSpeedKt: 360,
+          intent: AircraftIntent(route: ['FIX1', 'FIX2']),
+        ),
+      ],
+    );
+
+    final aircraft = engine.tick().aircraftById('a')!;
+
+    expect(aircraft.yNm, greaterThan(0));
+    expect(aircraft.headingDeg, closeTo(273, 0.001));
   });
 }

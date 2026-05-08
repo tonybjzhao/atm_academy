@@ -16,6 +16,19 @@
     "Use small speed reductions if the geometry tightens",
     "Reserve altitude changes for late recoveries"
   ],
+  "waypoints": [
+    { "id": "MLB_WEST", "xNm": -18, "yNm": 4 },
+    { "id": "MLB_EAST", "xNm": 18, "yNm": -4 },
+    { "id": "MLB_BASE", "xNm": 0, "yNm": 0 },
+    { "id": "MLB_SOUTH", "xNm": -4, "yNm": -18 },
+    { "id": "MLB_FINAL", "xNm": 4, "yNm": 8 },
+    { "id": "RWY27", "xNm": -3, "yNm": 16 },
+    { "id": "RWY34", "xNm": 5, "yNm": 14 }
+  ],
+  "weatherZones": [
+    { "id": "WX1", "xNm": 8, "yNm": 6, "radiusNm": 5, "severity": 2 }
+  ],
+  "densityScale": 1.0,
   "speedOptions": [1, 2, 4],
   "aircraft": [
     {
