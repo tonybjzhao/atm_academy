@@ -2,7 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:atm_flutter/features/radar_v2/commands/controller_command.dart';
 import 'package:atm_flutter/features/radar_v2/engine/simulation_engine.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_intent.dart';
+import 'package:atm_flutter/features/radar_v2/models/aircraft_performance_profile.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
+import 'package:atm_flutter/features/radar_v2/models/hold_pattern.dart';
 import 'package:atm_flutter/features/radar_v2/models/waypoint.dart';
 
 void main() {
@@ -235,5 +237,81 @@ void main() {
 
     expect(aircraft.yNm, greaterThan(0));
     expect(aircraft.headingDeg, closeTo(273, 0.001));
+  });
+
+  test('performance profiles change maneuver response rates', () {
+    final engine = SimulationEngine(
+      aircraft: [
+        const AircraftState(
+          id: 'jet',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 240,
+          performanceType: AircraftPerformanceType.jet,
+          intent: AircraftIntent(assignedHeadingDeg: 90),
+        ),
+        const AircraftState(
+          id: 'tp',
+          callsign: 'REX438',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 240,
+          performanceType: AircraftPerformanceType.turboprop,
+          intent: AircraftIntent(assignedHeadingDeg: 90),
+        ),
+      ],
+    );
+
+    final snapshot = engine.tick(steps: 10);
+
+    expect(snapshot.aircraftById('tp')!.headingDeg,
+        greaterThan(snapshot.aircraftById('jet')!.headingDeg));
+  });
+
+  test('hold command flies aircraft onto a racetrack hold', () {
+    final engine = SimulationEngine(
+      waypoints: const {
+        'FIX1': Waypoint(id: 'FIX1', xNm: 0, yNm: 0),
+      },
+      holdPatterns: const [
+        HoldPattern(
+          id: 'FIX1_HOLD',
+          fixWaypointId: 'FIX1',
+          inboundHeadingDeg: 180,
+          legSeconds: 30,
+          stackAltitudeFt: 8000,
+        ),
+      ],
+      aircraft: [
+        const AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 240,
+        ),
+      ],
+    );
+
+    engine.applyCommand(
+      const EnterHold(
+        aircraftId: 'a',
+        issuedAt: Duration.zero,
+        holdPatternId: 'FIX1_HOLD',
+      ),
+    );
+
+    final aircraft = engine.tick(steps: 4).aircraftById('a')!;
+
+    expect(aircraft.intent.hold, isTrue);
+    expect(aircraft.intent.holdPatternId, 'FIX1_HOLD');
+    expect(aircraft.intent.assignedAltitudeFt, 8000);
   });
 }

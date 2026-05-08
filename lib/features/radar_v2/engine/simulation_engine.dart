@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import '../commands/controller_command.dart';
+import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
+import '../models/arrival_flow.dart';
+import '../models/hold_pattern.dart';
 import '../models/separation_result.dart';
 import '../models/simulation_event.dart';
 import '../models/simulation_snapshot.dart';
@@ -21,6 +24,8 @@ class SimulationEngine {
   final Duration commandAcknowledgementDelay;
   final Map<String, Waypoint> waypoints;
   final List<WeatherZone> weatherZones;
+  final List<ArrivalFlow> arrivalFlows;
+  final List<HoldPattern> holdPatterns;
   final List<AircraftState> _aircraft;
   final Map<String, List<TrailPoint>> _trailHistory =
       <String, List<TrailPoint>>{};
@@ -39,6 +44,8 @@ class SimulationEngine {
     this.commandAcknowledgementDelay = const Duration(seconds: 3),
     this.waypoints = const {},
     this.weatherZones = const [],
+    this.arrivalFlows = const [],
+    this.holdPatterns = const [],
     int initialTick = 0,
     Duration initialElapsed = Duration.zero,
   })  : _aircraft = List<AircraftState>.from(aircraft, growable: true),
@@ -59,11 +66,18 @@ class SimulationEngine {
         if (!_aircraft[index].active) continue;
         final original = _aircraft[index];
         final guided = _applyRouteGuidance(original);
-        var advanced = trajectoryIntegrator.advance(guided, fixedStep);
+        var advanced = trajectoryIntegrator.advance(
+          guided,
+          fixedStep,
+          performance: AircraftPerformanceProfile.byType(
+            guided.performanceType,
+          ),
+        );
         if (original.intent.assignedHeadingDeg == null &&
             guided.intent.assignedHeadingDeg != null &&
             (original.intent.route.isNotEmpty ||
-                original.intent.directToWaypointId != null)) {
+                original.intent.directToWaypointId != null ||
+                original.intent.hold)) {
           advanced = advanced.copyWith(
             intent: advanced.intent.copyWith(clearAssignedHeading: true),
           );
@@ -114,6 +128,10 @@ class SimulationEngine {
       label: _commandIssuedLabel(command),
       aircraftId: command.aircraftId,
     ));
+  }
+
+  void recordEvent(SimulationEvent event) {
+    _events.add(event);
   }
 
   void _applyDueCommands(Duration effectiveElapsed) {
@@ -177,6 +195,35 @@ class SimulationEngine {
       _recordAcknowledgement(command, 'ACK direct ${command.waypointId}');
       return;
     }
+    if (command is EnterHold) {
+      updateAircraft(
+        aircraft.copyWith(
+          holdElapsedSeconds: 0,
+          intent: aircraft.intent.copyWith(
+            hold: true,
+            holdPatternId: command.holdPatternId,
+            clearAssignedHeading: true,
+            clearDirectTo: true,
+          ),
+        ),
+      );
+      _recordAcknowledgement(command, 'ACK hold ${command.holdPatternId}');
+      return;
+    }
+    if (command is ExitHold) {
+      updateAircraft(
+        aircraft.copyWith(
+          holdElapsedSeconds: 0,
+          intent: aircraft.intent.copyWith(
+            hold: false,
+            clearAssignedHeading: true,
+            clearHoldPattern: true,
+          ),
+        ),
+      );
+      _recordAcknowledgement(command, 'ACK exit hold');
+      return;
+    }
   }
 
   AircraftState _aircraftById(String aircraftId) {
@@ -208,11 +255,16 @@ class SimulationEngine {
       ),
       waypoints: Map<String, Waypoint>.unmodifiable(waypoints),
       weatherZones: List<WeatherZone>.unmodifiable(weatherZones),
+      arrivalFlows: List<ArrivalFlow>.unmodifiable(arrivalFlows),
+      holdPatterns: List<HoldPattern>.unmodifiable(holdPatterns),
       events: List<SimulationEvent>.unmodifiable(_events),
     );
   }
 
   AircraftState _applyRouteGuidance(AircraftState aircraft) {
+    if (aircraft.intent.hold && aircraft.intent.holdPatternId != null) {
+      return _applyHoldGuidance(aircraft);
+    }
     final directId = aircraft.intent.directToWaypointId;
     final route = aircraft.intent.route;
     final waypointId = directId ??
@@ -239,6 +291,48 @@ class SimulationEngine {
     );
   }
 
+  AircraftState _applyHoldGuidance(AircraftState aircraft) {
+    final pattern = _holdPatternById(aircraft.intent.holdPatternId);
+    if (pattern == null) return aircraft;
+    final fix = waypoints[pattern.fixWaypointId];
+    if (fix == null) return aircraft;
+
+    final distanceToFix =
+        _distance(aircraft.xNm, aircraft.yNm, fix.xNm, fix.yNm);
+    if (distanceToFix > 1.5 && aircraft.holdElapsedSeconds == 0) {
+      return aircraft.copyWith(
+        intent: aircraft.intent.copyWith(
+          assignedHeadingDeg:
+              _bearingTo(aircraft.xNm, aircraft.yNm, fix.xNm, fix.yNm),
+        ),
+      );
+    }
+
+    const turnSeconds = 30;
+    final cycleSeconds = pattern.legSeconds * 2 + turnSeconds * 2;
+    final nextElapsed =
+        (aircraft.holdElapsedSeconds + fixedStep.inSeconds) % cycleSeconds;
+    final firstLegEnd = pattern.legSeconds / cycleSeconds;
+    final firstTurnEnd = (pattern.legSeconds + turnSeconds) / cycleSeconds;
+    final secondLegEnd = (pattern.legSeconds * 2 + turnSeconds) / cycleSeconds;
+    final phase = nextElapsed / cycleSeconds;
+    final heading = phase < firstLegEnd
+        ? pattern.inboundHeadingDeg
+        : phase < firstTurnEnd
+            ? pattern.inboundHeadingDeg + 90
+            : phase < secondLegEnd
+                ? pattern.inboundHeadingDeg + 180
+                : pattern.inboundHeadingDeg + 270;
+
+    return aircraft.copyWith(
+      holdElapsedSeconds: nextElapsed.toDouble(),
+      intent: aircraft.intent.copyWith(
+        assignedHeadingDeg: _normalizeHeading(heading),
+        assignedAltitudeFt: pattern.stackAltitudeFt,
+      ),
+    );
+  }
+
   void _recordTrailPoint(AircraftState aircraft) {
     if (!aircraft.active) return;
     final points = _trailHistory.putIfAbsent(aircraft.id, () => <TrailPoint>[]);
@@ -259,6 +353,20 @@ class SimulationEngine {
   double _bearingTo(double fromX, double fromY, double toX, double toY) {
     final headingRad = math.atan2(toX - fromX, toY - fromY);
     return _normalizeHeading(headingRad * 180 / math.pi);
+  }
+
+  double _distance(double fromX, double fromY, double toX, double toY) {
+    final dx = fromX - toX;
+    final dy = fromY - toY;
+    return math.sqrt(dx * dx + dy * dy);
+  }
+
+  HoldPattern? _holdPatternById(String? id) {
+    if (id == null) return null;
+    for (final pattern in holdPatterns) {
+      if (pattern.id == id) return pattern;
+    }
+    return null;
   }
 
   void _recordAcknowledgement(ControllerCommand command, String label) {
@@ -282,6 +390,12 @@ class SimulationEngine {
     }
     if (command is DirectToWaypoint) {
       return 'Issued direct ${command.waypointId}';
+    }
+    if (command is EnterHold) {
+      return 'Issued hold ${command.holdPatternId}';
+    }
+    if (command is ExitHold) {
+      return 'Issued exit hold';
     }
     return 'Issued command';
   }

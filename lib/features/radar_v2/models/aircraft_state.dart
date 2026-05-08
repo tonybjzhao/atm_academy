@@ -1,4 +1,5 @@
 import 'aircraft_intent.dart';
+import 'aircraft_performance_profile.dart';
 
 class AircraftState {
   final String id;
@@ -11,6 +12,8 @@ class AircraftState {
   final int verticalSpeedFpm;
   final AircraftIntent intent;
   final int routeWaypointIndex;
+  final AircraftPerformanceType performanceType;
+  final double holdElapsedSeconds;
   final bool active;
 
   const AircraftState({
@@ -24,6 +27,8 @@ class AircraftState {
     this.verticalSpeedFpm = 0,
     this.intent = const AircraftIntent.empty(),
     this.routeWaypointIndex = 0,
+    this.performanceType = AircraftPerformanceType.jet,
+    this.holdElapsedSeconds = 0,
     this.active = true,
   });
 
@@ -38,6 +43,8 @@ class AircraftState {
     int? verticalSpeedFpm,
     AircraftIntent? intent,
     int? routeWaypointIndex,
+    AircraftPerformanceType? performanceType,
+    double? holdElapsedSeconds,
     bool? active,
   }) {
     return AircraftState(
@@ -51,6 +58,8 @@ class AircraftState {
       verticalSpeedFpm: verticalSpeedFpm ?? this.verticalSpeedFpm,
       intent: intent ?? this.intent,
       routeWaypointIndex: routeWaypointIndex ?? this.routeWaypointIndex,
+      performanceType: performanceType ?? this.performanceType,
+      holdElapsedSeconds: holdElapsedSeconds ?? this.holdElapsedSeconds,
       active: active ?? this.active,
     );
   }

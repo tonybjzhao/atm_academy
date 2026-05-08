@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import '../models/aircraft_performance_profile.dart';
+import '../models/arrival_flow.dart';
+import '../models/hold_pattern.dart';
 import '../models/weather_zone.dart';
 import '../models/waypoint.dart';
 import 'scenario_definition.dart';
@@ -20,6 +23,8 @@ class ScenarioLoader {
       id: _string(json, 'id'),
       title: _string(json, 'title'),
       sectorId: _string(json, 'sectorId'),
+      sectorPersonality:
+          (json['sectorPersonality'] as String?) ?? 'arrival_rush',
       duration: Duration(seconds: _int(json, 'durationSeconds')),
       difficulty: _int(json, 'difficulty'),
       radarRangeNm: (json['radarRangeNm'] as num?)?.toDouble() ?? 42,
@@ -28,6 +33,8 @@ class ScenarioLoader {
       expectedTechniques: _optionalStringList(json['expectedTechniques']),
       waypoints: _parseWaypoints(json['waypoints']),
       weatherZones: _parseWeatherZones(json['weatherZones']),
+      arrivalFlows: _parseArrivalFlows(json['arrivalFlows']),
+      holdPatterns: _parseHoldPatterns(json['holdPatterns']),
       densityScale: (json['densityScale'] as num?)?.toDouble() ?? 1,
       speedOptions: _intList(json['speedOptions']),
       aircraft: _list(json['aircraft'])
@@ -62,6 +69,9 @@ class ScenarioLoader {
       verticalSpeedFpm: (json['verticalSpeedFpm'] as num?)?.round() ?? 0,
       route: route,
       routeWaypointIndex: (json['routeWaypointIndex'] as num?)?.round() ?? 0,
+      performanceType:
+          AircraftPerformanceProfile.parseType(json['performanceType']),
+      assignedRunwayId: json['runwayId'] as String?,
     );
     return AircraftSpawnDefinition(
       id: id,
@@ -103,6 +113,37 @@ class ScenarioLoader {
         yNm: _number(json, 'yNm'),
         radiusNm: _number(json, 'radiusNm'),
         severity: (json['severity'] as num?)?.round() ?? 1,
+      );
+    }).toList(growable: false);
+  }
+
+  List<ArrivalFlow> _parseArrivalFlows(Object? value) {
+    if (value == null) return const [];
+    return _list(value).map((item) {
+      final json = _map(item, 'arrival flow');
+      return ArrivalFlow(
+        id: _string(json, 'id'),
+        runwayId: _string(json, 'runwayId'),
+        mergeWaypointId: _string(json, 'mergeWaypointId'),
+        finalFixWaypointId: _string(json, 'finalFixWaypointId'),
+        thresholdWaypointId: _string(json, 'thresholdWaypointId'),
+        spacingTargetNm: (json['spacingTargetNm'] as num?)?.toDouble() ?? 6,
+        stabilizedAltitudeFt:
+            (json['stabilizedAltitudeFt'] as num?)?.round() ?? 3000,
+      );
+    }).toList(growable: false);
+  }
+
+  List<HoldPattern> _parseHoldPatterns(Object? value) {
+    if (value == null) return const [];
+    return _list(value).map((item) {
+      final json = _map(item, 'hold pattern');
+      return HoldPattern(
+        id: _string(json, 'id'),
+        fixWaypointId: _string(json, 'fixWaypointId'),
+        inboundHeadingDeg: _number(json, 'inboundHeadingDeg'),
+        legSeconds: (json['legSeconds'] as num?)?.round() ?? 60,
+        stackAltitudeFt: (json['stackAltitudeFt'] as num?)?.round() ?? 7000,
       );
     }).toList(growable: false);
   }

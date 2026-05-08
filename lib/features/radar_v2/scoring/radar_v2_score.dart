@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../commands/controller_command.dart';
 import '../models/simulation_snapshot.dart';
 
@@ -32,6 +34,7 @@ class RadarV2ScoreTracker {
   final Set<String> _separationLossKeys = <String>{};
   final Set<String> _lateConflictKeys = <String>{};
   final Set<String> _weatherKeys = <String>{};
+  final Set<String> _flowSpacingKeys = <String>{};
   int _score = 100;
   int _commandCount = 0;
   int _altitudeCommandCount = 0;
@@ -95,6 +98,54 @@ class RadarV2ScoreTracker {
         }
       }
     }
+    _observeArrivalSpacing(snapshot);
+  }
+
+  void _observeArrivalSpacing(SimulationSnapshot snapshot) {
+    for (final flow in snapshot.arrivalFlows) {
+      final arrivals = snapshot.aircraft
+          .where((aircraft) =>
+              aircraft.active &&
+              aircraft.intent.assignedRunwayId == flow.runwayId)
+          .toList(growable: false);
+      if (arrivals.length < 2) continue;
+      final finalFix = snapshot.waypoints[flow.finalFixWaypointId];
+      final threshold = snapshot.waypoints[flow.thresholdWaypointId];
+      if (finalFix == null || threshold == null) continue;
+      arrivals.sort((a, b) {
+        final aDistance = _distanceToThresholdAlongFinal(
+          a.xNm,
+          a.yNm,
+          finalFix.xNm,
+          finalFix.yNm,
+          threshold.xNm,
+          threshold.yNm,
+        );
+        final bDistance = _distanceToThresholdAlongFinal(
+          b.xNm,
+          b.yNm,
+          finalFix.xNm,
+          finalFix.yNm,
+          threshold.xNm,
+          threshold.yNm,
+        );
+        return aDistance.compareTo(bDistance);
+      });
+      for (var i = 0; i < arrivals.length - 1; i++) {
+        final leading = arrivals[i];
+        final trailing = arrivals[i + 1];
+        final lateral = _distance(
+          leading.xNm,
+          leading.yNm,
+          trailing.xNm,
+          trailing.yNm,
+        );
+        final key = '${flow.id}:${leading.id}:${trailing.id}';
+        if (lateral < flow.spacingTargetNm && _flowSpacingKeys.add(key)) {
+          _penalize(4, 'Arrival spacing compressed');
+        }
+      }
+    }
   }
 
   void _penalize(int points, String reason) {
@@ -110,5 +161,35 @@ class RadarV2ScoreTracker {
   String _pairKey(String a, String b) {
     final ids = [a, b]..sort();
     return '${ids[0]}:${ids[1]}';
+  }
+
+  double _distance(
+    double ax,
+    double ay,
+    double bx,
+    double by,
+  ) {
+    final dx = ax - bx;
+    final dy = ay - by;
+    return math.sqrt(dx * dx + dy * dy);
+  }
+
+  double _distanceToThresholdAlongFinal(
+    double x,
+    double y,
+    double finalX,
+    double finalY,
+    double thresholdX,
+    double thresholdY,
+  ) {
+    final vx = thresholdX - finalX;
+    final vy = thresholdY - finalY;
+    final lengthSquared = vx * vx + vy * vy;
+    if (lengthSquared == 0) return _distance(x, y, thresholdX, thresholdY);
+    final projected =
+        (((x - finalX) * vx + (y - finalY) * vy) / lengthSquared).clamp(0, 1);
+    final px = finalX + vx * projected;
+    final py = finalY + vy * projected;
+    return _distance(px, py, thresholdX, thresholdY);
   }
 }

@@ -2,6 +2,7 @@
   "id": "melbourne_overtaking_traffic_001",
   "title": "Overtaking Traffic",
   "sectorId": "melbourne_approach",
+  "sectorPersonality": "busy_terminal",
   "durationSeconds": 210,
   "difficulty": 3,
   "radarRangeNm": 42,
@@ -19,11 +20,32 @@
   "waypoints": [
     { "id": "MLB_WEST", "xNm": -20, "yNm": -2 },
     { "id": "MLB_FINAL", "xNm": 20, "yNm": -2 },
+    { "id": "RWY09", "xNm": 28, "yNm": -2 },
     { "id": "MLB_NORTH", "xNm": 8, "yNm": 20 },
     { "id": "MLB_BASE", "xNm": 8, "yNm": 2 }
   ],
   "weatherZones": [
     { "id": "WX2", "xNm": -4, "yNm": 8, "radiusNm": 4.5, "severity": 1 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "mlb_rwy09_flow",
+      "runwayId": "RWY09",
+      "mergeWaypointId": "MLB_WEST",
+      "finalFixWaypointId": "MLB_FINAL",
+      "thresholdWaypointId": "RWY09",
+      "spacingTargetNm": 7,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "holdPatterns": [
+    {
+      "id": "MLB_WEST_HOLD",
+      "fixWaypointId": "MLB_WEST",
+      "inboundHeadingDeg": 90,
+      "legSeconds": 50,
+      "stackAltitudeFt": 8000
+    }
   ],
   "densityScale": 1.12,
   "speedOptions": [1, 2, 4],
@@ -36,7 +58,9 @@
       "altitudeFt": 8000,
       "headingDeg": 90,
       "groundSpeedKt": 230,
-      "route": ["MLB_WEST", "MLB_FINAL"]
+      "performanceType": "regional",
+      "runwayId": "RWY09",
+      "route": ["MLB_WEST", "MLB_FINAL", "RWY09"]
     },
     {
       "id": "jst771",
@@ -46,7 +70,9 @@
       "altitudeFt": 8000,
       "headingDeg": 90,
       "groundSpeedKt": 330,
-      "route": ["MLB_WEST", "MLB_FINAL"]
+      "performanceType": "jet",
+      "runwayId": "RWY09",
+      "route": ["MLB_WEST", "MLB_FINAL", "RWY09"]
     },
     {
       "id": "vja454",
@@ -56,7 +82,9 @@
       "altitudeFt": 9000,
       "headingDeg": 205,
       "groundSpeedKt": 260,
-      "route": ["MLB_NORTH", "MLB_BASE"]
+      "performanceType": "jet",
+      "runwayId": "RWY09",
+      "route": ["MLB_NORTH", "MLB_BASE", "RWY09"]
     }
   ],
   "winConditions": [

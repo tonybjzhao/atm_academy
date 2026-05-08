@@ -47,3 +47,20 @@ class DirectToWaypoint extends ControllerCommand {
     required this.waypointId,
   });
 }
+
+class EnterHold extends ControllerCommand {
+  final String holdPatternId;
+
+  const EnterHold({
+    required super.aircraftId,
+    required super.issuedAt,
+    required this.holdPatternId,
+  });
+}
+
+class ExitHold extends ControllerCommand {
+  const ExitHold({
+    required super.aircraftId,
+    required super.issuedAt,
+  });
+}

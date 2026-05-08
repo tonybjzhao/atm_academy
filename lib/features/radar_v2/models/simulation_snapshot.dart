@@ -1,4 +1,6 @@
+import 'arrival_flow.dart';
 import 'aircraft_state.dart';
+import 'hold_pattern.dart';
 import 'separation_result.dart';
 import 'simulation_event.dart';
 import 'trail_point.dart';
@@ -13,6 +15,8 @@ class SimulationSnapshot {
   final Map<String, List<TrailPoint>> trails;
   final Map<String, Waypoint> waypoints;
   final List<WeatherZone> weatherZones;
+  final List<ArrivalFlow> arrivalFlows;
+  final List<HoldPattern> holdPatterns;
   final List<SimulationEvent> events;
 
   const SimulationSnapshot({
@@ -23,6 +27,8 @@ class SimulationSnapshot {
     this.trails = const {},
     this.waypoints = const {},
     this.weatherZones = const [],
+    this.arrivalFlows = const [],
+    this.holdPatterns = const [],
     this.events = const [],
   });
 

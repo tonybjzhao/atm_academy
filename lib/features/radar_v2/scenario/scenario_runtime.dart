@@ -1,5 +1,6 @@
 import '../engine/simulation_engine.dart';
 import '../models/aircraft_state.dart';
+import '../models/simulation_event.dart';
 import '../models/simulation_snapshot.dart';
 import 'scenario_definition.dart';
 
@@ -18,6 +19,8 @@ class ScenarioRuntime {
               aircraft: const [],
               waypoints: definition.waypoints,
               weatherZones: definition.weatherZones,
+              arrivalFlows: definition.arrivalFlows,
+              holdPatterns: definition.holdPatterns,
             );
 
   SimulationSnapshot get snapshot => engine.snapshot;
@@ -116,8 +119,16 @@ class ScenarioRuntime {
   }
 
   void _recordSeparationLosses(SimulationSnapshot snapshot) {
-    _separationLossCount +=
-        snapshot.separation.where((result) => result.isLossOfSeparation).length;
+    for (final result
+        in snapshot.separation.where((result) => result.isLossOfSeparation)) {
+      _separationLossCount += 1;
+      engine.recordEvent(SimulationEvent(
+        elapsed: snapshot.elapsed,
+        type: 'separationLoss',
+        label: 'Loss ${result.aircraftAId}/${result.aircraftBId}',
+        aircraftId: result.aircraftAId,
+      ));
+    }
   }
 
   void _markExitedAircraft(SimulationSnapshot snapshot) {
@@ -125,6 +136,12 @@ class ScenarioRuntime {
       if (!aircraft.active || _exitedIds.contains(aircraft.id)) continue;
       if (_isOutsideRadarRange(aircraft)) {
         _exitedIds.add(aircraft.id);
+        engine.recordEvent(SimulationEvent(
+          elapsed: snapshot.elapsed,
+          type: 'aircraftExited',
+          label: '${aircraft.callsign} exited radar',
+          aircraftId: aircraft.id,
+        ));
         engine.deactivateAircraft(aircraft.id);
       }
     }

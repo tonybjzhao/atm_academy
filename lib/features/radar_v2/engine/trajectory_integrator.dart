@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
 
 class TrajectoryIntegrator {
@@ -17,23 +18,30 @@ class TrajectoryIntegrator {
     double accelerationKtPerSecond = defaultAccelerationKtPerSecond,
     int climbRateFpm = defaultClimbRateFpm,
     int descentRateFpm = defaultDescentRateFpm,
+    AircraftPerformanceProfile? performance,
   }) {
+    final effectiveTurnRate =
+        performance?.turnRateDegPerSecond ?? turnRateDegPerSecond;
+    final effectiveAcceleration =
+        performance?.accelerationKtPerSecond ?? accelerationKtPerSecond;
+    final effectiveClimbRate = performance?.climbRateFpm ?? climbRateFpm;
+    final effectiveDescentRate = performance?.descentRateFpm ?? descentRateFpm;
     final seconds = step.inMicroseconds / Duration.microsecondsPerSecond;
     final nextHeading = _approachAngle(
       aircraft.headingDeg,
       aircraft.intent.assignedHeadingDeg ?? aircraft.headingDeg,
-      turnRateDegPerSecond * seconds,
+      effectiveTurnRate * seconds,
     );
     final nextSpeed = _approachDouble(
       aircraft.groundSpeedKt,
       aircraft.intent.assignedSpeedKt ?? aircraft.groundSpeedKt,
-      accelerationKtPerSecond * seconds,
+      effectiveAcceleration * seconds,
     );
     final nextAltitude = _advanceAltitude(
       aircraft,
       seconds,
-      climbRateFpm: climbRateFpm,
-      descentRateFpm: descentRateFpm,
+      climbRateFpm: effectiveClimbRate,
+      descentRateFpm: effectiveDescentRate,
     );
 
     final headingRad = nextHeading * math.pi / 180;

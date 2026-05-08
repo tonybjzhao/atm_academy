@@ -1,5 +1,8 @@
 import '../models/aircraft_intent.dart';
+import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
+import '../models/arrival_flow.dart';
+import '../models/hold_pattern.dart';
 import '../models/weather_zone.dart';
 import '../models/waypoint.dart';
 
@@ -7,6 +10,7 @@ class ScenarioDefinition {
   final String id;
   final String title;
   final String sectorId;
+  final String sectorPersonality;
   final Duration duration;
   final int difficulty;
   final double radarRangeNm;
@@ -15,6 +19,8 @@ class ScenarioDefinition {
   final List<String> expectedTechniques;
   final Map<String, Waypoint> waypoints;
   final List<WeatherZone> weatherZones;
+  final List<ArrivalFlow> arrivalFlows;
+  final List<HoldPattern> holdPatterns;
   final double densityScale;
   final List<int> speedOptions;
   final List<AircraftSpawnDefinition> aircraft;
@@ -25,6 +31,7 @@ class ScenarioDefinition {
     required this.id,
     required this.title,
     required this.sectorId,
+    this.sectorPersonality = 'arrival_rush',
     required this.duration,
     required this.difficulty,
     this.radarRangeNm = 42,
@@ -33,6 +40,8 @@ class ScenarioDefinition {
     this.expectedTechniques = const [],
     this.waypoints = const {},
     this.weatherZones = const [],
+    this.arrivalFlows = const [],
+    this.holdPatterns = const [],
     this.densityScale = 1,
     required this.speedOptions,
     required this.aircraft,
@@ -93,6 +102,8 @@ AircraftState aircraftStateFromSpawn({
   int verticalSpeedFpm = 0,
   List<String> route = const [],
   int routeWaypointIndex = 0,
+  AircraftPerformanceType performanceType = AircraftPerformanceType.jet,
+  String? assignedRunwayId,
 }) {
   return AircraftState(
     id: id,
@@ -103,7 +114,8 @@ AircraftState aircraftStateFromSpawn({
     headingDeg: headingDeg,
     groundSpeedKt: groundSpeedKt,
     verticalSpeedFpm: verticalSpeedFpm,
-    intent: AircraftIntent(route: route),
+    intent: AircraftIntent(route: route, assignedRunwayId: assignedRunwayId),
     routeWaypointIndex: routeWaypointIndex,
+    performanceType: performanceType,
   );
 }

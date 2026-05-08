@@ -52,6 +52,8 @@ class RadarV2Painter extends CustomPainter {
     canvas.drawLine(
         center.translate(0, -radius), center.translate(0, radius), axisPaint);
     _drawWeather(canvas, center, scale);
+    _drawArrivalFlows(canvas, center, scale);
+    _drawHoldPatterns(canvas, center, scale);
     _drawWaypoints(canvas, center, scale);
     if (sweepEnabled) {
       _drawSweep(canvas, center, radius);
@@ -240,6 +242,114 @@ class RadarV2Painter extends CustomPainter {
     }
   }
 
+  void _drawArrivalFlows(Canvas canvas, Offset center, double scale) {
+    final funnelPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = const Color(0x6655D6BE);
+    final boundaryPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = const Color(0x3355D6BE);
+
+    for (final flow in snapshot.arrivalFlows) {
+      final merge = snapshot.waypoints[flow.mergeWaypointId];
+      final finalFix = snapshot.waypoints[flow.finalFixWaypointId];
+      final threshold = snapshot.waypoints[flow.thresholdWaypointId];
+      if (merge == null || finalFix == null || threshold == null) continue;
+
+      final mergePoint = _toCanvas(center, scale, merge.xNm, merge.yNm);
+      final finalPoint = _toCanvas(center, scale, finalFix.xNm, finalFix.yNm);
+      final thresholdPoint =
+          _toCanvas(center, scale, threshold.xNm, threshold.yNm);
+      canvas.drawLine(mergePoint, finalPoint, boundaryPaint);
+      canvas.drawLine(finalPoint, thresholdPoint, funnelPaint);
+
+      final dx = thresholdPoint.dx - finalPoint.dx;
+      final dy = thresholdPoint.dy - finalPoint.dy;
+      final length = math.sqrt(dx * dx + dy * dy);
+      if (length > 0) {
+        final normal = Offset(-dy / length, dx / length) * 12;
+        final funnel = Path()
+          ..moveTo(mergePoint.dx, mergePoint.dy)
+          ..lineTo(finalPoint.dx + normal.dx, finalPoint.dy + normal.dy)
+          ..lineTo(thresholdPoint.dx + normal.dx * 0.4,
+              thresholdPoint.dy + normal.dy * 0.4)
+          ..moveTo(mergePoint.dx, mergePoint.dy)
+          ..lineTo(finalPoint.dx - normal.dx, finalPoint.dy - normal.dy)
+          ..lineTo(thresholdPoint.dx - normal.dx * 0.4,
+              thresholdPoint.dy - normal.dy * 0.4);
+        canvas.drawPath(funnel, boundaryPaint);
+      }
+
+      _drawAlertLabel(
+        canvas,
+        mergePoint.translate(8, 8),
+        'MERGE ${flow.spacingTargetNm.toStringAsFixed(0)}NM',
+        const Color(0xFF55D6BE),
+      );
+      _drawAlertLabel(
+        canvas,
+        thresholdPoint.translate(8, -10),
+        flow.runwayId,
+        const Color(0xFF55D6BE),
+      );
+    }
+  }
+
+  void _drawHoldPatterns(Canvas canvas, Offset center, double scale) {
+    for (final pattern in snapshot.holdPatterns) {
+      final fix = snapshot.waypoints[pattern.fixWaypointId];
+      if (fix == null) continue;
+      final position = _toCanvas(center, scale, fix.xNm, fix.yNm);
+      final headingRad = pattern.inboundHeadingDeg * math.pi / 180;
+      final along = Offset(math.sin(headingRad), -math.cos(headingRad));
+      final across = Offset(along.dy, -along.dx);
+      final length = (pattern.legSeconds / 60 * 4.5 * scale).clamp(26.0, 56.0);
+      const width = 15.0;
+      final path = Path()
+        ..moveTo(
+          position.dx - across.dx * width,
+          position.dy - across.dy * width,
+        )
+        ..lineTo(
+          position.dx + along.dx * length - across.dx * width,
+          position.dy + along.dy * length - across.dy * width,
+        )
+        ..arcToPoint(
+          Offset(
+            position.dx + along.dx * length + across.dx * width,
+            position.dy + along.dy * length + across.dy * width,
+          ),
+          radius: const Radius.circular(width),
+        )
+        ..lineTo(
+          position.dx + across.dx * width,
+          position.dy + across.dy * width,
+        )
+        ..arcToPoint(
+          Offset(
+            position.dx - across.dx * width,
+            position.dy - across.dy * width,
+          ),
+          radius: const Radius.circular(width),
+        );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = const Color(0x889B8CFF),
+      );
+      _drawAlertLabel(
+        canvas,
+        position.translate(8, 12),
+        'HOLD ${pattern.id}',
+        const Color(0xFF9B8CFF),
+      );
+    }
+  }
+
   void _drawWaypoints(Canvas canvas, Offset center, double scale) {
     final routePaint = Paint()
       ..style = PaintingStyle.stroke
@@ -394,6 +504,39 @@ class RadarV2Painter extends CustomPainter {
         : 'CONFLICT T-${seconds}s ${conflict.lateralNm.toStringAsFixed(1)}NM';
     _drawAlertLabel(
         canvas, position.translate(12, -22), label, const Color(0xFFFFD166));
+    _drawClosureArrow(canvas, center, scale, conflict, paint);
+  }
+
+  void _drawClosureArrow(
+    Canvas canvas,
+    Offset center,
+    double scale,
+    SeparationResult conflict,
+    Paint paint,
+  ) {
+    final a = snapshot.aircraftById(conflict.aircraftAId);
+    final b = snapshot.aircraftById(conflict.aircraftBId);
+    final x = conflict.conflictXNm;
+    final y = conflict.conflictYNm;
+    if (a == null || b == null || x == null || y == null) return;
+    final conflictPoint = _toCanvas(center, scale, x, y);
+    for (final aircraft in [a, b]) {
+      final position = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
+      final arrowEnd = Offset.lerp(position, conflictPoint, 0.35)!;
+      canvas.drawLine(position, arrowEnd, paint..strokeWidth = 1.2);
+      final angle =
+          math.atan2(arrowEnd.dy - position.dy, arrowEnd.dx - position.dx);
+      final left = arrowEnd.translate(
+        -math.cos(angle - 0.45) * 6,
+        -math.sin(angle - 0.45) * 6,
+      );
+      final right = arrowEnd.translate(
+        -math.cos(angle + 0.45) * 6,
+        -math.sin(angle + 0.45) * 6,
+      );
+      canvas.drawLine(arrowEnd, left, paint);
+      canvas.drawLine(arrowEnd, right, paint);
+    }
   }
 
   void _drawAlertLabel(

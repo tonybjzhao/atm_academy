@@ -8,6 +8,7 @@ void main() {
   "id": "test_scenario",
   "title": "Test Scenario",
   "sectorId": "test_sector",
+  "sectorPersonality": "crossing_overflight",
   "durationSeconds": 120,
   "difficulty": 3,
   "radarRangeNm": 42,
@@ -16,6 +17,26 @@ void main() {
   ],
   "weatherZones": [
     { "id": "WX", "xNm": 2, "yNm": 3, "radiusNm": 4, "severity": 2 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "test_flow",
+      "runwayId": "RWY01",
+      "mergeWaypointId": "FIXA",
+      "finalFixWaypointId": "FIXA",
+      "thresholdWaypointId": "FIXA",
+      "spacingTargetNm": 7,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "holdPatterns": [
+    {
+      "id": "FIXA_HOLD",
+      "fixWaypointId": "FIXA",
+      "inboundHeadingDeg": 180,
+      "legSeconds": 45,
+      "stackAltitudeFt": 8000
+    }
   ],
   "densityScale": 1.2,
   "speedOptions": [1, 2, 4],
@@ -27,7 +48,9 @@ void main() {
       "position": { "xNm": -10, "yNm": 0 },
       "altitudeFt": 9000,
       "headingDeg": 90,
-      "groundSpeedKt": 300
+      "groundSpeedKt": 300,
+      "performanceType": "regional",
+      "runwayId": "RWY01"
     },
     {
       "id": "b",
@@ -55,11 +78,16 @@ void main() {
 
     expect(scenario.id, 'test_scenario');
     expect(scenario.difficulty, 3);
+    expect(scenario.sectorPersonality, 'crossing_overflight');
     expect(scenario.speedOptions, [1, 2, 4]);
     expect(scenario.waypoints['FIXA']?.yNm, 10);
     expect(scenario.weatherZones.single.id, 'WX');
+    expect(scenario.arrivalFlows.single.spacingTargetNm, 7);
+    expect(scenario.holdPatterns.single.stackAltitudeFt, 8000);
     expect(scenario.densityScale, 1.2);
     expect(scenario.aircraft, hasLength(2));
+    expect(
+        scenario.aircraft.first.initialState.intent.assignedRunwayId, 'RWY01');
     expect(scenario.aircraft.last.spawnAt, const Duration(seconds: 5));
   });
 

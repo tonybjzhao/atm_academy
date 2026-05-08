@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
 import 'commands/controller_command.dart';
 import 'models/aircraft_state.dart';
+import 'models/simulation_event.dart';
 import 'models/simulation_snapshot.dart';
 import 'rendering/radar_v2_painter.dart';
 import 'scenario/scenario_asset_loader.dart';
@@ -47,6 +48,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   bool _resultShown = false;
   String _scenarioName = 'Crossing Arrivals';
   String? _selectedAircraftId;
+  String? _reviewEventLabel;
   String? _recentlyCommandedAircraftId;
   Timer? _commandHighlightTimer;
   DateTime _lastAudioCue = DateTime.fromMillisecondsSinceEpoch(0);
@@ -71,6 +73,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _scoreTracker = RadarV2ScoreTracker();
       _scenarioName = scenarioName;
       _selectedAircraftId = null;
+      _reviewEventLabel = null;
       _recentlyCommandedAircraftId = null;
       _previousSnapshot = null;
       _snapshot = _runtime!.snapshot;
@@ -268,6 +271,30 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     );
   }
 
+  void _commandHold(AircraftState aircraft) {
+    final snapshot = _snapshot;
+    if (snapshot == null || snapshot.holdPatterns.isEmpty) return;
+    final hold = snapshot.holdPatterns.first;
+    if (aircraft.intent.hold) {
+      _issueCommand(
+        ExitHold(
+          aircraftId: aircraft.id,
+          issuedAt: snapshot.elapsed,
+        ),
+        '${aircraft.callsign} EXIT HOLD',
+      );
+      return;
+    }
+    _issueCommand(
+      EnterHold(
+        aircraftId: aircraft.id,
+        issuedAt: snapshot.elapsed,
+        holdPatternId: hold.id,
+      ),
+      '${aircraft.callsign} HOLD AT ${hold.fixWaypointId}',
+    );
+  }
+
   double _normalizeHeading(double headingDeg) {
     final normalized = headingDeg % 360;
     return normalized < 0 ? normalized + 360 : normalized;
@@ -399,9 +426,16 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                 if (value != null) _loadScenario(value);
               },
               onRestart: _restartScenario,
+              onEventSelected: (event) => setState(() {
+                _reviewEventLabel =
+                    '${event.elapsed.inSeconds}s ${event.label}';
+                _selectedAircraftId = event.aircraftId ?? _selectedAircraftId;
+              }),
               onHeading: _commandHeading,
               onAltitude: _commandAltitude,
               onSpeed: _commandSpeed,
+              onHold: _commandHold,
+              reviewEventLabel: _reviewEventLabel,
             ),
         ],
       ),
@@ -434,9 +468,12 @@ class _DebugControls extends StatelessWidget {
   final VoidCallback onStep;
   final ValueChanged<String?> onScenarioChanged;
   final VoidCallback onRestart;
+  final ValueChanged<SimulationEvent> onEventSelected;
   final void Function(AircraftState aircraft, int deltaDeg) onHeading;
   final void Function(AircraftState aircraft, int deltaFt) onAltitude;
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
+  final void Function(AircraftState aircraft) onHold;
+  final String? reviewEventLabel;
 
   const _DebugControls({
     required this.snapshot,
@@ -456,9 +493,12 @@ class _DebugControls extends StatelessWidget {
     required this.onStep,
     required this.onScenarioChanged,
     required this.onRestart,
+    required this.onEventSelected,
     required this.onHeading,
     required this.onAltitude,
     required this.onSpeed,
+    required this.onHold,
+    required this.reviewEventLabel,
   });
 
   @override
@@ -580,7 +620,15 @@ class _DebugControls extends StatelessWidget {
             ],
             if (snapshot.events.isNotEmpty) ...[
               const SizedBox(height: 10),
-              _TimelineStrip(snapshot: snapshot),
+              _TimelineStrip(
+                snapshot: snapshot,
+                onEventSelected: onEventSelected,
+                reviewEventLabel: reviewEventLabel,
+              ),
+            ],
+            if (snapshot.arrivalFlows.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _ArrivalFlowPanel(snapshot: snapshot),
             ],
             if (selectedAircraft != null) ...[
               const SizedBox(height: 10),
@@ -589,6 +637,7 @@ class _DebugControls extends StatelessWidget {
                 onHeading: onHeading,
                 onAltitude: onAltitude,
                 onSpeed: onSpeed,
+                onHold: onHold,
               ),
             ],
             if (score.penalties.isNotEmpty) ...[
@@ -619,8 +668,14 @@ class _DebugControls extends StatelessWidget {
 
 class _TimelineStrip extends StatelessWidget {
   final SimulationSnapshot snapshot;
+  final ValueChanged<SimulationEvent> onEventSelected;
+  final String? reviewEventLabel;
 
-  const _TimelineStrip({required this.snapshot});
+  const _TimelineStrip({
+    required this.snapshot,
+    required this.onEventSelected,
+    required this.reviewEventLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -650,29 +705,100 @@ class _TimelineStrip extends StatelessWidget {
             for (final event in recentEvents)
               Tooltip(
                 message: event.label,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: event.type == 'commandAcknowledged'
-                        ? const Color(0x2236D399)
-                        : const Color(0x2246A3FF),
-                    border: Border.all(color: AppTheme.borderColor),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '${event.elapsed.inSeconds}s ${event.type == 'commandAcknowledged' ? 'ACK' : 'CMD'}',
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 10,
+                child: InkWell(
+                  onTap: () => onEventSelected(event),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _eventColor(event.type),
+                      border: Border.all(color: AppTheme.borderColor),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${event.elapsed.inSeconds}s ${_eventShortLabel(event.type)}',
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                 ),
               ),
           ],
         ),
+        if (reviewEventLabel != null) ...[
+          const SizedBox(height: 5),
+          Text(
+            'Review: $reviewEventLabel',
+            style: const TextStyle(color: AppTheme.primary, fontSize: 11),
+          ),
+        ],
       ],
     );
+  }
+
+  Color _eventColor(String type) {
+    if (type == 'separationLoss') return const Color(0x33FF4D4D);
+    if (type == 'commandAcknowledged') return const Color(0x2236D399);
+    if (type == 'aircraftExited') return const Color(0x2255D6BE);
+    return const Color(0x2246A3FF);
+  }
+
+  String _eventShortLabel(String type) {
+    if (type == 'commandAcknowledged') return 'ACK';
+    if (type == 'separationLoss') return 'LOSS';
+    if (type == 'aircraftExited') return 'EXIT';
+    return 'CMD';
+  }
+}
+
+class _ArrivalFlowPanel extends StatelessWidget {
+  final SimulationSnapshot snapshot;
+
+  const _ArrivalFlowPanel({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07131C),
+        border: Border.all(color: AppTheme.borderColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Arrival Sequence',
+            style: TextStyle(
+              color: AppTheme.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 5),
+          for (final flow in snapshot.arrivalFlows)
+            Text(
+              _sequenceText(flow.runwayId, flow.spacingTargetNm),
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _sequenceText(String runwayId, double spacingTargetNm) {
+    final arrivals = snapshot.aircraft
+        .where((aircraft) =>
+            aircraft.active && aircraft.intent.assignedRunwayId == runwayId)
+        .map((aircraft) => aircraft.callsign)
+        .join(' -> ');
+    return '$runwayId target ${spacingTargetNm.toStringAsFixed(0)}NM: '
+        '${arrivals.isEmpty ? 'no active arrivals' : arrivals}';
   }
 }
 
@@ -922,12 +1048,14 @@ class _SelectedAircraftPanel extends StatelessWidget {
   final void Function(AircraftState aircraft, int deltaDeg) onHeading;
   final void Function(AircraftState aircraft, int deltaFt) onAltitude;
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
+  final void Function(AircraftState aircraft) onHold;
 
   const _SelectedAircraftPanel({
     required this.aircraft,
     required this.onHeading,
     required this.onAltitude,
     required this.onSpeed,
+    required this.onHold,
   });
 
   @override
@@ -991,6 +1119,12 @@ class _SelectedAircraftPanel extends StatelessWidget {
                   icon: Icons.remove,
                   label: '-SPD',
                   onPressed: () => onSpeed(aircraft, -20),
+                ),
+                const SizedBox(width: 10),
+                _CommandButton(
+                  icon: aircraft.intent.hold ? Icons.play_arrow : Icons.loop,
+                  label: aircraft.intent.hold ? 'EXIT HOLD' : 'HOLD',
+                  onPressed: () => onHold(aircraft),
                 ),
               ],
             ),
