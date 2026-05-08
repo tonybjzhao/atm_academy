@@ -64,4 +64,69 @@ void main() {
       ['a', 'b'],
     );
   });
+
+  test('scenario does not complete immediately after all aircraft spawn', () {
+    final scenario = const ScenarioLoader().parse(source);
+    final runtime = ScenarioRuntime(definition: scenario);
+
+    runtime.tick(speedMultiplier: 5);
+
+    expect(runtime.snapshot.aircraft, hasLength(2));
+    expect(runtime.evaluate().complete, isFalse);
+  });
+
+  test(
+      'scenario completes after duration when all aircraft spawned with no loss',
+      () {
+    final scenario = const ScenarioLoader().parse(source);
+    final runtime = ScenarioRuntime(definition: scenario);
+
+    runtime.tick(speedMultiplier: 120);
+
+    final result = runtime.evaluate();
+    expect(result.complete, isTrue);
+    expect(result.failed, isFalse);
+  });
+
+  test('scenario can complete early when all aircraft exit safely', () {
+    const exitSource = '''
+{
+  "id": "exit_scenario",
+  "title": "Exit Scenario",
+  "sectorId": "test_sector",
+  "durationSeconds": 120,
+  "difficulty": 1,
+  "radarRangeNm": 0.05,
+  "speedOptions": [1],
+  "aircraft": [
+    {
+      "id": "a",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 0, "yNm": 0 },
+      "altitudeFt": 9000,
+      "headingDeg": 90,
+      "groundSpeedKt": 360
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "allAircraftExitedSafely" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}
+''';
+    final scenario = const ScenarioLoader().parse(exitSource);
+    final runtime = ScenarioRuntime(definition: scenario);
+
+    runtime.tick();
+
+    final result = runtime.evaluate();
+    expect(result.complete, isTrue);
+    expect(result.failed, isFalse);
+  });
 }

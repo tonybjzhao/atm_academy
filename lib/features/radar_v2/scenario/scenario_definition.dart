@@ -7,6 +7,7 @@ class ScenarioDefinition {
   final String sectorId;
   final Duration duration;
   final int difficulty;
+  final double radarRangeNm;
   final List<int> speedOptions;
   final List<AircraftSpawnDefinition> aircraft;
   final List<ScenarioCondition> winConditions;
@@ -18,6 +19,7 @@ class ScenarioDefinition {
     required this.sectorId,
     required this.duration,
     required this.difficulty,
+    this.radarRangeNm = 42,
     required this.speedOptions,
     required this.aircraft,
     required this.winConditions,

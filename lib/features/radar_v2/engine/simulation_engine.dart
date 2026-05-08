@@ -1,3 +1,4 @@
+import '../commands/controller_command.dart';
 import '../models/aircraft_state.dart';
 import '../models/separation_result.dart';
 import '../models/simulation_snapshot.dart';
@@ -32,6 +33,7 @@ class SimulationEngine {
     if (steps < 1) return snapshot;
     for (var i = 0; i < steps; i++) {
       for (var index = 0; index < _aircraft.length; index++) {
+        if (!_aircraft[index].active) continue;
         _aircraft[index] =
             trajectoryIntegrator.advance(_aircraft[index], fixedStep);
       }
@@ -55,6 +57,57 @@ class SimulationEngine {
       throw ArgumentError('Unknown aircraft id: ${aircraft.id}');
     }
     _aircraft[index] = aircraft;
+  }
+
+  void deactivateAircraft(String aircraftId) {
+    final aircraft = _aircraftById(aircraftId);
+    updateAircraft(aircraft.copyWith(active: false));
+  }
+
+  void applyCommand(ControllerCommand command) {
+    final aircraft = _aircraftById(command.aircraftId);
+    if (command is AssignHeading) {
+      updateAircraft(
+        aircraft.copyWith(
+          intent: aircraft.intent.copyWith(
+            assignedHeadingDeg: _normalizeHeading(command.headingDeg),
+          ),
+        ),
+      );
+      return;
+    }
+    if (command is AssignAltitude) {
+      updateAircraft(
+        aircraft.copyWith(
+          intent: aircraft.intent.copyWith(
+            assignedAltitudeFt: command.altitudeFt,
+          ),
+        ),
+      );
+      return;
+    }
+    if (command is AssignSpeed) {
+      updateAircraft(
+        aircraft.copyWith(
+          intent: aircraft.intent.copyWith(
+            assignedSpeedKt: command.speedKt,
+          ),
+        ),
+      );
+      return;
+    }
+  }
+
+  AircraftState _aircraftById(String aircraftId) {
+    for (final aircraft in _aircraft) {
+      if (aircraft.id == aircraftId) return aircraft;
+    }
+    throw ArgumentError('Unknown aircraft id: $aircraftId');
+  }
+
+  double _normalizeHeading(double headingDeg) {
+    final normalized = headingDeg % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
   }
 
   SimulationSnapshot _buildSnapshot() {

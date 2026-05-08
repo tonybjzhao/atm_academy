@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:atm_flutter/features/radar_v2/commands/controller_command.dart';
 import 'package:atm_flutter/features/radar_v2/engine/simulation_engine.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_intent.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
@@ -130,5 +131,54 @@ void main() {
     expect(predicted.timeToConflict, const Duration(minutes: 2));
     expect(predicted.conflictXNm, closeTo(0, 0.001));
     expect(predicted.conflictYNm, closeTo(0, 0.001));
+  });
+
+  test('commands update aircraft intent and affect future motion', () {
+    final engine = SimulationEngine(
+      aircraft: [
+        const AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 240,
+        ),
+      ],
+    );
+
+    engine
+      ..applyCommand(
+        const AssignHeading(
+          aircraftId: 'a',
+          issuedAt: Duration.zero,
+          headingDeg: 90,
+        ),
+      )
+      ..applyCommand(
+        const AssignAltitude(
+          aircraftId: 'a',
+          issuedAt: Duration.zero,
+          altitudeFt: 12000,
+        ),
+      )
+      ..applyCommand(
+        const AssignSpeed(
+          aircraftId: 'a',
+          issuedAt: Duration.zero,
+          speedKt: 300,
+        ),
+      );
+
+    final intent = engine.snapshot.aircraftById('a')!.intent;
+    expect(intent.assignedHeadingDeg, 90);
+    expect(intent.assignedAltitudeFt, 12000);
+    expect(intent.assignedSpeedKt, 300);
+
+    final aircraft = engine.tick(steps: 10).aircraftById('a')!;
+    expect(aircraft.headingDeg, closeTo(30, 0.001));
+    expect(aircraft.groundSpeedKt, closeTo(270, 0.001));
+    expect(aircraft.altitudeFt, 9300);
   });
 }

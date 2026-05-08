@@ -38,37 +38,49 @@ class RadarV2Painter extends CustomPainter {
     canvas.drawLine(
         center.translate(0, -radius), center.translate(0, radius), axisPaint);
 
+    for (final loss
+        in snapshot.separation.where((item) => item.isLossOfSeparation)) {
+      _drawLoss(canvas, center, scale, loss);
+    }
+
     for (final conflict
         in snapshot.separation.where((item) => item.isPredictedConflict)) {
       _drawConflict(canvas, center, scale, conflict);
     }
 
     for (final aircraft in snapshot.aircraft) {
-      _drawAircraft(canvas, center, scale, aircraft);
+      if (!aircraft.active) continue;
+      _drawAircraft(
+        canvas,
+        center,
+        scale,
+        aircraft,
+        inLoss: _isAircraftInLoss(aircraft.id),
+      );
     }
   }
 
   void _drawAircraft(
-    Canvas canvas,
-    Offset center,
-    double scale,
-    AircraftState aircraft,
-  ) {
+      Canvas canvas, Offset center, double scale, AircraftState aircraft,
+      {required bool inLoss}) {
     final position = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
     final headingRad = aircraft.headingDeg * math.pi / 180;
-    final vectorLength = math.max(14, aircraft.groundSpeedKt / 12);
+    final vectorLength =
+        (aircraft.groundSpeedKt * 60 / 3600 * scale).clamp(12.0, 70.0);
     final vectorEnd = position.translate(
       math.sin(headingRad) * vectorLength,
       -math.cos(headingRad) * vectorLength,
     );
+    final aircraftColor =
+        inLoss ? const Color(0xFFFF4D4D) : const Color(0xFF46F5A7);
     final targetPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = const Color(0xFF46F5A7);
+      ..color = aircraftColor;
     final vectorPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round
-      ..color = const Color(0xCC46F5A7);
+      ..color = aircraftColor.withValues(alpha: 0.8);
     final labelPainter = TextPainter(
       text: TextSpan(
         text:
@@ -91,9 +103,33 @@ class RadarV2Painter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
-        ..color = const Color(0x8846F5A7),
+        ..color = aircraftColor.withValues(alpha: 0.55),
     );
     labelPainter.paint(canvas, position.translate(8, -18));
+  }
+
+  void _drawLoss(
+    Canvas canvas,
+    Offset center,
+    double scale,
+    SeparationResult loss,
+  ) {
+    final a = snapshot.aircraftById(loss.aircraftAId);
+    final b = snapshot.aircraftById(loss.aircraftBId);
+    if (a == null || b == null || !a.active || !b.active) return;
+    final aPosition = _toCanvas(center, scale, a.xNm, a.yNm);
+    final bPosition = _toCanvas(center, scale, b.xNm, b.yNm);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..color = const Color(0xFFFF4D4D);
+    canvas.drawLine(aPosition, bPosition, paint);
+    _drawAlertLabel(
+      canvas,
+      Offset.lerp(aPosition, bPosition, 0.5)!,
+      'LOSS ${loss.lateralNm.toStringAsFixed(1)}NM',
+      const Color(0xFFFF4D4D),
+    );
   }
 
   void _drawConflict(
@@ -115,6 +151,39 @@ class RadarV2Painter extends CustomPainter {
         position.translate(-8, -8), position.translate(8, 8), paint);
     canvas.drawLine(
         position.translate(-8, 8), position.translate(8, -8), paint);
+    final seconds = conflict.timeToConflict?.inSeconds;
+    final label = seconds == null
+        ? 'CONFLICT'
+        : 'CONFLICT T-${seconds}s ${conflict.lateralNm.toStringAsFixed(1)}NM';
+    _drawAlertLabel(
+        canvas, position.translate(12, -22), label, const Color(0xFFFFD166));
+  }
+
+  void _drawAlertLabel(
+    Canvas canvas,
+    Offset position,
+    String text,
+    Color color,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: 140);
+    painter.paint(canvas, position);
+  }
+
+  bool _isAircraftInLoss(String aircraftId) {
+    return snapshot.separation.any((result) =>
+        result.isLossOfSeparation &&
+        (result.aircraftAId == aircraftId || result.aircraftBId == aircraftId));
   }
 
   Offset _toCanvas(Offset center, double scale, double xNm, double yNm) {

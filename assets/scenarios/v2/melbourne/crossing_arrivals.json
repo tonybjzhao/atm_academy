@@ -4,6 +4,7 @@
   "sectorId": "melbourne_approach",
   "durationSeconds": 240,
   "difficulty": 2,
+  "radarRangeNm": 42,
   "speedOptions": [1, 2, 4],
   "aircraft": [
     {
@@ -39,6 +40,8 @@
   ],
   "winConditions": [
     { "type": "allAircraftSpawned" },
+    { "type": "durationReached" },
+    { "type": "allAircraftExitedSafely" },
     { "type": "maxSeparationLosses", "value": 0 }
   ],
   "failConditions": [

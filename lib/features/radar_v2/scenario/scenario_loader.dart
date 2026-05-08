@@ -20,6 +20,7 @@ class ScenarioLoader {
       sectorId: _string(json, 'sectorId'),
       duration: Duration(seconds: _int(json, 'durationSeconds')),
       difficulty: _int(json, 'difficulty'),
+      radarRangeNm: (json['radarRangeNm'] as num?)?.toDouble() ?? 42,
       speedOptions: _intList(json['speedOptions']),
       aircraft: _list(json['aircraft'])
           .map((item) => _parseAircraft(_map(item, 'aircraft item')))
