@@ -5,8 +5,10 @@ class AircraftIntent {
   final List<String> route;
   final String? directToWaypointId;
   final String? assignedRunwayId;
+  final String? assignedProcedureId;
   final String? holdPatternId;
   final bool hold;
+  final bool isDeparture;
 
   const AircraftIntent({
     this.assignedHeadingDeg,
@@ -15,8 +17,10 @@ class AircraftIntent {
     this.route = const [],
     this.directToWaypointId,
     this.assignedRunwayId,
+    this.assignedProcedureId,
     this.holdPatternId,
     this.hold = false,
+    this.isDeparture = false,
   });
 
   const AircraftIntent.empty()
@@ -26,8 +30,10 @@ class AircraftIntent {
         route = const [],
         directToWaypointId = null,
         assignedRunwayId = null,
+        assignedProcedureId = null,
         holdPatternId = null,
-        hold = false;
+        hold = false,
+        isDeparture = false;
 
   AircraftIntent copyWith({
     double? assignedHeadingDeg,
@@ -36,8 +42,10 @@ class AircraftIntent {
     List<String>? route,
     String? directToWaypointId,
     String? assignedRunwayId,
+    String? assignedProcedureId,
     String? holdPatternId,
     bool? hold,
+    bool? isDeparture,
     bool clearAssignedHeading = false,
     bool clearAssignedSpeed = false,
     bool clearAssignedAltitude = false,
@@ -60,9 +68,11 @@ class AircraftIntent {
       assignedRunwayId: clearAssignedRunway
           ? null
           : assignedRunwayId ?? this.assignedRunwayId,
+      assignedProcedureId: assignedProcedureId ?? this.assignedProcedureId,
       holdPatternId:
           clearHoldPattern ? null : holdPatternId ?? this.holdPatternId,
       hold: hold ?? this.hold,
+      isDeparture: isDeparture ?? this.isDeparture,
     );
   }
 }

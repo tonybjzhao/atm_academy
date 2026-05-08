@@ -5,6 +5,7 @@ import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
 import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
+import '../models/departure_flow.dart';
 import '../models/hold_pattern.dart';
 import '../models/runway_state.dart';
 import '../models/separation_result.dart';
@@ -27,6 +28,7 @@ class SimulationEngine {
   final Map<String, Waypoint> waypoints;
   final List<WeatherZone> weatherZones;
   final List<ArrivalFlow> arrivalFlows;
+  final List<DepartureFlow> departureFlows;
   final List<HoldPattern> holdPatterns;
   final List<AltitudeRestriction> altitudeRestrictions;
   final int maxControllerLoad;
@@ -36,6 +38,8 @@ class SimulationEngine {
       <String, List<TrailPoint>>{};
   final List<_PendingCommand> _pendingCommands = <_PendingCommand>[];
   final List<SimulationEvent> _events = <SimulationEvent>[];
+  int _dynamicControllerLoad;
+  double _sectorPressureIndex = 0;
   int _tick;
   Duration _elapsed;
 
@@ -50,12 +54,14 @@ class SimulationEngine {
     this.waypoints = const {},
     this.weatherZones = const [],
     this.arrivalFlows = const [],
+    this.departureFlows = const [],
     this.holdPatterns = const [],
     this.altitudeRestrictions = const [],
     this.maxControllerLoad = 6,
     int initialTick = 0,
     Duration initialElapsed = Duration.zero,
-  })  : _aircraft = List<AircraftState>.from(aircraft, growable: true),
+    })  : _aircraft = List<AircraftState>.from(aircraft, growable: true),
+      _dynamicControllerLoad = maxControllerLoad,
         _tick = initialTick,
         _elapsed = initialElapsed {
     for (final aircraft in _aircraft) {
@@ -89,6 +95,13 @@ class SimulationEngine {
             intent: advanced.intent.copyWith(clearAssignedHeading: true),
           );
         }
+        advanced = advanced.copyWith(
+          airborneSeconds: advanced.airborneSeconds + fixedStep.inSeconds,
+          cumulativeHoldSeconds: advanced.cumulativeHoldSeconds +
+              (advanced.intent.hold ? fixedStep.inSeconds : 0),
+          cumulativeVectorSeconds: advanced.cumulativeVectorSeconds +
+              (_isVectoring(advanced) ? fixedStep.inSeconds : 0),
+        );
         _aircraft[index] = advanced;
         _recordTrailPoint(_aircraft[index]);
       }
@@ -139,6 +152,14 @@ class SimulationEngine {
 
   void recordEvent(SimulationEvent event) {
     _events.add(event);
+  }
+
+  void updateWorkloadState({
+    required int dynamicControllerLoad,
+    required double sectorPressureIndex,
+  }) {
+    _dynamicControllerLoad = dynamicControllerLoad;
+    _sectorPressureIndex = sectorPressureIndex;
   }
 
   void _applyDueCommands(Duration effectiveElapsed) {
@@ -263,9 +284,11 @@ class SimulationEngine {
       waypoints: Map<String, Waypoint>.unmodifiable(waypoints),
       weatherZones: List<WeatherZone>.unmodifiable(weatherZones),
       arrivalFlows: List<ArrivalFlow>.unmodifiable(arrivalFlows),
+      departureFlows: List<DepartureFlow>.unmodifiable(departureFlows),
       holdPatterns: List<HoldPattern>.unmodifiable(holdPatterns),
       runwayStates: List<RunwayState>.unmodifiable(_runwayStates.values),
-      maxControllerLoad: maxControllerLoad,
+      maxControllerLoad: _dynamicControllerLoad,
+      sectorPressureIndex: _sectorPressureIndex,
       events: List<SimulationEvent>.unmodifiable(_events),
     );
   }
@@ -498,6 +521,13 @@ class SimulationEngine {
       return 'Issued exit hold';
     }
     return 'Issued command';
+  }
+
+  bool _isVectoring(AircraftState aircraft) {
+    if (aircraft.intent.hold) return false;
+    return aircraft.intent.assignedHeadingDeg != null &&
+        (aircraft.intent.route.isNotEmpty ||
+            aircraft.intent.assignedProcedureId != null);
   }
 }
 

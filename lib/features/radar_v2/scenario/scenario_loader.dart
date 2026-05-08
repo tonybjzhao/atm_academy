@@ -3,7 +3,9 @@ import 'dart:convert';
 import '../models/aircraft_performance_profile.dart';
 import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
+import '../models/departure_flow.dart';
 import '../models/hold_pattern.dart';
+import '../models/route_procedure.dart';
 import '../models/weather_zone.dart';
 import '../models/waypoint.dart';
 import 'scenario_definition.dart';
@@ -33,8 +35,10 @@ class ScenarioLoader {
       objectives: _optionalStringList(json['objectives']),
       expectedTechniques: _optionalStringList(json['expectedTechniques']),
       waypoints: _parseWaypoints(json['waypoints']),
+        routeProcedures: _parseRouteProcedures(json['routeProcedures']),
       weatherZones: _parseWeatherZones(json['weatherZones']),
       arrivalFlows: _parseArrivalFlows(json['arrivalFlows']),
+        departureFlows: _parseDepartureFlows(json['departureFlows']),
       holdPatterns: _parseHoldPatterns(json['holdPatterns']),
       altitudeRestrictions:
           _parseAltitudeRestrictions(json['altitudeRestrictions']),
@@ -42,6 +46,15 @@ class ScenarioLoader {
       runwayOccupancyDuration: Duration(
         seconds: (json['runwayOccupancySeconds'] as num?)?.round() ?? 45,
       ),
+        weatherMode: (json['weatherMode'] as String?) ?? 'normal',
+        lowVisibilitySpacingMultiplier:
+          (json['lowVisibilitySpacingMultiplier'] as num?)?.toDouble() ?? 1,
+        lowVisibilityRunwayOccupancyMultiplier:
+          (json['lowVisibilityRunwayOccupancyMultiplier'] as num?)
+              ?.toDouble() ??
+            1,
+        workloadPressureMultiplier:
+          (json['workloadPressureMultiplier'] as num?)?.toDouble() ?? 1,
       densityScale: (json['densityScale'] as num?)?.toDouble() ?? 1,
       speedOptions: _intList(json['speedOptions']),
       aircraft: _list(json['aircraft'])
@@ -60,11 +73,13 @@ class ScenarioLoader {
     final id = json['id'] as String? ?? _string(json, 'callsign');
     final callsign = _string(json, 'callsign');
     final position = _map(json['position'], 'position');
+    final procedureId = json['procedureId'] as String?;
     final route = json['route'] == null
         ? const <String>[]
         : _list(json['route'])
             .map((item) => item.toString())
             .toList(growable: false);
+    final isDeparture = json['isDeparture'] == true;
     final initialState = aircraftStateFromSpawn(
       id: id,
       callsign: callsign,
@@ -79,11 +94,16 @@ class ScenarioLoader {
       performanceType:
           AircraftPerformanceProfile.parseType(json['performanceType']),
       assignedRunwayId: json['runwayId'] as String?,
+      assignedProcedureId: procedureId,
+      isDeparture: isDeparture,
     );
     return AircraftSpawnDefinition(
       id: id,
       callsign: callsign,
       spawnAt: Duration(seconds: _int(json, 'spawnAtSeconds')),
+      isDeparture: isDeparture,
+      departureFlowId: json['departureFlowId'] as String?,
+      procedureId: procedureId,
       initialState: initialState,
     );
   }
@@ -124,6 +144,25 @@ class ScenarioLoader {
     }).toList(growable: false);
   }
 
+  Map<String, RouteProcedure> _parseRouteProcedures(Object? value) {
+    if (value == null) return const {};
+    final procedures = <String, RouteProcedure>{};
+    for (final item in _list(value)) {
+      final json = _map(item, 'route procedure');
+      final procedure = RouteProcedure(
+        id: _string(json, 'id'),
+        name: (json['name'] as String?) ?? _string(json, 'id'),
+        type: RouteProcedure.parseType(json['type']),
+        waypointIds: _list(json['waypoints'])
+            .map((waypoint) => waypoint.toString())
+            .toList(growable: false),
+        mergeWaypointId: json['mergeWaypointId'] as String?,
+      );
+      procedures[procedure.id] = procedure;
+    }
+    return procedures;
+  }
+
   List<ArrivalFlow> _parseArrivalFlows(Object? value) {
     if (value == null) return const [];
     return _list(value).map((item) {
@@ -131,12 +170,39 @@ class ScenarioLoader {
       return ArrivalFlow(
         id: _string(json, 'id'),
         runwayId: _string(json, 'runwayId'),
+        procedureId: json['procedureId'] as String?,
         mergeWaypointId: _string(json, 'mergeWaypointId'),
         finalFixWaypointId: _string(json, 'finalFixWaypointId'),
         thresholdWaypointId: _string(json, 'thresholdWaypointId'),
+        goAroundMergeWaypointId: json['goAroundMergeWaypointId'] as String?,
+        goAroundRouteWaypointIds: json['goAroundRoute'] == null
+            ? const <String>[]
+            : _list(json['goAroundRoute'])
+                .map((waypoint) => waypoint.toString())
+                .toList(growable: false),
         spacingTargetNm: (json['spacingTargetNm'] as num?)?.toDouble() ?? 6,
         stabilizedAltitudeFt:
             (json['stabilizedAltitudeFt'] as num?)?.round() ?? 3000,
+      );
+    }).toList(growable: false);
+  }
+
+  List<DepartureFlow> _parseDepartureFlows(Object? value) {
+    if (value == null) return const [];
+    return _list(value).map((item) {
+      final json = _map(item, 'departure flow');
+      return DepartureFlow(
+        id: _string(json, 'id'),
+        runwayId: _string(json, 'runwayId'),
+        sidProcedureId: _string(json, 'sidProcedureId'),
+        releaseIntervalSeconds:
+            (json['releaseIntervalSeconds'] as num?)?.round() ?? 45,
+        crossingRunwayIds: json['crossingRunwayIds'] == null
+            ? const <String>[]
+            : _list(json['crossingRunwayIds'])
+                .map((runwayId) => runwayId.toString())
+                .toList(growable: false),
+        initialClimbFt: (json['initialClimbFt'] as num?)?.round() ?? 5000,
       );
     }).toList(growable: false);
   }

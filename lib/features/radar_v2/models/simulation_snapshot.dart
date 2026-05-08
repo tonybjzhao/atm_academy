@@ -1,5 +1,6 @@
 import 'arrival_flow.dart';
 import 'aircraft_state.dart';
+import 'departure_flow.dart';
 import 'hold_pattern.dart';
 import 'runway_state.dart';
 import 'separation_result.dart';
@@ -17,9 +18,11 @@ class SimulationSnapshot {
   final Map<String, Waypoint> waypoints;
   final List<WeatherZone> weatherZones;
   final List<ArrivalFlow> arrivalFlows;
+  final List<DepartureFlow> departureFlows;
   final List<HoldPattern> holdPatterns;
   final List<RunwayState> runwayStates;
   final int maxControllerLoad;
+  final double sectorPressureIndex;
   final List<SimulationEvent> events;
 
   const SimulationSnapshot({
@@ -31,9 +34,11 @@ class SimulationSnapshot {
     this.waypoints = const {},
     this.weatherZones = const [],
     this.arrivalFlows = const [],
+    this.departureFlows = const [],
     this.holdPatterns = const [],
     this.runwayStates = const [],
     this.maxControllerLoad = 6,
+    this.sectorPressureIndex = 0,
     this.events = const [],
   });
 

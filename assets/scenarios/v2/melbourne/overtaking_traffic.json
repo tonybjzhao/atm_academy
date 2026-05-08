@@ -7,6 +7,10 @@
   "difficulty": 3,
   "radarRangeNm": 42,
   "maxControllerLoad": 5,
+  "weatherMode": "low_visibility",
+  "lowVisibilitySpacingMultiplier": 1.25,
+  "lowVisibilityRunwayOccupancyMultiplier": 1.35,
+  "workloadPressureMultiplier": 1.25,
   "runwayOccupancySeconds": 50,
   "trafficDescription": "A faster jet catches a slower aircraft on the same track while another arrival descends toward the flow.",
   "objectives": [
@@ -23,8 +27,32 @@
     { "id": "MLB_WEST", "xNm": -20, "yNm": -2 },
     { "id": "MLB_FINAL", "xNm": 20, "yNm": -2 },
     { "id": "RWY09", "xNm": 28, "yNm": -2 },
+    { "id": "RWY09_MISSED", "xNm": 12, "yNm": 4 },
+    { "id": "SID_COAST", "xNm": 34, "yNm": 8 },
     { "id": "MLB_NORTH", "xNm": 8, "yNm": 20 },
     { "id": "MLB_BASE", "xNm": 8, "yNm": 2 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_WEST09",
+      "name": "WEST COAST STAR",
+      "type": "star",
+      "waypoints": ["MLB_WEST", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_WEST"
+    },
+    {
+      "id": "STAR_NORTH09",
+      "name": "NORTH STREAM STAR",
+      "type": "star",
+      "waypoints": ["MLB_NORTH", "MLB_BASE", "RWY09"],
+      "mergeWaypointId": "MLB_BASE"
+    },
+    {
+      "id": "SID_COAST09",
+      "name": "COAST TWO SID",
+      "type": "sid",
+      "waypoints": ["RWY09", "MLB_BASE", "SID_COAST"]
+    }
   ],
   "weatherZones": [
     { "id": "WX2", "xNm": -4, "yNm": 8, "radiusNm": 4.5, "severity": 1 }
@@ -36,8 +64,21 @@
       "mergeWaypointId": "MLB_WEST",
       "finalFixWaypointId": "MLB_FINAL",
       "thresholdWaypointId": "RWY09",
+      "procedureId": "STAR_WEST09",
+      "goAroundMergeWaypointId": "RWY09_MISSED",
+      "goAroundRoute": ["RWY09_MISSED", "MLB_BASE", "RWY09"],
       "spacingTargetNm": 7,
       "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "mlb_dep_09",
+      "runwayId": "RWY09",
+      "sidProcedureId": "SID_COAST09",
+      "releaseIntervalSeconds": 60,
+      "crossingRunwayIds": [],
+      "initialClimbFt": 6000
     }
   ],
   "holdPatterns": [
@@ -65,6 +106,7 @@
       "headingDeg": 90,
       "groundSpeedKt": 230,
       "performanceType": "regional",
+      "procedureId": "STAR_WEST09",
       "runwayId": "RWY09",
       "route": ["MLB_WEST", "MLB_FINAL", "RWY09"]
     },
@@ -77,6 +119,7 @@
       "headingDeg": 90,
       "groundSpeedKt": 330,
       "performanceType": "jet",
+      "procedureId": "STAR_WEST09",
       "runwayId": "RWY09",
       "route": ["MLB_WEST", "MLB_FINAL", "RWY09"]
     },
@@ -89,8 +132,24 @@
       "headingDeg": 205,
       "groundSpeedKt": 260,
       "performanceType": "jet",
+      "procedureId": "STAR_NORTH09",
       "runwayId": "RWY09",
       "route": ["MLB_NORTH", "MLB_BASE", "RWY09"]
+    },
+    {
+      "id": "jst812",
+      "callsign": "JST812",
+      "spawnAtSeconds": 48,
+      "isDeparture": true,
+      "departureFlowId": "mlb_dep_09",
+      "procedureId": "SID_COAST09",
+      "position": { "xNm": 27.8, "yNm": -2.2 },
+      "altitudeFt": 3000,
+      "headingDeg": 95,
+      "groundSpeedKt": 160,
+      "performanceType": "jet",
+      "runwayId": "RWY09",
+      "route": ["RWY09", "MLB_BASE", "SID_COAST"]
     }
   ],
   "winConditions": [

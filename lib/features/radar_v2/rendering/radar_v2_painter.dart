@@ -53,6 +53,7 @@ class RadarV2Painter extends CustomPainter {
         center.translate(0, -radius), center.translate(0, radius), axisPaint);
     _drawWeather(canvas, center, scale);
     _drawArrivalFlows(canvas, center, scale);
+    _drawRunwayCrossingConflicts(canvas, center, scale);
     _drawHoldPatterns(canvas, center, scale);
     _drawWaypoints(canvas, center, scale);
     if (sweepEnabled) {
@@ -263,7 +264,18 @@ class RadarV2Painter extends CustomPainter {
       final thresholdPoint =
           _toCanvas(center, scale, threshold.xNm, threshold.yNm);
       canvas.drawLine(mergePoint, finalPoint, boundaryPaint);
-      canvas.drawLine(finalPoint, thresholdPoint, funnelPaint);
+      final runwayActive = _runwayActive(flow.runwayId);
+      final occupied = _runwayOccupied(flow.runwayId);
+      final centerlinePaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = runwayActive ? 2.2 : 1.2
+        ..color = occupied
+            ? (alertPulse ? const Color(0xFFFF4D4D) : const Color(0xFFFFD166))
+            : (runwayActive
+                ? const Color(0xFF62D2FF)
+                : const Color(0x6655D6BE));
+      canvas.drawLine(finalPoint, thresholdPoint, centerlinePaint);
+      _drawCenterlineExtension(canvas, finalPoint, thresholdPoint, centerlinePaint);
 
       final dx = thresholdPoint.dx - finalPoint.dx;
       final dy = thresholdPoint.dy - finalPoint.dy;
@@ -292,10 +304,130 @@ class RadarV2Painter extends CustomPainter {
         canvas,
         thresholdPoint.translate(8, -10),
         _runwayLabel(flow.runwayId),
-        _runwayOccupied(flow.runwayId)
-            ? const Color(0xFFFFD166)
+        occupied
+            ? (alertPulse
+                ? const Color(0xFFFF4D4D)
+                : const Color(0xFFFFD166))
             : const Color(0xFF55D6BE),
       );
+    }
+  }
+
+  void _drawCenterlineExtension(
+    Canvas canvas,
+    Offset finalPoint,
+    Offset thresholdPoint,
+    Paint centerlinePaint,
+  ) {
+    final dx = thresholdPoint.dx - finalPoint.dx;
+    final dy = thresholdPoint.dy - finalPoint.dy;
+    final length = math.sqrt(dx * dx + dy * dy);
+    if (length <= 0) return;
+    final ux = dx / length;
+    final uy = dy / length;
+    final extension = thresholdPoint.translate(ux * 52, uy * 52);
+    canvas.drawLine(
+      thresholdPoint,
+      extension,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = centerlinePaint.strokeWidth
+        ..color = centerlinePaint.color.withValues(alpha: 0.45),
+    );
+  }
+
+  void _drawRunwayCrossingConflicts(
+    Canvas canvas,
+    Offset center,
+    double scale,
+  ) {
+    for (final departureFlow in snapshot.departureFlows) {
+      final departureRunway = snapshot.waypoints[departureFlow.runwayId];
+      if (departureRunway == null) continue;
+      final departurePoint =
+          _toCanvas(center, scale, departureRunway.xNm, departureRunway.yNm);
+      for (final crossingRunwayId in departureFlow.crossingRunwayIds) {
+        final crossingRunway = snapshot.waypoints[crossingRunwayId];
+        if (crossingRunway == null) continue;
+        final crossingPoint =
+            _toCanvas(center, scale, crossingRunway.xNm, crossingRunway.yNm);
+        final risk = _crossingConflictRisk(
+          departureFlow.runwayId,
+          crossingRunwayId,
+        );
+        _drawDashedLine(
+          canvas,
+          departurePoint,
+          crossingPoint,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = risk ? 2 : 1.3
+            ..color = risk
+                ? (alertPulse
+                    ? const Color(0xFFFF4D4D)
+                    : const Color(0xFFFFD166))
+                : const Color(0x5562D2FF),
+        );
+        final midpoint = Offset.lerp(departurePoint, crossingPoint, 0.5)!;
+        if (risk) {
+          _drawAlertLabel(
+            canvas,
+            midpoint.translate(6, -14),
+            '${departureFlow.runwayId}/${crossingRunwayId} X-RWY RISK',
+            alertPulse ? const Color(0xFFFF4D4D) : const Color(0xFFFFD166),
+          );
+        }
+      }
+    }
+  }
+
+  bool _crossingConflictRisk(String departureRunwayId, String crossingRunwayId) {
+    final departureOccupied = _runwayOccupied(departureRunwayId);
+    final crossingOccupied = _runwayOccupied(crossingRunwayId);
+    if (departureOccupied && crossingOccupied) return true;
+
+    final crossingArrivalFlow = snapshot.arrivalFlows.where(
+      (flow) => flow.runwayId == crossingRunwayId,
+    );
+    if (crossingArrivalFlow.isNotEmpty) {
+      final threshold =
+          snapshot.waypoints[crossingArrivalFlow.first.thresholdWaypointId];
+      if (threshold != null) {
+        final shortFinalArrival = snapshot.aircraft.any((aircraft) {
+          if (!aircraft.active || aircraft.intent.isDeparture) return false;
+          if (aircraft.intent.assignedRunwayId != crossingRunwayId) return false;
+          final dx = aircraft.xNm - threshold.xNm;
+          final dy = aircraft.yNm - threshold.yNm;
+          return dx * dx + dy * dy < 7 * 7;
+        });
+        if (shortFinalArrival) return true;
+      }
+    }
+
+    final departureThreshold = snapshot.waypoints[departureRunwayId];
+    if (departureThreshold == null) return false;
+    final departureRolling = snapshot.aircraft.any((aircraft) {
+      if (!aircraft.active || !aircraft.intent.isDeparture) return false;
+      if (aircraft.intent.assignedRunwayId != departureRunwayId) return false;
+      final dx = aircraft.xNm - departureThreshold.xNm;
+      final dy = aircraft.yNm - departureThreshold.yNm;
+      return dx * dx + dy * dy < 8 * 8;
+    });
+    return departureRolling && (crossingOccupied || departureOccupied);
+  }
+
+  void _drawDashedLine(Canvas canvas, Offset from, Offset to, Paint paint) {
+    final distance = (to - from).distance;
+    if (distance <= 0) return;
+    const dash = 8.0;
+    const gap = 5.0;
+    final direction = (to - from) / distance;
+    var traveled = 0.0;
+    while (traveled < distance) {
+      final start = from + direction * traveled;
+      final end = from + direction * math.min(traveled + dash, distance);
+      canvas.drawLine(start, end, paint);
+      traveled += dash + gap;
     }
   }
 
@@ -312,6 +444,20 @@ class RadarV2Painter extends CustomPainter {
   bool _runwayOccupied(String runwayId) {
     final state = snapshot.runwayState(runwayId);
     return state != null && state.isOccupiedAt(snapshot.elapsed);
+  }
+
+  bool _runwayActive(String runwayId) {
+    final hasArrival = snapshot.aircraft.any((aircraft) {
+      return aircraft.active &&
+          aircraft.intent.assignedRunwayId == runwayId &&
+          !aircraft.intent.isDeparture;
+    });
+    if (hasArrival) return true;
+    return snapshot.aircraft.any((aircraft) {
+      return aircraft.active &&
+          aircraft.intent.assignedRunwayId == runwayId &&
+          aircraft.intent.isDeparture;
+    });
   }
 
   void _drawHoldPatterns(Canvas canvas, Offset center, double scale) {

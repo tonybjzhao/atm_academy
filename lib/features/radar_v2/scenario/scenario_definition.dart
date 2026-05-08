@@ -3,7 +3,9 @@ import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
 import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
+import '../models/departure_flow.dart';
 import '../models/hold_pattern.dart';
+import '../models/route_procedure.dart';
 import '../models/weather_zone.dart';
 import '../models/waypoint.dart';
 
@@ -19,12 +21,18 @@ class ScenarioDefinition {
   final List<String> objectives;
   final List<String> expectedTechniques;
   final Map<String, Waypoint> waypoints;
+  final Map<String, RouteProcedure> routeProcedures;
   final List<WeatherZone> weatherZones;
   final List<ArrivalFlow> arrivalFlows;
+  final List<DepartureFlow> departureFlows;
   final List<HoldPattern> holdPatterns;
   final List<AltitudeRestriction> altitudeRestrictions;
   final int maxControllerLoad;
   final Duration runwayOccupancyDuration;
+  final String weatherMode;
+  final double lowVisibilitySpacingMultiplier;
+  final double lowVisibilityRunwayOccupancyMultiplier;
+  final double workloadPressureMultiplier;
   final double densityScale;
   final List<int> speedOptions;
   final List<AircraftSpawnDefinition> aircraft;
@@ -43,12 +51,18 @@ class ScenarioDefinition {
     this.objectives = const [],
     this.expectedTechniques = const [],
     this.waypoints = const {},
+    this.routeProcedures = const {},
     this.weatherZones = const [],
     this.arrivalFlows = const [],
+    this.departureFlows = const [],
     this.holdPatterns = const [],
     this.altitudeRestrictions = const [],
     this.maxControllerLoad = 6,
     this.runwayOccupancyDuration = const Duration(seconds: 45),
+    this.weatherMode = 'normal',
+    this.lowVisibilitySpacingMultiplier = 1.0,
+    this.lowVisibilityRunwayOccupancyMultiplier = 1.0,
+    this.workloadPressureMultiplier = 1.0,
     this.densityScale = 1,
     required this.speedOptions,
     required this.aircraft,
@@ -61,12 +75,18 @@ class AircraftSpawnDefinition {
   final String id;
   final String callsign;
   final Duration spawnAt;
+  final bool isDeparture;
+  final String? departureFlowId;
+  final String? procedureId;
   final AircraftState initialState;
 
   const AircraftSpawnDefinition({
     required this.id,
     required this.callsign,
     required this.spawnAt,
+    this.isDeparture = false,
+    this.departureFlowId,
+    this.procedureId,
     required this.initialState,
   });
 }
@@ -111,6 +131,8 @@ AircraftState aircraftStateFromSpawn({
   int routeWaypointIndex = 0,
   AircraftPerformanceType performanceType = AircraftPerformanceType.jet,
   String? assignedRunwayId,
+  String? assignedProcedureId,
+  bool isDeparture = false,
 }) {
   return AircraftState(
     id: id,
@@ -121,7 +143,12 @@ AircraftState aircraftStateFromSpawn({
     headingDeg: headingDeg,
     groundSpeedKt: groundSpeedKt,
     verticalSpeedFpm: verticalSpeedFpm,
-    intent: AircraftIntent(route: route, assignedRunwayId: assignedRunwayId),
+    intent: AircraftIntent(
+      route: route,
+      assignedRunwayId: assignedRunwayId,
+      assignedProcedureId: assignedProcedureId,
+      isDeparture: isDeparture,
+    ),
     routeWaypointIndex: routeWaypointIndex,
     performanceType: performanceType,
   );

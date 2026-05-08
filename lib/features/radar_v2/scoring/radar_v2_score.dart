@@ -8,6 +8,10 @@ class RadarV2ScoreSnapshot {
   final int commandCount;
   final int separationLossCount;
   final int lateResolutionCount;
+  final double spacingStability;
+  final double throughputEfficiency;
+  final double weatherManagement;
+  final double commandEfficiency;
   final int lastDelta;
   final String? lastReason;
   final List<String> penalties;
@@ -17,6 +21,10 @@ class RadarV2ScoreSnapshot {
     required this.commandCount,
     required this.separationLossCount,
     required this.lateResolutionCount,
+    required this.spacingStability,
+    required this.throughputEfficiency,
+    required this.weatherManagement,
+    required this.commandEfficiency,
     required this.lastDelta,
     required this.lastReason,
     required this.penalties,
@@ -37,6 +45,14 @@ class RadarV2ScoreTracker {
   final Set<String> _flowSpacingKeys = <String>{};
   final Set<String> _controllerLoadKeys = <String>{};
   final Set<String> _runwayOverloadKeys = <String>{};
+  final Set<String> _holdPenaltyKeys = <String>{};
+  final Set<String> _vectorPenaltyKeys = <String>{};
+  final Set<String> _arrivalDelayPenaltyKeys = <String>{};
+  Set<String> _lastActiveAircraftIds = <String>{};
+  int _ticksObserved = 0;
+  int _stableSpacingTicks = 0;
+  int _weatherSafeTicks = 0;
+  int _throughputCount = 0;
   int _score = 100;
   int _commandCount = 0;
   int _altitudeCommandCount = 0;
@@ -49,6 +65,11 @@ class RadarV2ScoreTracker {
         commandCount: _commandCount,
         separationLossCount: _separationLossKeys.length,
         lateResolutionCount: _lateConflictKeys.length,
+        spacingStability: _percentage(_stableSpacingTicks, _ticksObserved),
+        throughputEfficiency: (_throughputCount * 12).clamp(0, 100).toDouble(),
+        weatherManagement: _percentage(_weatherSafeTicks, _ticksObserved),
+        commandEfficiency:
+            (100 - math.max(0, (_commandCount - 6) * 5)).toDouble(),
         lastDelta: _lastDelta,
         lastReason: _lastReason,
         penalties: List<String>.unmodifiable(_penalties),
@@ -76,6 +97,9 @@ class RadarV2ScoreTracker {
   }
 
   void observe(SimulationSnapshot snapshot) {
+    _ticksObserved += 1;
+    var spacingStableThisTick = true;
+    var weatherIncursionThisTick = false;
     for (final result in snapshot.separation) {
       final key = _pairKey(result.aircraftAId, result.aircraftBId);
       if (result.isLossOfSeparation && _separationLossKeys.add(key)) {
@@ -95,21 +119,34 @@ class RadarV2ScoreTracker {
         final key = '${aircraft.id}:${zone.id}';
         if (dx * dx + dy * dy < zone.radiusNm * zone.radiusNm &&
             _weatherKeys.add(key)) {
+          weatherIncursionThisTick = true;
           _penalize(2 * zone.severity, 'Weather penetration');
-          return;
+        }
+        if (dx * dx + dy * dy < zone.radiusNm * zone.radiusNm) {
+          weatherIncursionThisTick = true;
         }
       }
     }
-    _observeArrivalSpacing(snapshot);
+    spacingStableThisTick = _observeArrivalSpacing(snapshot);
     _observeControllerLoad(snapshot);
     _observeRunwayPressure(snapshot);
+    _observeFuelDelayPressure(snapshot);
+    _observeThroughput(snapshot);
+    if (spacingStableThisTick) {
+      _stableSpacingTicks += 1;
+    }
+    if (!weatherIncursionThisTick) {
+      _weatherSafeTicks += 1;
+    }
   }
 
-  void _observeArrivalSpacing(SimulationSnapshot snapshot) {
+  bool _observeArrivalSpacing(SimulationSnapshot snapshot) {
+    var stable = true;
     for (final flow in snapshot.arrivalFlows) {
       final arrivals = snapshot.aircraft
           .where((aircraft) =>
               aircraft.active &&
+              !aircraft.intent.isDeparture &&
               aircraft.intent.assignedRunwayId == flow.runwayId)
           .toList(growable: false);
       if (arrivals.length < 2) continue;
@@ -146,10 +183,12 @@ class RadarV2ScoreTracker {
         );
         final key = '${flow.id}:${leading.id}:${trailing.id}';
         if (lateral < flow.spacingTargetNm && _flowSpacingKeys.add(key)) {
+          stable = false;
           _penalize(4, 'Arrival spacing compressed');
         }
       }
     }
+    return stable;
   }
 
   void _observeControllerLoad(SimulationSnapshot snapshot) {
@@ -186,6 +225,59 @@ class RadarV2ScoreTracker {
         }
       }
     }
+  }
+
+  void _observeFuelDelayPressure(SimulationSnapshot snapshot) {
+    for (final aircraft in snapshot.aircraft) {
+      if (!aircraft.active) continue;
+
+      final holdBucket = aircraft.cumulativeHoldSeconds ~/ 120;
+      final holdKey = '${aircraft.id}:$holdBucket';
+      if (holdBucket > 0 && _holdPenaltyKeys.add(holdKey)) {
+        _penalize(2, 'Fuel pressure from prolonged hold');
+      }
+
+      final vectorBucket = aircraft.cumulativeVectorSeconds ~/ 150;
+      final vectorKey = '${aircraft.id}:$vectorBucket';
+      if (vectorBucket > 0 && _vectorPenaltyKeys.add(vectorKey)) {
+        _penalize(2, 'Fuel pressure from excessive vectoring');
+      }
+
+      if (aircraft.intent.isDeparture) continue;
+      final runwayId = aircraft.intent.assignedRunwayId;
+      if (runwayId == null) continue;
+      final flow = snapshot.arrivalFlows.where((item) => item.runwayId == runwayId);
+      if (flow.isEmpty) continue;
+      final threshold = snapshot.waypoints[flow.first.thresholdWaypointId];
+      if (threshold == null) continue;
+      final distance = _distance(
+        aircraft.xNm,
+        aircraft.yNm,
+        threshold.xNm,
+        threshold.yNm,
+      );
+      final delayBucket = aircraft.airborneSeconds ~/ 180;
+      final delayKey = '${aircraft.id}:$delayBucket';
+      if (aircraft.airborneSeconds > 600 &&
+          distance > 10 &&
+          delayBucket > 0 &&
+          _arrivalDelayPenaltyKeys.add(delayKey)) {
+        _penalize(3, 'Arrival delay pressure');
+      }
+    }
+  }
+
+  void _observeThroughput(SimulationSnapshot snapshot) {
+    final activeIds = snapshot.aircraft
+        .where((aircraft) => aircraft.active)
+        .map((aircraft) => aircraft.id)
+        .toSet();
+    for (final previousId in _lastActiveAircraftIds) {
+      if (!activeIds.contains(previousId)) {
+        _throughputCount += 1;
+      }
+    }
+    _lastActiveAircraftIds = activeIds;
   }
 
   void _penalize(int points, String reason) {
@@ -231,5 +323,10 @@ class RadarV2ScoreTracker {
     final px = finalX + vx * projected;
     final py = finalY + vy * projected;
     return _distance(px, py, thresholdX, thresholdY);
+  }
+
+  double _percentage(int value, int total) {
+    if (total <= 0) return 100;
+    return (value / total * 100).clamp(0, 100).toDouble();
   }
 }

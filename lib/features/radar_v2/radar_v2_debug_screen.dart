@@ -48,8 +48,11 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   bool _reviewingReplay = false;
   bool _scenarioStarted = false;
   bool _resultShown = false;
+  int _replayCursor = 0;
   String _scenarioName = 'Crossing Arrivals';
   String? _selectedAircraftId;
+  String? _commandFilterAircraftId;
+  String _commandFilterType = 'all';
   String? _reviewEventLabel;
   String? _recentlyCommandedAircraftId;
   Timer? _commandHighlightTimer;
@@ -75,6 +78,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _scoreTracker = RadarV2ScoreTracker();
       _scenarioName = scenarioName;
       _selectedAircraftId = null;
+      _commandFilterAircraftId = null;
+      _commandFilterType = 'all';
       _reviewEventLabel = null;
       _recentlyCommandedAircraftId = null;
       _previousSnapshot = null;
@@ -82,6 +87,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _replayHistory
         ..clear()
         ..add(_snapshot!);
+      _replayCursor = 0;
       _reviewingReplay = false;
       _simulationAccumulatorSeconds = 0;
       _renderInterpolation = 0;
@@ -144,6 +150,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         ..clear()
         ..add(_previousSnapshot!)
         ..add(_snapshot!);
+      _replayCursor = _replayHistory.length - 1;
       _scoreTracker.observe(_snapshot!);
       _simulationAccumulatorSeconds = 0;
       _renderInterpolation = 0;
@@ -312,6 +319,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     if (_replayHistory.length > 180) {
       _replayHistory.removeAt(0);
     }
+    _replayCursor = _replayHistory.length - 1;
   }
 
   void _jumpToEvent(SimulationEvent event) {
@@ -323,6 +331,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     setState(() {
       _paused = true;
       _reviewingReplay = true;
+      _replayCursor = index;
       _previousSnapshot = index > 0 ? _replayHistory[index - 1] : null;
       _snapshot = _replayHistory[index];
       _reviewEventLabel = '${event.elapsed.inSeconds}s ${event.label}';
@@ -338,9 +347,95 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _reviewingReplay = false;
       _previousSnapshot = _snapshot;
       _snapshot = runtime.snapshot;
+      _replayCursor = _replayHistory.length - 1;
       _reviewEventLabel = null;
       _renderInterpolation = 1;
     });
+  }
+
+  void _scrubReplay(double value) {
+    if (_replayHistory.isEmpty) return;
+    final index = value.round().clamp(0, _replayHistory.length - 1);
+    setState(() {
+      _paused = true;
+      _reviewingReplay = true;
+      _replayCursor = index;
+      _previousSnapshot = index > 0 ? _replayHistory[index - 1] : null;
+      _snapshot = _replayHistory[index];
+      _reviewEventLabel =
+          'Replay ${_snapshot!.elapsed.inSeconds}s tick ${_snapshot!.tick}';
+      _renderInterpolation = 1;
+    });
+  }
+
+  void _stepReplayEvent(int direction) {
+    final snapshot = _snapshot;
+    if (snapshot == null || snapshot.events.isEmpty) return;
+    final elapsed = snapshot.elapsed;
+    if (direction > 0) {
+      for (final event in snapshot.events) {
+        if (event.elapsed > elapsed) {
+          _jumpToEvent(event);
+          return;
+        }
+      }
+      return;
+    }
+    for (final event in snapshot.events.reversed) {
+      if (event.elapsed < elapsed) {
+        _jumpToEvent(event);
+        return;
+      }
+    }
+  }
+
+  void _setCommandFilterAircraftId(String? aircraftId) {
+    setState(() => _commandFilterAircraftId = aircraftId);
+  }
+
+  void _setCommandFilterType(String type) {
+    setState(() => _commandFilterType = type);
+  }
+
+  void _jumpToPairedCommandEvent(SimulationEvent event) {
+    final pair = _pairedCommandEvent(event);
+    if (pair == null) return;
+    _jumpToEvent(pair);
+  }
+
+  SimulationEvent? _pairedCommandEvent(SimulationEvent event) {
+    if (event.type != 'commandIssued' && event.type != 'commandAcknowledged') {
+      return null;
+    }
+    final snapshot = _snapshot;
+    if (snapshot == null) return null;
+    final token = _commandTypeToken(event.label);
+    final fromIssued = event.type == 'commandIssued';
+    final matches = snapshot.events.where((candidate) {
+      if (candidate.aircraftId != event.aircraftId) return false;
+      if (fromIssued && candidate.type != 'commandAcknowledged') return false;
+      if (!fromIssued && candidate.type != 'commandIssued') return false;
+      final delta = candidate.elapsed - event.elapsed;
+      final inWindow = fromIssued
+          ? delta >= Duration.zero && delta <= const Duration(seconds: 12)
+          : delta <= Duration.zero && delta >= const Duration(seconds: -12);
+      if (!inWindow) return false;
+      return _commandTypeToken(candidate.label) == token;
+    });
+    if (matches.isEmpty) return null;
+    return fromIssued ? matches.first : matches.last;
+  }
+
+  String _commandTypeToken(String label) {
+    final normalized = label.toLowerCase();
+    if (normalized.contains('heading')) return 'heading';
+    if (normalized.contains('altitude')) return 'altitude';
+    if (normalized.contains('speed')) return 'speed';
+    if (normalized.contains('direct')) return 'direct';
+    if (normalized.contains('exit hold') || normalized.contains(' hold')) {
+      return 'hold';
+    }
+    return 'other';
   }
 
   double _normalizeHeading(double headingDeg) {
@@ -454,6 +549,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
           if (snapshot != null)
             _DebugControls(
               snapshot: snapshot,
+              replayLength: _replayHistory.length,
+              replayCursor: _replayCursor,
               runtime: _runtime!,
               score: _scoreTracker.snapshot,
               paused: _paused,
@@ -477,6 +574,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               onRestart: _restartScenario,
               onReturnToLive: _returnToLive,
               onEventSelected: _jumpToEvent,
+              commandFilterAircraftId: _commandFilterAircraftId,
+              commandFilterType: _commandFilterType,
+              onCommandFilterAircraftChanged: _setCommandFilterAircraftId,
+              onCommandFilterTypeChanged: _setCommandFilterType,
+              onJumpToCommandPair: _jumpToPairedCommandEvent,
+              onReplayScrub: _scrubReplay,
+              onStepReplayEvent: _stepReplayEvent,
               onHeading: _commandHeading,
               onAltitude: _commandAltitude,
               onSpeed: _commandSpeed,
@@ -498,6 +602,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
 
 class _DebugControls extends StatelessWidget {
   final SimulationSnapshot snapshot;
+  final int replayLength;
+  final int replayCursor;
   final ScenarioRuntime runtime;
   final RadarV2ScoreSnapshot score;
   final bool paused;
@@ -517,6 +623,13 @@ class _DebugControls extends StatelessWidget {
   final VoidCallback onRestart;
   final VoidCallback onReturnToLive;
   final ValueChanged<SimulationEvent> onEventSelected;
+  final String? commandFilterAircraftId;
+  final String commandFilterType;
+  final ValueChanged<String?> onCommandFilterAircraftChanged;
+  final ValueChanged<String> onCommandFilterTypeChanged;
+  final ValueChanged<SimulationEvent> onJumpToCommandPair;
+  final ValueChanged<double> onReplayScrub;
+  final ValueChanged<int> onStepReplayEvent;
   final void Function(AircraftState aircraft, int deltaDeg) onHeading;
   final void Function(AircraftState aircraft, int deltaFt) onAltitude;
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
@@ -525,6 +638,8 @@ class _DebugControls extends StatelessWidget {
 
   const _DebugControls({
     required this.snapshot,
+    required this.replayLength,
+    required this.replayCursor,
     required this.runtime,
     required this.score,
     required this.paused,
@@ -544,6 +659,13 @@ class _DebugControls extends StatelessWidget {
     required this.onRestart,
     required this.onReturnToLive,
     required this.onEventSelected,
+    required this.commandFilterAircraftId,
+    required this.commandFilterType,
+    required this.onCommandFilterAircraftChanged,
+    required this.onCommandFilterTypeChanged,
+    required this.onJumpToCommandPair,
+    required this.onReplayScrub,
+    required this.onStepReplayEvent,
     required this.onHeading,
     required this.onAltitude,
     required this.onSpeed,
@@ -619,7 +741,9 @@ class _DebugControls extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '${snapshot.aircraft.where((item) => item.active).length} aircraft  $conflicts alerts  Score ${score.score}',
+                  '${snapshot.aircraft.where((item) => item.active).length} aircraft  '
+                  '$conflicts alerts  Score ${score.score}  '
+                  'Pressure ${snapshot.sectorPressureIndex.toStringAsFixed(1)}',
                   style: const TextStyle(
                       color: AppTheme.textSecondary, fontSize: 12),
                 ),
@@ -678,8 +802,26 @@ class _DebugControls extends StatelessWidget {
               const SizedBox(height: 10),
               _TimelineStrip(
                 snapshot: snapshot,
+                replayLength: replayLength,
+                replayCursor: replayCursor,
                 onEventSelected: onEventSelected,
+                onReplayScrub: onReplayScrub,
+                onStepReplayEvent: onStepReplayEvent,
                 reviewEventLabel: reviewEventLabel,
+              ),
+            ],
+            if (snapshot.events.any((event) =>
+                event.type == 'commandIssued' ||
+                event.type == 'commandAcknowledged')) ...[
+              const SizedBox(height: 10),
+              _CommandReviewPanel(
+                snapshot: snapshot,
+                selectedAircraftId: commandFilterAircraftId,
+                selectedType: commandFilterType,
+                onAircraftChanged: onCommandFilterAircraftChanged,
+                onTypeChanged: onCommandFilterTypeChanged,
+                onJumpToEvent: onEventSelected,
+                onJumpToPair: onJumpToCommandPair,
               ),
             ],
             if (snapshot.arrivalFlows.isNotEmpty) ...[
@@ -728,36 +870,80 @@ class _DebugControls extends StatelessWidget {
 
 class _TimelineStrip extends StatelessWidget {
   final SimulationSnapshot snapshot;
+  final int replayLength;
+  final int replayCursor;
   final ValueChanged<SimulationEvent> onEventSelected;
+  final ValueChanged<double> onReplayScrub;
+  final ValueChanged<int> onStepReplayEvent;
   final String? reviewEventLabel;
 
   const _TimelineStrip({
     required this.snapshot,
+    required this.replayLength,
+    required this.replayCursor,
     required this.onEventSelected,
+    required this.onReplayScrub,
+    required this.onStepReplayEvent,
     required this.reviewEventLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    final durationSeconds = snapshot.elapsed.inSeconds.clamp(1, 9999);
+    final commandEvents = snapshot.events.where((event) {
+      return event.type == 'commandIssued' ||
+          event.type == 'commandAcknowledged';
+    }).toList(growable: false);
     final recentEvents = snapshot.events.length > 8
         ? snapshot.events.sublist(snapshot.events.length - 8)
         : snapshot.events;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.skip_previous, size: 18),
+              onPressed: () => onStepReplayEvent(-1),
+              tooltip: 'Previous event',
+            ),
+            Expanded(
+              child: Text(
+                'Replay $replayCursor / ${replayLength - 1}',
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.skip_next, size: 18),
+              onPressed: () => onStepReplayEvent(1),
+              tooltip: 'Next event',
+            ),
+          ],
+        ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 2,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
           ),
           child: Slider(
-            value: snapshot.elapsed.inSeconds.toDouble(),
+            value: replayCursor.clamp(0, replayLength - 1).toDouble(),
             min: 0,
-            max: durationSeconds.toDouble(),
-            onChanged: (_) {},
+            max: (replayLength - 1).clamp(1, 9999).toDouble(),
+            onChanged: onReplayScrub,
           ),
         ),
+        if (commandEvents.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          _PairedCommandLane(
+            events: commandEvents.length > 16
+                ? commandEvents.sublist(commandEvents.length - 16)
+                : commandEvents,
+            onEventSelected: onEventSelected,
+          ),
+          const SizedBox(height: 6),
+        ],
         Wrap(
           spacing: 6,
           runSpacing: 4,
@@ -811,6 +997,496 @@ class _TimelineStrip extends StatelessWidget {
     if (type == 'aircraftExited') return 'EXIT';
     return 'CMD';
   }
+}
+
+class _CommandReviewPanel extends StatelessWidget {
+  final SimulationSnapshot snapshot;
+  final String? selectedAircraftId;
+  final String selectedType;
+  final ValueChanged<String?> onAircraftChanged;
+  final ValueChanged<String> onTypeChanged;
+  final ValueChanged<SimulationEvent> onJumpToEvent;
+  final ValueChanged<SimulationEvent> onJumpToPair;
+
+  const _CommandReviewPanel({
+    required this.snapshot,
+    required this.selectedAircraftId,
+    required this.selectedType,
+    required this.onAircraftChanged,
+    required this.onTypeChanged,
+    required this.onJumpToEvent,
+    required this.onJumpToPair,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final commandEvents = snapshot.events.where((event) {
+      return event.type == 'commandIssued' ||
+          event.type == 'commandAcknowledged';
+    }).toList(growable: false);
+    final callsignsById = <String, String>{
+      for (final aircraft in snapshot.aircraft) aircraft.id: aircraft.callsign,
+    };
+    final aircraftIds = commandEvents
+        .map((event) => event.aircraftId)
+        .whereType<String>()
+        .toSet()
+        .toList(growable: false)
+      ..sort();
+
+    final filtered = commandEvents.where((event) {
+      if (selectedAircraftId != null && event.aircraftId != selectedAircraftId) {
+        return false;
+      }
+      if (selectedType == 'all') return true;
+      return _commandTypeToken(event.label) == selectedType;
+    }).toList(growable: false);
+
+    final visible = filtered.length > 6
+        ? filtered.sublist(filtered.length - 6)
+        : filtered;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07131C),
+        border: Border.all(color: AppTheme.borderColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Command Review',
+            style: TextStyle(
+              color: AppTheme.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              SizedBox(
+                width: 150,
+                child: DropdownButton<String?>(
+                  value: selectedAircraftId,
+                  isExpanded: true,
+                  dropdownColor: AppTheme.surface,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                  ),
+                  underline: const SizedBox.shrink(),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('All Aircraft'),
+                    ),
+                    for (final id in aircraftIds)
+                      DropdownMenuItem<String?>(
+                        value: id,
+                        child: Text(callsignsById[id] ?? id),
+                      ),
+                  ],
+                  onChanged: onAircraftChanged,
+                ),
+              ),
+              SizedBox(
+                width: 128,
+                child: DropdownButton<String>(
+                  value: selectedType,
+                  isExpanded: true,
+                  dropdownColor: AppTheme.surface,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                  ),
+                  underline: const SizedBox.shrink(),
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('All Types')),
+                    DropdownMenuItem(value: 'heading', child: Text('Heading')),
+                    DropdownMenuItem(value: 'speed', child: Text('Speed')),
+                    DropdownMenuItem(value: 'altitude', child: Text('Altitude')),
+                    DropdownMenuItem(value: 'direct', child: Text('Direct')),
+                    DropdownMenuItem(value: 'hold', child: Text('Hold')),
+                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) onTypeChanged(value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (visible.isEmpty)
+            const Text(
+              'No command events for current filter',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+            ),
+          for (final event in visible)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: InkWell(
+                onTap: () => onJumpToEvent(event),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0x1018E3FF),
+                    border: Border.all(color: AppTheme.borderColor),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${event.elapsed.inSeconds}s '
+                          '${_shortEventType(event.type)} '
+                          '${_eventCallsign(event, callsignsById)} '
+                          '${event.label}',
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        constraints: const BoxConstraints.tightFor(
+                          width: 22,
+                          height: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        tooltip: 'Jump to paired command/ack',
+                        onPressed: () => onJumpToPair(event),
+                        icon: const Icon(
+                          Icons.compare_arrows,
+                          size: 14,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _eventCallsign(SimulationEvent event, Map<String, String> callsigns) {
+    final id = event.aircraftId;
+    if (id == null) return '';
+    return callsigns[id] ?? id;
+  }
+
+  String _shortEventType(String type) {
+    if (type == 'commandIssued') return 'ISS';
+    if (type == 'commandAcknowledged') return 'ACK';
+    return type;
+  }
+
+  String _commandTypeToken(String label) {
+    final normalized = label.toLowerCase();
+    if (normalized.contains('heading')) return 'heading';
+    if (normalized.contains('altitude')) return 'altitude';
+    if (normalized.contains('speed')) return 'speed';
+    if (normalized.contains('direct')) return 'direct';
+    if (normalized.contains('exit hold') || normalized.contains(' hold')) {
+      return 'hold';
+    }
+    return 'other';
+  }
+}
+
+class _PairedCommandLane extends StatelessWidget {
+  final List<SimulationEvent> events;
+  final ValueChanged<SimulationEvent> onEventSelected;
+
+  const _PairedCommandLane({
+    required this.events,
+    required this.onEventSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final issued = events
+        .where((event) => event.type == 'commandIssued')
+        .toList(growable: false);
+    final acknowledgements = events
+        .where((event) => event.type == 'commandAcknowledged')
+        .toList(growable: false);
+    final pairs = _pairCommands(issued, acknowledgements);
+    final minSeconds = events.first.elapsed.inSeconds;
+    final maxSeconds = events.last.elapsed.inSeconds;
+    final span = (maxSeconds - minSeconds).clamp(1, 3600).toDouble();
+
+    return Container(
+      width: double.infinity,
+      height: 84,
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF081823),
+        border: Border.all(color: AppTheme.borderColor),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final issuedY = 16.0;
+          final ackY = 56.0;
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _PairConnectorPainter(
+                    pairs: pairs,
+                    minSeconds: minSeconds,
+                    spanSeconds: span,
+                    width: width,
+                    issuedY: issuedY,
+                    ackY: ackY,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 2,
+                top: 0,
+                child: Text(
+                  'Issued',
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 9,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 2,
+                top: 40,
+                child: Text(
+                  'Ack',
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 9,
+                  ),
+                ),
+              ),
+              for (final event in issued)
+                _laneMarker(
+                  event: event,
+                  minSeconds: minSeconds,
+                  span: span,
+                  y: issuedY,
+                  width: width,
+                  color: const Color(0xFF46A3FF),
+                ),
+              for (final event in acknowledgements)
+                _laneMarker(
+                  event: event,
+                  minSeconds: minSeconds,
+                  span: span,
+                  y: ackY,
+                  width: width,
+                  color: const Color(0xFF36D399),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _laneMarker({
+    required SimulationEvent event,
+    required int minSeconds,
+    required double span,
+    required double y,
+    required double width,
+    required Color color,
+  }) {
+    final x = ((event.elapsed.inSeconds - minSeconds) / span)
+        .clamp(0, 1)
+        .toDouble() *
+        (width - 26);
+    return Positioned(
+      left: x,
+      top: y,
+      child: Tooltip(
+        message: '${event.elapsed.inSeconds}s ${event.label}',
+        child: InkWell(
+          onTap: () => onEventSelected(event),
+          child: Container(
+            width: 20,
+            height: 14,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: color.withValues(alpha: 0.8)),
+            ),
+            child: Text(
+              event.type == 'commandIssued' ? 'I' : 'A',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<_CommandPair> _pairCommands(
+    List<SimulationEvent> issued,
+    List<SimulationEvent> acknowledgements,
+  ) {
+    final usedAckIndexes = <int>{};
+    final pairs = <_CommandPair>[];
+    for (final issue in issued) {
+      final issueToken = _commandTypeToken(issue.label);
+      int? bestIndex;
+      for (var i = 0; i < acknowledgements.length; i++) {
+        if (usedAckIndexes.contains(i)) continue;
+        final ack = acknowledgements[i];
+        if (ack.aircraftId != issue.aircraftId) continue;
+        if (_commandTypeToken(ack.label) != issueToken) continue;
+        final delta = ack.elapsed - issue.elapsed;
+        if (delta < Duration.zero || delta > const Duration(seconds: 12)) {
+          continue;
+        }
+        bestIndex = i;
+        break;
+      }
+      if (bestIndex == null) continue;
+      usedAckIndexes.add(bestIndex);
+      pairs.add(_CommandPair(issue: issue, ack: acknowledgements[bestIndex]));
+    }
+    return pairs;
+  }
+
+  String _commandTypeToken(String label) {
+    final normalized = label.toLowerCase();
+    if (normalized.contains('heading')) return 'heading';
+    if (normalized.contains('altitude')) return 'altitude';
+    if (normalized.contains('speed')) return 'speed';
+    if (normalized.contains('direct')) return 'direct';
+    if (normalized.contains('exit hold') || normalized.contains(' hold')) {
+      return 'hold';
+    }
+    return 'other';
+  }
+}
+
+class _PairConnectorPainter extends CustomPainter {
+  final List<_CommandPair> pairs;
+  final int minSeconds;
+  final double spanSeconds;
+  final double width;
+  final double issuedY;
+  final double ackY;
+
+  const _PairConnectorPainter({
+    required this.pairs,
+    required this.minSeconds,
+    required this.spanSeconds,
+    required this.width,
+    required this.issuedY,
+    required this.ackY,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = const Color(0x557ED8FF);
+    final urgentPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..color = const Color(0x88FFD166);
+
+    for (final pair in pairs) {
+      final issueX = _toX(pair.issue.elapsed.inSeconds);
+      final ackX = _toX(pair.ack.elapsed.inSeconds);
+      final deltaSeconds =
+          (pair.ack.elapsed - pair.issue.elapsed).inSeconds.abs();
+      final isUrgent = deltaSeconds > 6;
+      final path = Path()
+        ..moveTo(issueX + 10, issuedY + 14)
+        ..quadraticBezierTo(
+          (issueX + ackX) / 2 + 10,
+          (issuedY + ackY) / 2,
+          ackX + 10,
+          ackY,
+        );
+      canvas.drawPath(path, isUrgent ? urgentPaint : paint);
+
+      final label = '${deltaSeconds}s';
+      final labelPainter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: TextStyle(
+            color: isUrgent ? const Color(0xFFFFD166) : AppTheme.textSecondary,
+            fontSize: 8,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final labelX = ((issueX + ackX) / 2 + 10 - labelPainter.width / 2)
+          .clamp(0, width - labelPainter.width)
+          .toDouble();
+      final labelY = (issuedY + ackY) / 2 - labelPainter.height / 2 - 2;
+      final labelRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          labelX - 2,
+          labelY - 1,
+          labelPainter.width + 4,
+          labelPainter.height + 2,
+        ),
+        const Radius.circular(3),
+      );
+      canvas.drawRRect(
+        labelRect,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color(0xDD0A1925),
+      );
+      labelPainter.paint(canvas, Offset(labelX, labelY));
+    }
+  }
+
+  double _toX(int seconds) {
+    return ((seconds - minSeconds) / spanSeconds).clamp(0, 1).toDouble() *
+        (width - 26);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PairConnectorPainter oldDelegate) {
+    return oldDelegate.pairs != pairs ||
+        oldDelegate.minSeconds != minSeconds ||
+        oldDelegate.spanSeconds != spanSeconds ||
+        oldDelegate.width != width ||
+        oldDelegate.issuedY != issuedY ||
+        oldDelegate.ackY != ackY;
+  }
+}
+
+class _CommandPair {
+  final SimulationEvent issue;
+  final SimulationEvent ack;
+
+  const _CommandPair({
+    required this.issue,
+    required this.ack,
+  });
 }
 
 class _ArrivalFlowPanel extends StatelessWidget {
@@ -874,6 +1550,7 @@ class _OperationalTrendPanel extends StatelessWidget {
     final runwayPressure = _runwayPressureText();
     final mergePressure = _mergePressureText();
     final weatherPressure = _weatherPressureText();
+    final departurePressure = _departurePressureText();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(8),
@@ -905,6 +1582,16 @@ class _OperationalTrendPanel extends StatelessWidget {
             label: 'WX',
             value: weatherPressure.$1,
             warning: weatherPressure.$2,
+          ),
+          _TrendChip(
+            label: 'DEP',
+            value: departurePressure.$1,
+            warning: departurePressure.$2,
+          ),
+          _TrendChip(
+            label: 'PRESS',
+            value: snapshot.sectorPressureIndex.toStringAsFixed(1),
+            warning: snapshot.sectorPressureIndex >= 1.0,
           ),
         ],
       ),
@@ -954,6 +1641,20 @@ class _OperationalTrendPanel extends StatelessWidget {
       }
     }
     return ('nominal', false);
+  }
+
+  (String, bool) _departurePressureText() {
+    if (snapshot.departureFlows.isEmpty) return ('none', false);
+    var occupied = 0;
+    for (final flow in snapshot.departureFlows) {
+      final state = snapshot.runwayState(flow.runwayId);
+      if (state != null && state.isOccupiedAt(snapshot.elapsed)) {
+        occupied += 1;
+      }
+    }
+    return occupied == 0
+        ? ('flowing', false)
+        : ('$occupied blocked', true);
   }
 }
 
@@ -1182,6 +1883,14 @@ class _ScenarioResultPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Efficiency ${_efficiencyLabel(score.commandCount)}',
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Spacing ${score.spacingStability.toStringAsFixed(0)}%  '
+            'Throughput ${score.throughputEfficiency.toStringAsFixed(0)}%  '
+            'Weather ${score.weatherManagement.toStringAsFixed(0)}%  '
+            'Commands ${score.commandEfficiency.toStringAsFixed(0)}%',
             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
           if (score.penalties.isNotEmpty) ...[

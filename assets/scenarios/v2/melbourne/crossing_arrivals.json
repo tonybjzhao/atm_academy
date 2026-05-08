@@ -7,6 +7,10 @@
   "difficulty": 2,
   "radarRangeNm": 42,
   "maxControllerLoad": 5,
+  "weatherMode": "normal",
+  "lowVisibilitySpacingMultiplier": 1.0,
+  "lowVisibilityRunwayOccupancyMultiplier": 1.0,
+  "workloadPressureMultiplier": 1.15,
   "runwayOccupancySeconds": 45,
   "trafficDescription": "Two same-level arrivals converge near the centre of the sector, followed by a lower southbound arrival.",
   "objectives": [
@@ -24,9 +28,33 @@
     { "id": "MLB_EAST", "xNm": 18, "yNm": -4 },
     { "id": "MLB_BASE", "xNm": 0, "yNm": 0 },
     { "id": "MLB_SOUTH", "xNm": -4, "yNm": -18 },
+    { "id": "MLB_MISSED", "xNm": -12, "yNm": 2 },
     { "id": "MLB_FINAL", "xNm": 4, "yNm": 8 },
+    { "id": "SID_EAST", "xNm": 20, "yNm": 4 },
     { "id": "RWY27", "xNm": -3, "yNm": 16 },
     { "id": "RWY34", "xNm": 5, "yNm": 14 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_WEST27",
+      "name": "WEST ONE STAR",
+      "type": "star",
+      "waypoints": ["MLB_WEST", "MLB_BASE", "RWY27"],
+      "mergeWaypointId": "MLB_BASE"
+    },
+    {
+      "id": "STAR_EAST27",
+      "name": "EAST TWO STAR",
+      "type": "star",
+      "waypoints": ["MLB_EAST", "MLB_BASE", "RWY27"],
+      "mergeWaypointId": "MLB_BASE"
+    },
+    {
+      "id": "SID_MLB27E",
+      "name": "MELBOURNE TWO DEPARTURE",
+      "type": "sid",
+      "waypoints": ["RWY27", "MLB_BASE", "SID_EAST"]
+    }
   ],
   "weatherZones": [
     { "id": "WX1", "xNm": 8, "yNm": 6, "radiusNm": 5, "severity": 2 }
@@ -38,6 +66,9 @@
       "mergeWaypointId": "MLB_BASE",
       "finalFixWaypointId": "MLB_FINAL",
       "thresholdWaypointId": "RWY27",
+      "procedureId": "STAR_WEST27",
+      "goAroundMergeWaypointId": "MLB_MISSED",
+      "goAroundRoute": ["MLB_MISSED", "MLB_BASE", "RWY27"],
       "spacingTargetNm": 6,
       "stabilizedAltitudeFt": 3000
     },
@@ -47,8 +78,20 @@
       "mergeWaypointId": "MLB_FINAL",
       "finalFixWaypointId": "MLB_FINAL",
       "thresholdWaypointId": "RWY34",
+      "goAroundMergeWaypointId": "MLB_BASE",
+      "goAroundRoute": ["MLB_BASE", "MLB_FINAL", "RWY34"],
       "spacingTargetNm": 6,
       "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "mlb_dep_27",
+      "runwayId": "RWY27",
+      "sidProcedureId": "SID_MLB27E",
+      "releaseIntervalSeconds": 52,
+      "crossingRunwayIds": ["RWY34"],
+      "initialClimbFt": 5000
     }
   ],
   "holdPatterns": [
@@ -76,6 +119,7 @@
       "headingDeg": 105,
       "groundSpeedKt": 270,
       "performanceType": "jet",
+      "procedureId": "STAR_WEST27",
       "runwayId": "RWY27",
       "route": ["MLB_WEST", "MLB_BASE", "RWY27"]
     },
@@ -88,6 +132,7 @@
       "headingDeg": 285,
       "groundSpeedKt": 265,
       "performanceType": "jet",
+      "procedureId": "STAR_EAST27",
       "runwayId": "RWY27",
       "route": ["MLB_EAST", "MLB_BASE", "RWY27"]
     },
@@ -102,6 +147,21 @@
       "performanceType": "turboprop",
       "runwayId": "RWY34",
       "route": ["MLB_SOUTH", "MLB_FINAL", "RWY34"]
+    },
+    {
+      "id": "qfa901",
+      "callsign": "QFA901",
+      "spawnAtSeconds": 52,
+      "isDeparture": true,
+      "departureFlowId": "mlb_dep_27",
+      "procedureId": "SID_MLB27E",
+      "position": { "xNm": -3.2, "yNm": 15.8 },
+      "altitudeFt": 3000,
+      "headingDeg": 90,
+      "groundSpeedKt": 165,
+      "performanceType": "jet",
+      "runwayId": "RWY27",
+      "route": ["RWY27", "MLB_BASE", "SID_EAST"]
     }
   ],
   "winConditions": [

@@ -13,9 +13,29 @@ void main() {
   "difficulty": 3,
   "radarRangeNm": 42,
   "maxControllerLoad": 4,
+  "weatherMode": "low_visibility",
+  "lowVisibilitySpacingMultiplier": 1.2,
+  "lowVisibilityRunwayOccupancyMultiplier": 1.3,
+  "workloadPressureMultiplier": 1.1,
   "runwayOccupancySeconds": 40,
   "waypoints": [
-    { "id": "FIXA", "xNm": 0, "yNm": 10 }
+    { "id": "FIXA", "xNm": 0, "yNm": 10 },
+    { "id": "RWY01", "xNm": 0, "yNm": 0 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_A",
+      "name": "STAR A",
+      "type": "star",
+      "waypoints": ["FIXA", "RWY01"],
+      "mergeWaypointId": "FIXA"
+    },
+    {
+      "id": "SID_A",
+      "name": "SID A",
+      "type": "sid",
+      "waypoints": ["RWY01", "FIXA"]
+    }
   ],
   "weatherZones": [
     { "id": "WX", "xNm": 2, "yNm": 3, "radiusNm": 4, "severity": 2 }
@@ -24,11 +44,22 @@ void main() {
     {
       "id": "test_flow",
       "runwayId": "RWY01",
+      "procedureId": "STAR_A",
       "mergeWaypointId": "FIXA",
       "finalFixWaypointId": "FIXA",
-      "thresholdWaypointId": "FIXA",
+      "thresholdWaypointId": "RWY01",
       "spacingTargetNm": 7,
       "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "dep_flow",
+      "runwayId": "RWY01",
+      "sidProcedureId": "SID_A",
+      "releaseIntervalSeconds": 30,
+      "crossingRunwayIds": [],
+      "initialClimbFt": 6000
     }
   ],
   "holdPatterns": [
@@ -55,12 +86,16 @@ void main() {
       "headingDeg": 90,
       "groundSpeedKt": 300,
       "performanceType": "regional",
+      "procedureId": "STAR_A",
       "runwayId": "RWY01"
     },
     {
       "id": "b",
       "callsign": "VJA612",
       "spawnAtSeconds": 5,
+      "isDeparture": true,
+      "departureFlowId": "dep_flow",
+      "procedureId": "SID_A",
       "position": { "xNm": 10, "yNm": 0 },
       "altitudeFt": 10000,
       "headingDeg": 270,
@@ -92,10 +127,16 @@ void main() {
     expect(scenario.altitudeRestrictions.single.altitudeFt, 4000);
     expect(scenario.maxControllerLoad, 4);
     expect(scenario.runwayOccupancyDuration, const Duration(seconds: 40));
+    expect(scenario.weatherMode, 'low_visibility');
+    expect(scenario.lowVisibilitySpacingMultiplier, 1.2);
+    expect(scenario.routeProcedures['STAR_A']?.name, 'STAR A');
+    expect(scenario.departureFlows.single.sidProcedureId, 'SID_A');
     expect(scenario.densityScale, 1.2);
     expect(scenario.aircraft, hasLength(2));
     expect(
         scenario.aircraft.first.initialState.intent.assignedRunwayId, 'RWY01');
+    expect(scenario.aircraft.last.isDeparture, isTrue);
+    expect(scenario.aircraft.last.procedureId, 'SID_A');
     expect(scenario.aircraft.last.spawnAt, const Duration(seconds: 5));
   });
 
@@ -107,9 +148,19 @@ void main() {
     runtime.tick(speedMultiplier: 4);
 
     expect(
-      runtime.snapshot.aircraft.map((aircraft) => aircraft.id).toList(),
-      ['a', 'b'],
+      runtime.snapshot.aircraft.map((aircraft) => aircraft.id),
+      contains('a'),
     );
+  });
+
+  test('runtime queues and releases departures on runway availability', () {
+    final scenario = const ScenarioLoader().parse(source);
+    final runtime = ScenarioRuntime(definition: scenario);
+
+    runtime.tick(speedMultiplier: 40);
+
+    expect(runtime.snapshot.events.map((event) => event.type),
+        contains('departureReleased'));
   });
 
   test('scenario does not complete immediately after all aircraft spawn', () {
@@ -238,5 +289,68 @@ void main() {
       runtime.snapshot.events.map((event) => event.type),
       contains('handoff'),
     );
+  });
+
+  test('unstable final spacing can trigger go-around event', () {
+    const goAroundSource = '''
+{
+  "id": "go_around_scenario",
+  "title": "Go Around Scenario",
+  "sectorId": "test_sector",
+  "durationSeconds": 120,
+  "difficulty": 2,
+  "radarRangeNm": 42,
+  "speedOptions": [1],
+  "waypoints": [
+    { "id": "FINAL", "xNm": 0, "yNm": 5 },
+    { "id": "RWY", "xNm": 0, "yNm": 0 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "flow",
+      "runwayId": "RWY",
+      "mergeWaypointId": "FINAL",
+      "finalFixWaypointId": "FINAL",
+      "thresholdWaypointId": "RWY",
+      "goAroundRoute": ["FINAL", "RWY"],
+      "spacingTargetNm": 6,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "aircraft": [
+    {
+      "id": "lead",
+      "callsign": "QFA111",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 0, "yNm": 2.4 },
+      "altitudeFt": 3000,
+      "headingDeg": 180,
+      "groundSpeedKt": 160,
+      "runwayId": "RWY",
+      "route": ["FINAL", "RWY"]
+    },
+    {
+      "id": "trail",
+      "callsign": "VJA222",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 0, "yNm": 4.8 },
+      "altitudeFt": 3200,
+      "headingDeg": 180,
+      "groundSpeedKt": 170,
+      "runwayId": "RWY",
+      "route": ["FINAL", "RWY"]
+    }
+  ],
+  "winConditions": [{ "type": "allAircraftSpawned" }],
+  "failConditions": [{ "type": "timeout" }]
+}
+''';
+    final scenario = const ScenarioLoader().parse(goAroundSource);
+    final runtime = ScenarioRuntime(definition: scenario);
+
+    runtime.tick(speedMultiplier: 2);
+
+    expect(runtime.snapshot.events.map((event) => event.type),
+        contains('goAround'));
   });
 }

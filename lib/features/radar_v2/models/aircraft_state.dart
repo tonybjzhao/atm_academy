@@ -14,6 +14,9 @@ class AircraftState {
   final int routeWaypointIndex;
   final AircraftPerformanceType performanceType;
   final double holdElapsedSeconds;
+  final int airborneSeconds;
+  final int cumulativeHoldSeconds;
+  final int cumulativeVectorSeconds;
   final bool active;
 
   const AircraftState({
@@ -29,6 +32,9 @@ class AircraftState {
     this.routeWaypointIndex = 0,
     this.performanceType = AircraftPerformanceType.jet,
     this.holdElapsedSeconds = 0,
+    this.airborneSeconds = 0,
+    this.cumulativeHoldSeconds = 0,
+    this.cumulativeVectorSeconds = 0,
     this.active = true,
   });
 
@@ -45,6 +51,9 @@ class AircraftState {
     int? routeWaypointIndex,
     AircraftPerformanceType? performanceType,
     double? holdElapsedSeconds,
+    int? airborneSeconds,
+    int? cumulativeHoldSeconds,
+    int? cumulativeVectorSeconds,
     bool? active,
   }) {
     return AircraftState(
@@ -60,6 +69,10 @@ class AircraftState {
       routeWaypointIndex: routeWaypointIndex ?? this.routeWaypointIndex,
       performanceType: performanceType ?? this.performanceType,
       holdElapsedSeconds: holdElapsedSeconds ?? this.holdElapsedSeconds,
+      airborneSeconds: airborneSeconds ?? this.airborneSeconds,
+      cumulativeHoldSeconds: cumulativeHoldSeconds ?? this.cumulativeHoldSeconds,
+      cumulativeVectorSeconds:
+          cumulativeVectorSeconds ?? this.cumulativeVectorSeconds,
       active: active ?? this.active,
     );
   }
