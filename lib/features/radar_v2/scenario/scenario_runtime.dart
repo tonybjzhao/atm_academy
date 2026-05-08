@@ -1,5 +1,10 @@
 import 'dart:math' as math;
 
+import '../core/alerts/alert_manager.dart';
+import '../core/alerts/alert_priority.dart';
+import '../core/alerts/operational_alert.dart';
+import '../core/cognitive_load/cognitive_load_engine.dart';
+import '../core/cognitive_load/cognitive_load_state.dart';
 import '../engine/simulation_engine.dart';
 import '../models/aircraft_state.dart';
 import '../models/arrival_flow.dart';
@@ -30,6 +35,12 @@ class ScenarioRuntime {
   static const Duration _maxSpawnHoldDuration = Duration(seconds: 25);
   int _separationLossCount = 0;
   double _pressureCarryOver = 0;
+  // Decision Pressure Engine V1
+  final CognitiveLoadEngine _cognitiveLoadEngine = CognitiveLoadEngine();
+  final AlertManager _alertManager = AlertManager();
+  // Rolling command timestamps for recent-command-density tracking
+  final List<Duration> _recentCommandTimestamps = [];
+  int _totalGoAroundCount = 0;
 
   ScenarioRuntime({
     required this.definition,
@@ -94,6 +105,13 @@ class ScenarioRuntime {
 
   /// Builds a new snapshot including active alerts.
   SimulationSnapshot _buildSnapshotWithAlerts(SimulationSnapshot baseSnapshot) {
+    // Update cognitive load engine from current simulation state
+    final cognitiveLoad = _updateCognitiveLoad(baseSnapshot);
+
+    // Sync alert manager: expire stale alerts, then sync from legacy alerts
+    _alertManager.tick(baseSnapshot.elapsed);
+    _syncOperationalAlerts(baseSnapshot);
+
     return SimulationSnapshot(
       tick: baseSnapshot.tick,
       elapsed: baseSnapshot.elapsed,
@@ -112,11 +130,97 @@ class ScenarioRuntime {
       activeAlerts: List<ControllerAlert>.from(_activeAlerts.values),
       activeDistractions: Set<String>.from(_activeDistractionUntil.keys),
       distractionEfficiencyPenalty: getDistractionEfficiencyPenalty(baseSnapshot.elapsed),
+      cognitiveLoad: cognitiveLoad,
+      operationalAlerts: _alertManager.activeAlerts,
     );
   }
 
+  /// Calculates cognitive load from current snapshot state.
+  CognitiveLoadState _updateCognitiveLoad(SimulationSnapshot snapshot) {
+    final activeAircraft = snapshot.aircraft.where((a) => a.active).length;
+    final unresolvedConflicts = snapshot.separation
+        .where((r) => r.isLossOfSeparation || r.isPredictedConflict)
+        .length;
+    final occupiedRunways = snapshot.runwayStates
+        .where((r) => r.isOccupiedAt(snapshot.elapsed))
+        .length;
+    final weatherSeverity = snapshot.weatherZones
+        .fold<int>(0, (sum, z) => sum + z.severity);
+    final escalationCount =
+        _activeAlerts.values.fold<int>(0, (sum, a) => sum + a.escalationCount);
+
+    // Evict command timestamps older than 30s
+    final cutoff = snapshot.elapsed > const Duration(seconds: 30)
+        ? snapshot.elapsed - const Duration(seconds: 30)
+        : Duration.zero;
+    _recentCommandTimestamps.removeWhere((t) => t < cutoff);
+
+    final inputs = CognitiveLoadInputs(
+      unresolvedConflicts: unresolvedConflicts,
+      simultaneousAlerts: _activeAlerts.length + _alertManager.activeAlerts.length,
+      activeAircraftCount: activeAircraft,
+      departureQueueSize: _queuedDepartures.length,
+      occupiedRunwayCount: occupiedRunways,
+      weatherSeverityTotal: weatherSeverity,
+      goAroundCount: _totalGoAroundCount,
+      recentCommandCount: _recentCommandTimestamps.length,
+      alertEscalationCount: escalationCount,
+    );
+    return _cognitiveLoadEngine.calculate(inputs, snapshot.elapsed);
+  }
+
+  /// Synchronises the [AlertManager] from the legacy [_activeAlerts] map so
+  /// the two systems remain consistent during the migration period.
+  void _syncOperationalAlerts(SimulationSnapshot snapshot) {
+    // Register any legacy alerts not yet in the manager
+    for (final legacyAlert in _activeAlerts.values) {
+      final opType = _legacyAlertTypeToOperational(legacyAlert.type);
+      _alertManager.registerOnce(OperationalAlert(
+        id: 'legacy:${legacyAlert.id}',
+        type: opType,
+        priority: OperationalAlertType.defaultPriority(opType),
+        createdAt: legacyAlert.createdAt,
+        workloadImpact: OperationalAlertType.workloadImpact(opType),
+        acknowledged: legacyAlert.acknowledged,
+        relatedAircraftIds: legacyAlert.aircraftIds,
+        relatedRunwayId: legacyAlert.runwayId,
+      ));
+    }
+
+    // Dismiss manager entries whose legacy counterpart no longer exists
+    final legacyIds = _activeAlerts.keys.map((k) => 'legacy:$k').toSet();
+    for (final alert in List<OperationalAlert>.from(_alertManager.activeAlerts)) {
+      if (alert.id.startsWith('legacy:') && !legacyIds.contains(alert.id)) {
+        _alertManager.dismiss(alert.id);
+      }
+    }
+  }
+
+  /// Maps a [AlertType] enum value to an [OperationalAlertType] string.
+  String _legacyAlertTypeToOperational(AlertType type) => switch (type) {
+        AlertType.separationLoss => OperationalAlertType.separationLoss,
+        AlertType.goAround => OperationalAlertType.goAround,
+        AlertType.unstableApproach => OperationalAlertType.unstableSpacing,
+        AlertType.weatherEscalation => OperationalAlertType.weatherEscalation,
+        AlertType.runwayOccupancy => OperationalAlertType.runwayOccupancy,
+        AlertType.departureQueueBacklog => OperationalAlertType.departureQueueSaturation,
+        AlertType.lowFuelWarning => OperationalAlertType.lowFuel,
+        AlertType.medicalEmergency => OperationalAlertType.medicalEmergency,
+        AlertType.distractionEvent => OperationalAlertType.runwayChange,
+      };
+
   /// Returns the number of aircraft currently held from spawning due to high pressure.
   int get heldSpawnCount => _spawnHeldUntil.length;
+
+  /// Records a command timestamp for recent-command-density tracking.
+  /// Call this when the controller issues a command so the cognitive load
+  /// engine can detect command bursts.
+  void recordCommandTimestamp(Duration elapsed) {
+    _recentCommandTimestamps.add(elapsed);
+  }
+
+  /// Exposes the [AlertManager] for acknowledgements from the UI layer.
+  AlertManager get alertManager => _alertManager;
 
   /// Returns the current sector pressure index (0–5 scale).
   double get currentSectorPressure => _currentSectorPressure;
@@ -487,6 +591,7 @@ class ScenarioRuntime {
       ),
     );
     _goAroundIssued.add(aircraft.id);
+    _totalGoAroundCount += 1;
     _pressureCarryOver += 0.5;
     engine
       ..updateAircraft(updated)
@@ -813,7 +918,7 @@ class ScenarioRuntime {
           a.spawnAt.compareTo(b.spawnAt) < 0 ? a : b);
       final queueAge = snapshot.elapsed - oldestQueued.spawnAt;
       if (queueAge.inSeconds > 30) {
-        final key = 'departure_queue:backlog';
+        const key = 'departure_queue:backlog';
         if (!_activeAlerts.containsKey(key)) {
           _activeAlerts[key] = ControllerAlert(
             id: key,

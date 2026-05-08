@@ -9,6 +9,8 @@ import 'simulation_event.dart';
 import 'trail_point.dart';
 import 'weather_zone.dart';
 import 'waypoint.dart';
+import '../core/cognitive_load/cognitive_load_state.dart';
+import '../core/alerts/operational_alert.dart';
 
 class SimulationSnapshot {
   final int tick;
@@ -28,6 +30,9 @@ class SimulationSnapshot {
   final List<ControllerAlert> activeAlerts;
   final Set<String> activeDistractions;
   final double distractionEfficiencyPenalty;
+  // Decision Pressure Engine V1 fields
+  final CognitiveLoadState cognitiveLoad;
+  final List<OperationalAlert> operationalAlerts;
 
   const SimulationSnapshot({
     required this.tick,
@@ -47,6 +52,8 @@ class SimulationSnapshot {
     this.activeAlerts = const [],
     this.activeDistractions = const {},
     this.distractionEfficiencyPenalty = 1.0,
+    this.cognitiveLoad = CognitiveLoadState.idle,
+    this.operationalAlerts = const [],
   });
 
   AircraftState? aircraftById(String id) {

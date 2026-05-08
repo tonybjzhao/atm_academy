@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'commands/controller_command.dart';
+import 'core/cognitive_load/cognitive_load_level.dart';
 import 'models/aircraft_state.dart';
 import 'models/simulation_event.dart';
 import 'models/simulation_snapshot.dart';
@@ -229,6 +230,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final snapshot = _snapshot;
     if (runtime == null || snapshot == null) return;
     runtime.engine.applyCommand(command);
+    runtime.recordCommandTimestamp(snapshot.elapsed);
     _scoreTracker.recordCommand(command, snapshot);
     _commandHighlightTimer?.cancel();
     setState(() {
@@ -521,26 +523,35 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                           : LayoutBuilder(
                               builder: (context, constraints) {
                                 final size = constraints.biggest;
-                                return GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTapUp: (details) =>
-                                      _selectAircraft(details, size),
-                                  child: CustomPaint(
-                                    painter: RadarV2Painter(
-                                      snapshot: snapshot,
-                                      previousSnapshot: _previousSnapshot,
-                                      interpolation: _renderInterpolation,
-                                      rangeNm:
-                                          _runtime!.definition.radarRangeNm,
-                                      selectedAircraftId: _selectedAircraftId,
-                                      recentlyCommandedAircraftId:
-                                          _recentlyCommandedAircraftId,
-                                      alertPulse: _alertPulse,
-                                      sweepEnabled: _sweepEnabled,
-                                      sweepAngleRad: _sweepAngleRad,
+                                return Stack(
+                                  children: [
+                                    GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTapUp: (details) =>
+                                          _selectAircraft(details, size),
+                                      child: CustomPaint(
+                                        painter: RadarV2Painter(
+                                          snapshot: snapshot,
+                                          previousSnapshot: _previousSnapshot,
+                                          interpolation: _renderInterpolation,
+                                          rangeNm:
+                                              _runtime!.definition.radarRangeNm,
+                                          selectedAircraftId: _selectedAircraftId,
+                                          recentlyCommandedAircraftId:
+                                              _recentlyCommandedAircraftId,
+                                          alertPulse: _alertPulse,
+                                          sweepEnabled: _sweepEnabled,
+                                          sweepAngleRad: _sweepAngleRad,
+                                        ),
+                                        child: const SizedBox.expand(),
+                                      ),
                                     ),
-                                    child: const SizedBox.expand(),
-                                  ),
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: _WorkloadOverlay(snapshot: snapshot),
+                                    ),
+                                  ],
                                 );
                               },
                             ),
@@ -2056,4 +2067,139 @@ class _CommandButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Decision Pressure Engine V1 — Workload Overlay ─────────────────────────
+
+/// Debug overlay that shows the current cognitive load state and top alerts.
+/// Visible only in [kDebugMode]; zero overhead in production.
+class _WorkloadOverlay extends StatelessWidget {
+  const _WorkloadOverlay({required this.snapshot});
+
+  final SimulationSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final load = snapshot.cognitiveLoad;
+    final alerts = snapshot.operationalAlerts.take(3).toList();
+
+    final levelColor = switch (load.currentLevel) {
+      CognitiveLoadLevel.calm => const Color(0xFF4CAF50),
+      CognitiveLoadLevel.busy => const Color(0xFFFFEB3B),
+      CognitiveLoadLevel.overloaded => const Color(0xFFFF9800),
+      CognitiveLoadLevel.saturated => const Color(0xFFF44336),
+    };
+    final levelLabel = switch (load.currentLevel) {
+      CognitiveLoadLevel.calm => 'CALM',
+      CognitiveLoadLevel.busy => 'BUSY',
+      CognitiveLoadLevel.overloaded => 'OVERLOADED',
+      CognitiveLoadLevel.saturated => 'SATURATED',
+    };
+
+    return IgnorePointer(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 200),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.72),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: levelColor.withOpacity(0.6)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Level badge + score
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: levelColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(3),
+                    border: Border.all(color: levelColor),
+                  ),
+                  child: Text(
+                    levelLabel,
+                    style: TextStyle(
+                      color: levelColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  load.totalLoadScore.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: levelColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '/10',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+            if (alerts.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              const Divider(height: 1, color: Color(0x33FFFFFF)),
+              const SizedBox(height: 4),
+              // Alert count summary
+              Text(
+                '${snapshot.operationalAlerts.length} alert${snapshot.operationalAlerts.length == 1 ? '' : 's'}',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 9,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 3),
+              for (final alert in alerts)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _priorityColor(alert.priority.name),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          alert.type.replaceAll('_', ' ').toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Color _priorityColor(String priorityName) => switch (priorityName) {
+        'critical' => const Color(0xFFF44336),
+        'high' => const Color(0xFFFF9800),
+        'medium' => const Color(0xFFFFEB3B),
+        _ => const Color(0xFF9E9E9E),
+      };
 }
