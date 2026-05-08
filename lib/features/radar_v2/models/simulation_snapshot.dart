@@ -26,6 +26,8 @@ class SimulationSnapshot {
   final double sectorPressureIndex;
   final List<SimulationEvent> events;
   final List<ControllerAlert> activeAlerts;
+  final Set<String> activeDistractions;
+  final double distractionEfficiencyPenalty;
 
   const SimulationSnapshot({
     required this.tick,
@@ -43,6 +45,8 @@ class SimulationSnapshot {
     this.sectorPressureIndex = 0,
     this.events = const [],
     this.activeAlerts = const [],
+    this.activeDistractions = const {},
+    this.distractionEfficiencyPenalty = 1.0,
   });
 
   AircraftState? aircraftById(String id) {

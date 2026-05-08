@@ -50,6 +50,7 @@ class RadarV2ScoreTracker {
   final Set<String> _holdPenaltyKeys = <String>{};
   final Set<String> _vectorPenaltyKeys = <String>{};
   final Set<String> _arrivalDelayPenaltyKeys = <String>{};
+  final Set<String> _distractionPenaltyKeys = <String>{};
   final Map<String, Duration> _conflictFirstSeen = <String, Duration>{};
   final Map<String, bool> _conflictWasResolved = <String, bool>{};
   final Set<String> _earlyResolutionBonusKeys = <String>{};
@@ -64,6 +65,7 @@ class RadarV2ScoreTracker {
   int _earlyResolutionCount = 0;
   int _proactiveSequencingCount = 0;
   int _stabilizedFinalsCount = 0;
+  double _totalDistractionEfficiencyPenalty = 1.0;
   int _score = 100;
   int _commandCount = 0;
   int _altitudeCommandCount = 0;
@@ -101,6 +103,14 @@ class RadarV2ScoreTracker {
   void recordCommand(ControllerCommand command, SimulationSnapshot snapshot) {
     _commandCount += 1;
 
+    // Apply distraction efficiency penalty to command scoring
+    final commandEfficiencyMultiplier =
+        math.min(1.0, snapshot.distractionEfficiencyPenalty);
+    if (commandEfficiencyMultiplier < 1.0) {
+      final penalty = ((1.0 - commandEfficiencyMultiplier) * 2).toInt();
+      _penalize(penalty, 'Distraction reduces command efficiency');
+    }
+
     if (_commandCount > 8) {
       _penalize(1, 'Excessive command load');
     }
@@ -123,6 +133,17 @@ class RadarV2ScoreTracker {
     _ticksObserved += 1;
     var spacingStableThisTick = true;
     var weatherIncursionThisTick = false;
+    
+    // Track distraction effects on controller performance
+    if (snapshot.activeDistractions.isNotEmpty) {
+      _totalDistractionEfficiencyPenalty *= snapshot.distractionEfficiencyPenalty;
+      for (final distractionId in snapshot.activeDistractions) {
+        if (_distractionPenaltyKeys.add(distractionId)) {
+          _penalize(1, 'Distraction event');
+        }
+      }
+    }
+    
     for (final result in snapshot.separation) {
       final key = _pairKey(result.aircraftAId, result.aircraftBId);
       if (result.isLossOfSeparation && _separationLossKeys.add(key)) {

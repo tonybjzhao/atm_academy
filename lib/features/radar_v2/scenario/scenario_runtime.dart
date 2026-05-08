@@ -21,6 +21,8 @@ class ScenarioRuntime {
   final Set<String> _goAroundIssued = <String>{};
   final Map<String, ControllerAlert> _activeAlerts = <String, ControllerAlert>{};
   final Set<String> _alertsEscalatedThisTick = <String>{};
+  final Map<String, Duration> _activeDistractionUntil = <String, Duration>{};
+  final Set<String> _distractionsProcessedThisTick = <String>{};
   int _separationLossCount = 0;
   double _pressureCarryOver = 0;
 
@@ -69,6 +71,7 @@ class ScenarioRuntime {
       _spawnDueAircraft(engine.snapshot.elapsed);
       _releaseQueuedDepartures(engine.snapshot.elapsed);
       _updateAdaptivePressure(engine.snapshot);
+      _evaluateDistractionEvents(engine.snapshot.elapsed);
       final snapshot = engine.tick();
       _generateAndEscalateAlerts(snapshot);
       _evaluateGoAroundTriggers(snapshot);
@@ -79,6 +82,7 @@ class ScenarioRuntime {
     _spawnDueAircraft(engine.snapshot.elapsed);
     _releaseQueuedDepartures(engine.snapshot.elapsed);
     _updateAdaptivePressure(engine.snapshot);
+    _evaluateDistractionEvents(engine.snapshot.elapsed);
     _generateAndEscalateAlerts(engine.snapshot);
     return _buildSnapshotWithAlerts(engine.snapshot);
   }
@@ -101,6 +105,8 @@ class ScenarioRuntime {
       sectorPressureIndex: baseSnapshot.sectorPressureIndex,
       events: baseSnapshot.events,
       activeAlerts: List<ControllerAlert>.from(_activeAlerts.values),
+      activeDistractions: Set<String>.from(_activeDistractionUntil.keys),
+      distractionEfficiencyPenalty: getDistractionEfficiencyPenalty(baseSnapshot.elapsed),
     );
   }
 
@@ -584,6 +590,45 @@ class ScenarioRuntime {
     final dx = ax - bx;
     final dy = ay - by;
     return math.sqrt(dx * dx + dy * dy);
+  }
+
+  /// Evaluates and fires distraction events based on scenario definition timeline.
+  /// Tracks active distractions and applies temporary controller performance penalties.
+  void _evaluateDistractionEvents(Duration elapsed) {
+    // Clear processed tracking from previous tick
+    _distractionsProcessedThisTick.clear();
+    
+    // Fire any new distraction events due at this elapsed time
+    for (final event in definition.attentionManagementEvents) {
+      if (event.type == 'distraction' && !_distractionsProcessedThisTick.contains(event.id)) {
+        if (elapsed >= event.scheduledAt && elapsed < event.scheduledAt + const Duration(seconds: 1)) {
+          // Event fires this tick - apply distraction effect
+          final durationSecs = (event.duration?.inSeconds ?? 30);
+          _activeDistractionUntil[event.id] = elapsed + Duration(seconds: durationSecs);
+          _distractionsProcessedThisTick.add(event.id);
+        }
+      }
+    }
+    
+    // Expire old distractions
+    _activeDistractionUntil.removeWhere((_, expiryTime) => elapsed >= expiryTime);
+  }
+
+  /// Checks if a distraction is currently active that impacts controller performance.
+  bool hasActiveDistraction(Duration elapsed) => _activeDistractionUntil.isNotEmpty &&
+      _activeDistractionUntil.values.any((expiry) => elapsed < expiry);
+
+  /// Returns penalty multiplier applied to controller efficiency during active distractions.
+  /// Values < 1.0 reduce efficiency; values > 1.0 (not used here) would increase it.
+  double getDistractionEfficiencyPenalty(Duration elapsed) {
+    if (!hasActiveDistraction(elapsed)) return 1.0;
+    
+    // Multiple active distractions compound the penalty (non-linearly)
+    final activeCount = _activeDistractionUntil.values.where((expiry) => elapsed < expiry).length;
+    if (activeCount == 0) return 1.0;
+    if (activeCount == 1) return 0.8; // 20% efficiency loss
+    if (activeCount == 2) return 0.6; // 40% efficiency loss
+    return 0.4; // 60% efficiency loss for 3+ distractions
   }
 
   /// Generates and escalates active alerts based on current snapshot conditions.
