@@ -12,6 +12,7 @@ class RadarV2ScoreSnapshot {
   final double throughputEfficiency;
   final double weatherManagement;
   final double commandEfficiency;
+  final double anticipationScore;
   final int lastDelta;
   final String? lastReason;
   final List<String> penalties;
@@ -25,6 +26,7 @@ class RadarV2ScoreSnapshot {
     required this.throughputEfficiency,
     required this.weatherManagement,
     required this.commandEfficiency,
+    required this.anticipationScore,
     required this.lastDelta,
     required this.lastReason,
     required this.penalties,
@@ -48,11 +50,20 @@ class RadarV2ScoreTracker {
   final Set<String> _holdPenaltyKeys = <String>{};
   final Set<String> _vectorPenaltyKeys = <String>{};
   final Set<String> _arrivalDelayPenaltyKeys = <String>{};
+  final Map<String, Duration> _conflictFirstSeen = <String, Duration>{};
+  final Map<String, bool> _conflictWasResolved = <String, bool>{};
+  final Set<String> _earlyResolutionBonusKeys = <String>{};
+  final Set<String> _lateResolutionPenaltyKeys = <String>{};
+  final Set<String> _stabilizedFinalKeys = <String>{};
+  final Set<String> _sequencingBonusKeys = <String>{};
   Set<String> _lastActiveAircraftIds = <String>{};
   int _ticksObserved = 0;
   int _stableSpacingTicks = 0;
   int _weatherSafeTicks = 0;
   int _throughputCount = 0;
+  int _earlyResolutionCount = 0;
+  int _proactiveSequencingCount = 0;
+  int _stabilizedFinalsCount = 0;
   int _score = 100;
   int _commandCount = 0;
   int _altitudeCommandCount = 0;
@@ -70,10 +81,22 @@ class RadarV2ScoreTracker {
         weatherManagement: _percentage(_weatherSafeTicks, _ticksObserved),
         commandEfficiency:
             (100 - math.max(0, (_commandCount - 6) * 5)).toDouble(),
+        anticipationScore: _calculateAnticipationScore(),
         lastDelta: _lastDelta,
         lastReason: _lastReason,
         penalties: List<String>.unmodifiable(_penalties),
       );
+
+  /// Calculates controller anticipation score (0–100).
+  /// Based on early resolutions, proactive sequencing, stabilized finals.
+  double _calculateAnticipationScore() {
+    var score = 50.0; // Base neutral score
+    score += (_earlyResolutionCount * 5).clamp(0, 25).toDouble();
+    score += (_proactiveSequencingCount * 3).clamp(0, 20).toDouble();
+    score += (_stabilizedFinalsCount * 2).clamp(0, 20).toDouble();
+    score -= _lateResolutionPenaltyKeys.length * 5;
+    return score.clamp(0, 100);
+  }
 
   void recordCommand(ControllerCommand command, SimulationSnapshot snapshot) {
     _commandCount += 1;
@@ -131,6 +154,7 @@ class RadarV2ScoreTracker {
     _observeControllerLoad(snapshot);
     _observeRunwayPressure(snapshot);
     _observeFuelDelayPressure(snapshot);
+    _observeAnticipation(snapshot);
     _observeThroughput(snapshot);
     if (spacingStableThisTick) {
       _stableSpacingTicks += 1;
@@ -279,6 +303,137 @@ class RadarV2ScoreTracker {
     }
     _lastActiveAircraftIds = activeIds;
   }
+
+  void _observeAnticipation(SimulationSnapshot snapshot) {
+    // Track early vs late conflict resolutions
+    for (final result in snapshot.separation.where((r) => r.isPredictedConflict)) {
+      final key = _pairKey(result.aircraftAId, result.aircraftBId);
+      
+      // Mark as first seen if not already
+      _conflictFirstSeen.putIfAbsent(key, () => snapshot.elapsed);
+      
+      // Check if conflict was resolved (no longer predicted)
+      if (_conflictWasResolved[key] != true) {
+        final timeToConflict = result.timeToConflict?.inSeconds ?? 999;
+        
+        // Early resolution: >30s warning time (bonus)
+        if (timeToConflict > 30 && _earlyResolutionBonusKeys.add(key)) {
+          _earlyResolutionCount += 1;
+        }
+      }
+    }
+    
+    // Check for conflicts that no longer exist (were resolved)
+    final currentConflictKeys = snapshot.separation
+        .where((r) => r.isPredictedConflict)
+        .map((r) => _pairKey(r.aircraftAId, r.aircraftBId))
+        .toSet();
+    
+    for (final previousKey in _conflictFirstSeen.keys) {
+      if (!currentConflictKeys.contains(previousKey) && 
+          _conflictWasResolved[previousKey] != true) {
+        _conflictWasResolved[previousKey] = true;
+        
+        // Check if it was resolved late (less than 5s warning)
+        final wasLateResolution = _lateConflictKeys.contains(previousKey);
+        if (wasLateResolution && _lateResolutionPenaltyKeys.add(previousKey)) {
+          // Already penalized separately, but tracking for anticipation score
+        }
+      }
+    }
+    
+    // Track stabilized finals (≥8NM on final at proper speed/altitude)
+    for (final flow in snapshot.arrivalFlows) {
+      final arrivals = snapshot.aircraft
+          .where((aircraft) =>
+              aircraft.active &&
+              !aircraft.intent.isDeparture &&
+              aircraft.intent.assignedRunwayId == flow.runwayId)
+          .toList(growable: false);
+      
+      for (final aircraft in arrivals) {
+        final threshold = snapshot.waypoints[flow.thresholdWaypointId];
+        if (threshold == null) continue;
+        
+        final distance = _distance(
+          aircraft.xNm,
+          aircraft.yNm,
+          threshold.xNm,
+          threshold.yNm,
+        );
+        
+        // On approach, ≥8NM distance, at target speed ±15kt, at target alt ±500ft
+        final isStabilized = distance >= 8 &&
+            distance <= 25 &&
+            (aircraft.groundSpeedKt - 
+              (aircraft.intent.assignedSpeedKt ?? aircraft.groundSpeedKt)).abs() <= 15 &&
+            (aircraft.altitudeFt - 
+              (aircraft.intent.assignedAltitudeFt ?? aircraft.altitudeFt)).abs() <= 500;
+        
+        if (isStabilized) {
+          final key = '${flow.runwayId}:${aircraft.id}';
+          if (_stabilizedFinalKeys.add(key)) {
+            _stabilizedFinalsCount += 1;
+          }
+        }
+      }
+    }
+    
+    // Track proactive sequencing (aircraft on short final in correct order)
+    for (final flow in snapshot.arrivalFlows) {
+      final arrivals = snapshot.aircraft
+          .where((aircraft) =>
+              aircraft.active &&
+              !aircraft.intent.isDeparture &&
+              aircraft.intent.assignedRunwayId == flow.runwayId)
+          .toList(growable: false);
+      if (arrivals.length < 2) continue;
+      
+      final finalFix = snapshot.waypoints[flow.finalFixWaypointId];
+      final threshold = snapshot.waypoints[flow.thresholdWaypointId];
+      if (finalFix == null || threshold == null) continue;
+      
+      arrivals.sort((a, b) {
+        final aDistance = _distanceToThresholdAlongFinal(
+          a.xNm, a.yNm, finalFix.xNm, finalFix.yNm, 
+          threshold.xNm, threshold.yNm,
+        );
+        final bDistance = _distanceToThresholdAlongFinal(
+          b.xNm, b.yNm, finalFix.xNm, finalFix.yNm,
+          threshold.xNm, threshold.yNm,
+        );
+        return aDistance.compareTo(bDistance);
+      });
+      
+      // Check if sequence is maintained with proper spacing
+      var sequencedCount = 0;
+      for (var i = 0; i < arrivals.length - 1; i++) {
+        final leading = arrivals[i];
+        final trailing = arrivals[i + 1];
+        final distance = _distance(
+          leading.xNm, leading.yNm, trailing.xNm, trailing.yNm,
+        );
+        
+        // Short final: within 10NM of threshold with proper spacing
+        final leadingToThreshold = _distance(
+          leading.xNm, leading.yNm, threshold.xNm, threshold.yNm,
+        );
+        
+        if (leadingToThreshold < 10 && 
+            distance >= flow.spacingTargetNm * 0.7) {  // 70% of target = good sequencing
+          sequencedCount += 1;
+        }
+      }
+      
+      if (sequencedCount > 0) {
+        final key = '${flow.id}:sequence:${snapshot.elapsed.inSeconds ~/ 10}';
+        if (_sequencingBonusKeys.add(key)) {
+          _proactiveSequencingCount += 1;
+        }
+      }
+    }
+  }
+
 
   void _penalize(int points, String reason) {
     _score -= points;
