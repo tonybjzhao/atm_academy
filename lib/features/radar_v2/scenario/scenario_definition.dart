@@ -1,6 +1,7 @@
 import '../models/aircraft_intent.dart';
 import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
+import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
 import '../models/hold_pattern.dart';
 import '../models/weather_zone.dart';
@@ -21,6 +22,9 @@ class ScenarioDefinition {
   final List<WeatherZone> weatherZones;
   final List<ArrivalFlow> arrivalFlows;
   final List<HoldPattern> holdPatterns;
+  final List<AltitudeRestriction> altitudeRestrictions;
+  final int maxControllerLoad;
+  final Duration runwayOccupancyDuration;
   final double densityScale;
   final List<int> speedOptions;
   final List<AircraftSpawnDefinition> aircraft;
@@ -42,6 +46,9 @@ class ScenarioDefinition {
     this.weatherZones = const [],
     this.arrivalFlows = const [],
     this.holdPatterns = const [],
+    this.altitudeRestrictions = const [],
+    this.maxControllerLoad = 6,
+    this.runwayOccupancyDuration = const Duration(seconds: 45),
     this.densityScale = 1,
     required this.speedOptions,
     required this.aircraft,

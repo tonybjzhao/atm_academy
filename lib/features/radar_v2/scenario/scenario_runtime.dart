@@ -1,5 +1,6 @@
 import '../engine/simulation_engine.dart';
 import '../models/aircraft_state.dart';
+import '../models/arrival_flow.dart';
 import '../models/simulation_event.dart';
 import '../models/simulation_snapshot.dart';
 import 'scenario_definition.dart';
@@ -21,6 +22,8 @@ class ScenarioRuntime {
               weatherZones: definition.weatherZones,
               arrivalFlows: definition.arrivalFlows,
               holdPatterns: definition.holdPatterns,
+              altitudeRestrictions: definition.altitudeRestrictions,
+              maxControllerLoad: definition.maxControllerLoad,
             );
 
   SimulationSnapshot get snapshot => engine.snapshot;
@@ -31,6 +34,7 @@ class ScenarioRuntime {
       _spawnDueAircraft(engine.snapshot.elapsed);
       final snapshot = engine.tick();
       _recordSeparationLosses(snapshot);
+      _markLandedAircraft(snapshot);
       _markExitedAircraft(snapshot);
     }
     _spawnDueAircraft(engine.snapshot.elapsed);
@@ -108,6 +112,12 @@ class ScenarioRuntime {
       if (scaledSpawnAt <= elapsed) {
         engine.addAircraft(_scaledAircraft(spawn.initialState));
         _spawnedIds.add(spawn.id);
+        engine.recordEvent(SimulationEvent(
+          elapsed: elapsed,
+          type: 'sectorEntry',
+          label: '${spawn.callsign} entered sector',
+          aircraftId: spawn.id,
+        ));
       }
     }
   }
@@ -147,9 +157,47 @@ class ScenarioRuntime {
     }
   }
 
+  void _markLandedAircraft(SimulationSnapshot snapshot) {
+    for (final aircraft in snapshot.aircraft) {
+      if (!aircraft.active || _exitedIds.contains(aircraft.id)) continue;
+      final runwayId = aircraft.intent.assignedRunwayId;
+      if (runwayId == null) continue;
+      final flow = _arrivalFlowForRunway(runwayId);
+      if (flow == null) continue;
+      final threshold = definition.waypoints[flow.thresholdWaypointId];
+      if (threshold == null) continue;
+      final dx = aircraft.xNm - threshold.xNm;
+      final dy = aircraft.yNm - threshold.yNm;
+      final distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared > 0.8 * 0.8) continue;
+
+      _exitedIds.add(aircraft.id);
+      engine
+        ..occupyRunway(
+          runwayId: runwayId,
+          duration: definition.runwayOccupancyDuration,
+          aircraftId: aircraft.id,
+        )
+        ..recordEvent(SimulationEvent(
+          elapsed: snapshot.elapsed,
+          type: 'handoff',
+          label: '${aircraft.callsign} landed and handed off',
+          aircraftId: aircraft.id,
+        ))
+        ..deactivateAircraft(aircraft.id);
+    }
+  }
+
   bool _isOutsideRadarRange(AircraftState aircraft) {
     final distanceSquared =
         aircraft.xNm * aircraft.xNm + aircraft.yNm * aircraft.yNm;
     return distanceSquared > definition.radarRangeNm * definition.radarRangeNm;
+  }
+
+  ArrivalFlow? _arrivalFlowForRunway(String runwayId) {
+    for (final flow in definition.arrivalFlows) {
+      if (flow.runwayId == runwayId) return flow;
+    }
+    return null;
   }
 }

@@ -34,6 +34,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   ScenarioRuntime? _runtime;
   SimulationSnapshot? _previousSnapshot;
   SimulationSnapshot? _snapshot;
+  final List<SimulationSnapshot> _replayHistory = <SimulationSnapshot>[];
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
   Ticker? _ticker;
   Duration? _lastFrameTime;
@@ -44,6 +45,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   bool _paused = false;
   bool _alertPulse = false;
   bool _sweepEnabled = true;
+  bool _reviewingReplay = false;
   bool _scenarioStarted = false;
   bool _resultShown = false;
   String _scenarioName = 'Crossing Arrivals';
@@ -77,6 +79,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _recentlyCommandedAircraftId = null;
       _previousSnapshot = null;
       _snapshot = _runtime!.snapshot;
+      _replayHistory
+        ..clear()
+        ..add(_snapshot!);
+      _reviewingReplay = false;
       _simulationAccumulatorSeconds = 0;
       _renderInterpolation = 0;
       _scenarioStarted = false;
@@ -134,6 +140,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _paused = false;
       _previousSnapshot = runtime.snapshot;
       _snapshot = runtime.tick();
+      _replayHistory
+        ..clear()
+        ..add(_previousSnapshot!)
+        ..add(_snapshot!);
       _scoreTracker.observe(_snapshot!);
       _simulationAccumulatorSeconds = 0;
       _renderInterpolation = 0;
@@ -159,6 +169,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     if (runtime == null || snapshot == null) return;
     _previousSnapshot = snapshot;
     _snapshot = runtime.tick();
+    _reviewingReplay = false;
+    _recordReplaySnapshot(_snapshot!);
     _scoreTracker.observe(_snapshot!);
     _playConflictCue(_snapshot!);
     final scenarioState = runtime.evaluate();
@@ -295,6 +307,42 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     );
   }
 
+  void _recordReplaySnapshot(SimulationSnapshot snapshot) {
+    _replayHistory.add(snapshot);
+    if (_replayHistory.length > 180) {
+      _replayHistory.removeAt(0);
+    }
+  }
+
+  void _jumpToEvent(SimulationEvent event) {
+    if (_replayHistory.isEmpty) return;
+    var index = _replayHistory.indexWhere(
+      (snapshot) => snapshot.elapsed >= event.elapsed,
+    );
+    if (index == -1) index = _replayHistory.length - 1;
+    setState(() {
+      _paused = true;
+      _reviewingReplay = true;
+      _previousSnapshot = index > 0 ? _replayHistory[index - 1] : null;
+      _snapshot = _replayHistory[index];
+      _reviewEventLabel = '${event.elapsed.inSeconds}s ${event.label}';
+      _selectedAircraftId = event.aircraftId ?? _selectedAircraftId;
+      _renderInterpolation = 1;
+    });
+  }
+
+  void _returnToLive() {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    setState(() {
+      _reviewingReplay = false;
+      _previousSnapshot = _snapshot;
+      _snapshot = runtime.snapshot;
+      _reviewEventLabel = null;
+      _renderInterpolation = 1;
+    });
+  }
+
   double _normalizeHeading(double headingDeg) {
     final normalized = headingDeg % 360;
     return normalized < 0 ? normalized + 360 : normalized;
@@ -413,6 +461,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               sweepEnabled: _sweepEnabled,
               scenarioStarted: _scenarioStarted,
               resultShown: _resultShown,
+              reviewingReplay: _reviewingReplay,
               selectedAircraft: _selectedAircraftId == null
                   ? null
                   : snapshot.aircraftById(_selectedAircraftId!),
@@ -426,11 +475,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                 if (value != null) _loadScenario(value);
               },
               onRestart: _restartScenario,
-              onEventSelected: (event) => setState(() {
-                _reviewEventLabel =
-                    '${event.elapsed.inSeconds}s ${event.label}';
-                _selectedAircraftId = event.aircraftId ?? _selectedAircraftId;
-              }),
+              onReturnToLive: _returnToLive,
+              onEventSelected: _jumpToEvent,
               onHeading: _commandHeading,
               onAltitude: _commandAltitude,
               onSpeed: _commandSpeed,
@@ -459,6 +505,7 @@ class _DebugControls extends StatelessWidget {
   final bool sweepEnabled;
   final bool scenarioStarted;
   final bool resultShown;
+  final bool reviewingReplay;
   final AircraftState? selectedAircraft;
   final String scenarioName;
   final List<String> scenarioNames;
@@ -468,6 +515,7 @@ class _DebugControls extends StatelessWidget {
   final VoidCallback onStep;
   final ValueChanged<String?> onScenarioChanged;
   final VoidCallback onRestart;
+  final VoidCallback onReturnToLive;
   final ValueChanged<SimulationEvent> onEventSelected;
   final void Function(AircraftState aircraft, int deltaDeg) onHeading;
   final void Function(AircraftState aircraft, int deltaFt) onAltitude;
@@ -484,6 +532,7 @@ class _DebugControls extends StatelessWidget {
     required this.sweepEnabled,
     required this.scenarioStarted,
     required this.resultShown,
+    required this.reviewingReplay,
     required this.selectedAircraft,
     required this.scenarioName,
     required this.scenarioNames,
@@ -493,6 +542,7 @@ class _DebugControls extends StatelessWidget {
     required this.onStep,
     required this.onScenarioChanged,
     required this.onRestart,
+    required this.onReturnToLive,
     required this.onEventSelected,
     required this.onHeading,
     required this.onAltitude,
@@ -540,6 +590,12 @@ class _DebugControls extends StatelessWidget {
                   onPressed: onRestart,
                   icon: const Icon(Icons.restart_alt),
                 ),
+                if (reviewingReplay)
+                  IconButton(
+                    tooltip: 'Return to live',
+                    onPressed: onReturnToLive,
+                    icon: const Icon(Icons.sensors),
+                  ),
                 IconButton(
                   tooltip: paused ? 'Resume' : 'Pause',
                   onPressed:
@@ -625,6 +681,10 @@ class _DebugControls extends StatelessWidget {
                 onEventSelected: onEventSelected,
                 reviewEventLabel: reviewEventLabel,
               ),
+            ],
+            if (snapshot.arrivalFlows.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _OperationalTrendPanel(snapshot: snapshot),
             ],
             if (snapshot.arrivalFlows.isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -799,6 +859,125 @@ class _ArrivalFlowPanel extends StatelessWidget {
         .join(' -> ');
     return '$runwayId target ${spacingTargetNm.toStringAsFixed(0)}NM: '
         '${arrivals.isEmpty ? 'no active arrivals' : arrivals}';
+  }
+}
+
+class _OperationalTrendPanel extends StatelessWidget {
+  final SimulationSnapshot snapshot;
+
+  const _OperationalTrendPanel({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    final active =
+        snapshot.aircraft.where((aircraft) => aircraft.active).length;
+    final runwayPressure = _runwayPressureText();
+    final mergePressure = _mergePressureText();
+    final weatherPressure = _weatherPressureText();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07131C),
+        border: Border.all(color: AppTheme.borderColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 5,
+        children: [
+          _TrendChip(
+            label: 'LOAD',
+            value: '$active/${snapshot.maxControllerLoad}',
+            warning: active > snapshot.maxControllerLoad,
+          ),
+          _TrendChip(
+            label: 'RWY',
+            value: runwayPressure.$1,
+            warning: runwayPressure.$2,
+          ),
+          _TrendChip(
+            label: 'MERGE',
+            value: mergePressure.$1,
+            warning: mergePressure.$2,
+          ),
+          _TrendChip(
+            label: 'WX',
+            value: weatherPressure.$1,
+            warning: weatherPressure.$2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  (String, bool) _runwayPressureText() {
+    for (final flow in snapshot.arrivalFlows) {
+      final state = snapshot.runwayState(flow.runwayId);
+      if (state != null && state.isOccupiedAt(snapshot.elapsed)) {
+        final remaining =
+            state.occupiedUntil.inSeconds - snapshot.elapsed.inSeconds;
+        return ('${flow.runwayId} ${remaining}s', true);
+      }
+    }
+    return ('clear', false);
+  }
+
+  (String, bool) _mergePressureText() {
+    for (final flow in snapshot.arrivalFlows) {
+      final merge = snapshot.waypoints[flow.mergeWaypointId];
+      if (merge == null) continue;
+      final closeCount = snapshot.aircraft.where((aircraft) {
+        if (!aircraft.active ||
+            aircraft.intent.assignedRunwayId != flow.runwayId) {
+          return false;
+        }
+        final dx = aircraft.xNm - merge.xNm;
+        final dy = aircraft.yNm - merge.yNm;
+        return dx * dx + dy * dy < 10 * 10;
+      }).length;
+      if (closeCount >= 3) return ('saturated', true);
+    }
+    return ('stable', false);
+  }
+
+  (String, bool) _weatherPressureText() {
+    for (final aircraft in snapshot.aircraft) {
+      if (!aircraft.active) continue;
+      for (final zone in snapshot.weatherZones) {
+        final dx = aircraft.xNm - zone.xNm;
+        final dy = aircraft.yNm - zone.yNm;
+        final guard = zone.radiusNm + 3;
+        if (dx * dx + dy * dy < guard * guard) {
+          return ('reroute risk', true);
+        }
+      }
+    }
+    return ('nominal', false);
+  }
+}
+
+class _TrendChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool warning;
+
+  const _TrendChip({
+    required this.label,
+    required this.value,
+    required this.warning,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '$label $value',
+      style: TextStyle(
+        color: warning ? AppTheme.warning : AppTheme.textSecondary,
+        fontSize: 11,
+        fontWeight: warning ? FontWeight.w700 : FontWeight.w500,
+      ),
+    );
   }
 }
 

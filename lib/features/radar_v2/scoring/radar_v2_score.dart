@@ -35,6 +35,8 @@ class RadarV2ScoreTracker {
   final Set<String> _lateConflictKeys = <String>{};
   final Set<String> _weatherKeys = <String>{};
   final Set<String> _flowSpacingKeys = <String>{};
+  final Set<String> _controllerLoadKeys = <String>{};
+  final Set<String> _runwayOverloadKeys = <String>{};
   int _score = 100;
   int _commandCount = 0;
   int _altitudeCommandCount = 0;
@@ -99,6 +101,8 @@ class RadarV2ScoreTracker {
       }
     }
     _observeArrivalSpacing(snapshot);
+    _observeControllerLoad(snapshot);
+    _observeRunwayPressure(snapshot);
   }
 
   void _observeArrivalSpacing(SimulationSnapshot snapshot) {
@@ -143,6 +147,42 @@ class RadarV2ScoreTracker {
         final key = '${flow.id}:${leading.id}:${trailing.id}';
         if (lateral < flow.spacingTargetNm && _flowSpacingKeys.add(key)) {
           _penalize(4, 'Arrival spacing compressed');
+        }
+      }
+    }
+  }
+
+  void _observeControllerLoad(SimulationSnapshot snapshot) {
+    final activeCount = snapshot.aircraft.where((item) => item.active).length;
+    final key = 'load:${snapshot.elapsed.inSeconds ~/ 30}';
+    if (activeCount > snapshot.maxControllerLoad &&
+        _controllerLoadKeys.add(key)) {
+      _penalize(3, 'Controller workload high');
+    }
+  }
+
+  void _observeRunwayPressure(SimulationSnapshot snapshot) {
+    for (final flow in snapshot.arrivalFlows) {
+      final state = snapshot.runwayState(flow.runwayId);
+      if (state == null || !state.isOccupiedAt(snapshot.elapsed)) continue;
+      final threshold = snapshot.waypoints[flow.thresholdWaypointId];
+      if (threshold == null) continue;
+      for (final aircraft in snapshot.aircraft) {
+        if (!aircraft.active ||
+            aircraft.intent.assignedRunwayId != flow.runwayId) {
+          continue;
+        }
+        if (_distance(
+              aircraft.xNm,
+              aircraft.yNm,
+              threshold.xNm,
+              threshold.yNm,
+            ) <
+            8) {
+          final key = '${flow.runwayId}:${aircraft.id}';
+          if (_runwayOverloadKeys.add(key)) {
+            _penalize(4, 'Runway occupancy pressure');
+          }
         }
       }
     }

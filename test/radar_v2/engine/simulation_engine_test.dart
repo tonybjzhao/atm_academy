@@ -4,6 +4,8 @@ import 'package:atm_flutter/features/radar_v2/engine/simulation_engine.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_intent.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_performance_profile.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
+import 'package:atm_flutter/features/radar_v2/models/altitude_restriction.dart';
+import 'package:atm_flutter/features/radar_v2/models/arrival_flow.dart';
 import 'package:atm_flutter/features/radar_v2/models/hold_pattern.dart';
 import 'package:atm_flutter/features/radar_v2/models/waypoint.dart';
 
@@ -313,5 +315,74 @@ void main() {
     expect(aircraft.intent.hold, isTrue);
     expect(aircraft.intent.holdPatternId, 'FIX1_HOLD');
     expect(aircraft.intent.assignedAltitudeFt, 8000);
+  });
+
+  test('route guidance applies altitude restrictions', () {
+    final engine = SimulationEngine(
+      waypoints: const {
+        'FIX1': Waypoint(id: 'FIX1', xNm: 0, yNm: 10),
+      },
+      altitudeRestrictions: const [
+        AltitudeRestriction(
+          waypointId: 'FIX1',
+          altitudeFt: 7000,
+          type: AltitudeRestrictionType.atOrBelow,
+        ),
+      ],
+      aircraft: [
+        const AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 240,
+          intent: AircraftIntent(route: ['FIX1']),
+        ),
+      ],
+    );
+
+    final aircraft = engine.tick().aircraftById('a')!;
+
+    expect(aircraft.intent.assignedAltitudeFt, 7000);
+  });
+
+  test('approach capture stabilizes speed and altitude near final', () {
+    final engine = SimulationEngine(
+      waypoints: const {
+        'FINAL': Waypoint(id: 'FINAL', xNm: 0, yNm: 4),
+        'RWY': Waypoint(id: 'RWY', xNm: 0, yNm: 0),
+      },
+      arrivalFlows: const [
+        ArrivalFlow(
+          id: 'flow',
+          runwayId: 'RWY',
+          mergeWaypointId: 'FINAL',
+          finalFixWaypointId: 'FINAL',
+          thresholdWaypointId: 'RWY',
+          spacingTargetNm: 6,
+          stabilizedAltitudeFt: 3000,
+        ),
+      ],
+      aircraft: [
+        const AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 7,
+          altitudeFt: 5000,
+          headingDeg: 180,
+          groundSpeedKt: 220,
+          intent:
+              AircraftIntent(route: ['FINAL', 'RWY'], assignedRunwayId: 'RWY'),
+        ),
+      ],
+    );
+
+    final aircraft = engine.tick().aircraftById('a')!;
+
+    expect(aircraft.intent.assignedSpeedKt, 145);
+    expect(aircraft.intent.assignedAltitudeFt, 3000);
   });
 }

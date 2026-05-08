@@ -291,10 +291,27 @@ class RadarV2Painter extends CustomPainter {
       _drawAlertLabel(
         canvas,
         thresholdPoint.translate(8, -10),
-        flow.runwayId,
-        const Color(0xFF55D6BE),
+        _runwayLabel(flow.runwayId),
+        _runwayOccupied(flow.runwayId)
+            ? const Color(0xFFFFD166)
+            : const Color(0xFF55D6BE),
       );
     }
+  }
+
+  String _runwayLabel(String runwayId) {
+    final state = snapshot.runwayState(runwayId);
+    if (state == null || !state.isOccupiedAt(snapshot.elapsed)) {
+      return runwayId;
+    }
+    final remaining =
+        state.occupiedUntil.inSeconds - snapshot.elapsed.inSeconds;
+    return '$runwayId OCC ${remaining}s';
+  }
+
+  bool _runwayOccupied(String runwayId) {
+    final state = snapshot.runwayState(runwayId);
+    return state != null && state.isOccupiedAt(snapshot.elapsed);
   }
 
   void _drawHoldPatterns(Canvas canvas, Offset center, double scale) {

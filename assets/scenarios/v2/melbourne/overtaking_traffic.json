@@ -6,6 +6,8 @@
   "durationSeconds": 210,
   "difficulty": 3,
   "radarRangeNm": 42,
+  "maxControllerLoad": 5,
+  "runwayOccupancySeconds": 50,
   "trafficDescription": "A faster jet catches a slower aircraft on the same track while another arrival descends toward the flow.",
   "objectives": [
     "Prevent the overtake from becoming a separation loss",
@@ -46,6 +48,10 @@
       "legSeconds": 50,
       "stackAltitudeFt": 8000
     }
+  ],
+  "altitudeRestrictions": [
+    { "waypointId": "MLB_BASE", "altitudeFt": 5000, "type": "atOrBelow" },
+    { "waypointId": "MLB_FINAL", "altitudeFt": 3000, "type": "at" }
   ],
   "densityScale": 1.12,
   "speedOptions": [1, 2, 4],

@@ -12,6 +12,8 @@ void main() {
   "durationSeconds": 120,
   "difficulty": 3,
   "radarRangeNm": 42,
+  "maxControllerLoad": 4,
+  "runwayOccupancySeconds": 40,
   "waypoints": [
     { "id": "FIXA", "xNm": 0, "yNm": 10 }
   ],
@@ -37,6 +39,9 @@ void main() {
       "legSeconds": 45,
       "stackAltitudeFt": 8000
     }
+  ],
+  "altitudeRestrictions": [
+    { "waypointId": "FIXA", "altitudeFt": 4000, "type": "atOrBelow" }
   ],
   "densityScale": 1.2,
   "speedOptions": [1, 2, 4],
@@ -84,6 +89,9 @@ void main() {
     expect(scenario.weatherZones.single.id, 'WX');
     expect(scenario.arrivalFlows.single.spacingTargetNm, 7);
     expect(scenario.holdPatterns.single.stackAltitudeFt, 8000);
+    expect(scenario.altitudeRestrictions.single.altitudeFt, 4000);
+    expect(scenario.maxControllerLoad, 4);
+    expect(scenario.runwayOccupancyDuration, const Duration(seconds: 40));
     expect(scenario.densityScale, 1.2);
     expect(scenario.aircraft, hasLength(2));
     expect(
@@ -167,5 +175,68 @@ void main() {
     final result = runtime.evaluate();
     expect(result.complete, isTrue);
     expect(result.failed, isFalse);
+  });
+
+  test('landing aircraft occupy runway and hand off cleanly', () {
+    const landingSource = '''
+{
+  "id": "landing_scenario",
+  "title": "Landing Scenario",
+  "sectorId": "test_sector",
+  "durationSeconds": 120,
+  "difficulty": 1,
+  "radarRangeNm": 42,
+  "runwayOccupancySeconds": 35,
+  "waypoints": [
+    { "id": "FINAL", "xNm": 0, "yNm": 2 },
+    { "id": "RWY", "xNm": 0, "yNm": 0 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "flow",
+      "runwayId": "RWY",
+      "mergeWaypointId": "FINAL",
+      "finalFixWaypointId": "FINAL",
+      "thresholdWaypointId": "RWY",
+      "spacingTargetNm": 6,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "speedOptions": [1],
+  "aircraft": [
+    {
+      "id": "a",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 0, "yNm": 0.2 },
+      "altitudeFt": 3000,
+      "headingDeg": 180,
+      "groundSpeedKt": 120,
+      "runwayId": "RWY",
+      "route": ["RWY"]
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "allAircraftExitedSafely" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}
+''';
+    final scenario = const ScenarioLoader().parse(landingSource);
+    final runtime = ScenarioRuntime(definition: scenario);
+
+    runtime.tick();
+
+    expect(runtime.snapshot.aircraftById('a')!.active, isFalse);
+    expect(runtime.snapshot.runwayState('RWY')?.occupiedByAircraftId, 'a');
+    expect(
+      runtime.snapshot.events.map((event) => event.type),
+      contains('handoff'),
+    );
   });
 }

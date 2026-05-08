@@ -3,8 +3,10 @@ import 'dart:math' as math;
 import '../commands/controller_command.dart';
 import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
+import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
 import '../models/hold_pattern.dart';
+import '../models/runway_state.dart';
 import '../models/separation_result.dart';
 import '../models/simulation_event.dart';
 import '../models/simulation_snapshot.dart';
@@ -26,7 +28,10 @@ class SimulationEngine {
   final List<WeatherZone> weatherZones;
   final List<ArrivalFlow> arrivalFlows;
   final List<HoldPattern> holdPatterns;
+  final List<AltitudeRestriction> altitudeRestrictions;
+  final int maxControllerLoad;
   final List<AircraftState> _aircraft;
+  final Map<String, RunwayState> _runwayStates = <String, RunwayState>{};
   final Map<String, List<TrailPoint>> _trailHistory =
       <String, List<TrailPoint>>{};
   final List<_PendingCommand> _pendingCommands = <_PendingCommand>[];
@@ -46,6 +51,8 @@ class SimulationEngine {
     this.weatherZones = const [],
     this.arrivalFlows = const [],
     this.holdPatterns = const [],
+    this.altitudeRestrictions = const [],
+    this.maxControllerLoad = 6,
     int initialTick = 0,
     Duration initialElapsed = Duration.zero,
   })  : _aircraft = List<AircraftState>.from(aircraft, growable: true),
@@ -257,8 +264,28 @@ class SimulationEngine {
       weatherZones: List<WeatherZone>.unmodifiable(weatherZones),
       arrivalFlows: List<ArrivalFlow>.unmodifiable(arrivalFlows),
       holdPatterns: List<HoldPattern>.unmodifiable(holdPatterns),
+      runwayStates: List<RunwayState>.unmodifiable(_runwayStates.values),
+      maxControllerLoad: maxControllerLoad,
       events: List<SimulationEvent>.unmodifiable(_events),
     );
+  }
+
+  void occupyRunway({
+    required String runwayId,
+    required Duration duration,
+    required String aircraftId,
+  }) {
+    _runwayStates[runwayId] = RunwayState(
+      runwayId: runwayId,
+      occupiedUntil: _elapsed + duration,
+      occupiedByAircraftId: aircraftId,
+    );
+    recordEvent(SimulationEvent(
+      elapsed: _elapsed,
+      type: 'runwayOccupied',
+      label: '$runwayId occupied',
+      aircraftId: aircraftId,
+    ));
   }
 
   AircraftState _applyRouteGuidance(AircraftState aircraft) {
@@ -285,10 +312,74 @@ class SimulationEngine {
     }
     final heading =
         _bearingTo(aircraft.xNm, aircraft.yNm, waypoint.xNm, waypoint.yNm);
+    final approach = _approachIntentFor(aircraft);
+    final restriction = _restrictionFor(waypointId);
+    final altitudeTarget =
+        _altitudeTargetForRestriction(aircraft, restriction) ?? approach?.$2;
+    final speedTarget = approach?.$1;
     return aircraft.copyWith(
       routeWaypointIndex: nextIndex,
-      intent: aircraft.intent.copyWith(assignedHeadingDeg: heading),
+      intent: aircraft.intent.copyWith(
+        assignedHeadingDeg: heading,
+        assignedSpeedKt: speedTarget,
+        assignedAltitudeFt: altitudeTarget,
+      ),
     );
+  }
+
+  (double, int)? _approachIntentFor(AircraftState aircraft) {
+    final runwayId = aircraft.intent.assignedRunwayId;
+    if (runwayId == null) return null;
+    final flow = _arrivalFlowForRunway(runwayId);
+    if (flow == null) return null;
+    final finalFix = waypoints[flow.finalFixWaypointId];
+    final threshold = waypoints[flow.thresholdWaypointId];
+    if (finalFix == null || threshold == null) return null;
+    final distanceToThreshold =
+        _distance(aircraft.xNm, aircraft.yNm, threshold.xNm, threshold.yNm);
+    final distanceToFinal =
+        _distance(aircraft.xNm, aircraft.yNm, finalFix.xNm, finalFix.yNm);
+    if (distanceToThreshold > 18 && distanceToFinal > 8) return null;
+    final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
+    final speedTarget = distanceToThreshold < 8
+        ? profile.approachSpeedKt
+        : math.max(profile.approachSpeedKt + 35, 180).toDouble();
+    return (speedTarget, flow.stabilizedAltitudeFt);
+  }
+
+  ArrivalFlow? _arrivalFlowForRunway(String runwayId) {
+    for (final flow in arrivalFlows) {
+      if (flow.runwayId == runwayId) return flow;
+    }
+    return null;
+  }
+
+  AltitudeRestriction? _restrictionFor(String waypointId) {
+    for (final restriction in altitudeRestrictions) {
+      if (restriction.waypointId == waypointId) return restriction;
+    }
+    return null;
+  }
+
+  int? _altitudeTargetForRestriction(
+    AircraftState aircraft,
+    AltitudeRestriction? restriction,
+  ) {
+    if (restriction == null) return null;
+    switch (restriction.type) {
+      case AltitudeRestrictionType.at:
+        return restriction.altitudeFt;
+      case AltitudeRestrictionType.atOrAbove:
+        if (aircraft.altitudeFt < restriction.altitudeFt) {
+          return restriction.altitudeFt;
+        }
+        return aircraft.intent.assignedAltitudeFt;
+      case AltitudeRestrictionType.atOrBelow:
+        if (aircraft.altitudeFt > restriction.altitudeFt) {
+          return restriction.altitudeFt;
+        }
+        return aircraft.intent.assignedAltitudeFt;
+    }
   }
 
   AircraftState _applyHoldGuidance(AircraftState aircraft) {
@@ -328,9 +419,18 @@ class SimulationEngine {
       holdElapsedSeconds: nextElapsed.toDouble(),
       intent: aircraft.intent.copyWith(
         assignedHeadingDeg: _normalizeHeading(heading),
-        assignedAltitudeFt: pattern.stackAltitudeFt,
+        assignedAltitudeFt: _holdStackAltitude(aircraft, pattern),
       ),
     );
+  }
+
+  int _holdStackAltitude(AircraftState aircraft, HoldPattern pattern) {
+    final lowerAircraft = _aircraft.where((candidate) {
+      return candidate.id != aircraft.id &&
+          candidate.active &&
+          candidate.intent.holdPatternId == pattern.id;
+    }).length;
+    return pattern.stackAltitudeFt + lowerAircraft * 1000;
   }
 
   void _recordTrailPoint(AircraftState aircraft) {

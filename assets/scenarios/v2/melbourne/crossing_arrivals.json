@@ -6,6 +6,8 @@
   "durationSeconds": 240,
   "difficulty": 2,
   "radarRangeNm": 42,
+  "maxControllerLoad": 5,
+  "runwayOccupancySeconds": 45,
   "trafficDescription": "Two same-level arrivals converge near the centre of the sector, followed by a lower southbound arrival.",
   "objectives": [
     "Resolve the crossing conflict before it becomes urgent",
@@ -57,6 +59,10 @@
       "legSeconds": 45,
       "stackAltitudeFt": 8000
     }
+  ],
+  "altitudeRestrictions": [
+    { "waypointId": "MLB_BASE", "altitudeFt": 6000, "type": "atOrBelow" },
+    { "waypointId": "MLB_FINAL", "altitudeFt": 3000, "type": "at" }
   ],
   "densityScale": 1.0,
   "speedOptions": [1, 2, 4],

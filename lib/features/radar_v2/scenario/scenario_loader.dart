@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../models/aircraft_performance_profile.dart';
+import '../models/altitude_restriction.dart';
 import '../models/arrival_flow.dart';
 import '../models/hold_pattern.dart';
 import '../models/weather_zone.dart';
@@ -35,6 +36,12 @@ class ScenarioLoader {
       weatherZones: _parseWeatherZones(json['weatherZones']),
       arrivalFlows: _parseArrivalFlows(json['arrivalFlows']),
       holdPatterns: _parseHoldPatterns(json['holdPatterns']),
+      altitudeRestrictions:
+          _parseAltitudeRestrictions(json['altitudeRestrictions']),
+      maxControllerLoad: (json['maxControllerLoad'] as num?)?.round() ?? 6,
+      runwayOccupancyDuration: Duration(
+        seconds: (json['runwayOccupancySeconds'] as num?)?.round() ?? 45,
+      ),
       densityScale: (json['densityScale'] as num?)?.toDouble() ?? 1,
       speedOptions: _intList(json['speedOptions']),
       aircraft: _list(json['aircraft'])
@@ -144,6 +151,18 @@ class ScenarioLoader {
         inboundHeadingDeg: _number(json, 'inboundHeadingDeg'),
         legSeconds: (json['legSeconds'] as num?)?.round() ?? 60,
         stackAltitudeFt: (json['stackAltitudeFt'] as num?)?.round() ?? 7000,
+      );
+    }).toList(growable: false);
+  }
+
+  List<AltitudeRestriction> _parseAltitudeRestrictions(Object? value) {
+    if (value == null) return const [];
+    return _list(value).map((item) {
+      final json = _map(item, 'altitude restriction');
+      return AltitudeRestriction(
+        waypointId: _string(json, 'waypointId'),
+        altitudeFt: _int(json, 'altitudeFt'),
+        type: AltitudeRestriction.parseType(json['type']),
       );
     }).toList(growable: false);
   }
