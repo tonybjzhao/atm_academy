@@ -665,6 +665,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
 
   void _playButtonCue() {
     if (_muted) return;
+    // Keep an always-audible diagnostic cue on Android command actions.
+    _playSystemFallbackCue();
     _playCue('audio/radio/runway_pressure_warning.wav');
   }
 
@@ -676,7 +678,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       );
       return;
     }
-    final ok = await _enqueueCue('audio/radio/runway_pressure_warning.wav');
+    final fallbackOk = _playSystemFallbackCue();
+    final assetOk = await _enqueueCue('audio/radio/runway_pressure_warning.wav');
+    final ok = fallbackOk || assetOk;
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -757,20 +761,18 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
             widget.betaMode ? l10n.radarTrainingBetaTitle : 'Radar V2 Debug'),
         backgroundColor: AppTheme.surface,
         actions: [
-          if (widget.betaMode)
-            IconButton(
-              tooltip: _muted
-                  ? l10n.radarTrainingUnmuteAudioCues
-                  : l10n.radarTrainingMuteAudioCues,
-              icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
-              onPressed: () => setState(() => _muted = !_muted),
-            ),
-          if (widget.betaMode)
-            IconButton(
-              tooltip: l10n.radarTrainingAudioSelfTestTooltip,
-              icon: const Icon(Icons.hearing),
-              onPressed: () => _runAudioSelfTest(l10n),
-            ),
+          IconButton(
+            tooltip: _muted
+                ? l10n.radarTrainingUnmuteAudioCues
+                : l10n.radarTrainingMuteAudioCues,
+            icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
+            onPressed: () => setState(() => _muted = !_muted),
+          ),
+          IconButton(
+            tooltip: l10n.radarTrainingAudioSelfTestTooltip,
+            icon: const Icon(Icons.hearing),
+            onPressed: () => _runAudioSelfTest(l10n),
+          ),
           IconButton(
             tooltip: l10n.radarTrainingRestartScenario,
             icon: const Icon(Icons.restart_alt),
