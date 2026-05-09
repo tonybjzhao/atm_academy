@@ -98,6 +98,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   final Map<String, DateTime> _commandCooldownUntil = {};
   bool _muted = false;
   Object? _loadError;
+  int _audioProbeCount = 0;
+  String _audioProbeStatus = '';
 
   @override
   void initState() {
@@ -666,7 +668,11 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   void _playButtonCue() {
     if (_muted) return;
     // Keep an always-audible diagnostic cue on Android command actions.
-    _playSystemFallbackCue();
+    final fallbackOk = _playSystemFallbackCue();
+    _audioProbeCount++;
+    _audioProbeStatus = fallbackOk
+        ? 'command cue: system beep ok (#$_audioProbeCount)'
+        : 'command cue: system beep failed (#$_audioProbeCount)';
     _playCue('audio/radio/runway_pressure_warning.wav');
   }
 
@@ -681,6 +687,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final fallbackOk = _playSystemFallbackCue();
     final assetOk = await _enqueueCue('audio/radio/runway_pressure_warning.wav');
     final ok = fallbackOk || assetOk;
+    if (mounted) {
+      setState(() {
+        _audioProbeCount++;
+        _audioProbeStatus =
+            'self-test #$_audioProbeCount: system=${fallbackOk ? "ok" : "fail"}, asset=${assetOk ? "ok" : "fail"}';
+      });
+    }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -887,6 +900,51 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                         sectorId: runtime.definition.sectorId,
                                         weatherMode:
                                             runtime.definition.weatherMode,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 10,
+                                      bottom: 10,
+                                      child: Container(
+                                        width: 210,
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xCC0A1A28),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: const Color(0x6646F5A7),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            FilledButton.icon(
+                                              onPressed: () =>
+                                                  _runAudioSelfTest(l10n),
+                                              icon: const Icon(Icons.hearing,
+                                                  size: 16),
+                                              label: Text(
+                                                l10n.radarTrainingAudioSelfTestTooltip,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (_audioProbeStatus.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    top: 6),
+                                                child: Text(
+                                                  _audioProbeStatus,
+                                                  style: const TextStyle(
+                                                    color: AppTheme.textSecondary,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     if (_commandFlashUntil != null &&
