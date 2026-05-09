@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
+import '../services/pilot_radio_audio_service.dart';
+import '../services/radio_audio_settings_service.dart';
 
 const bool kUnityEnabled = false;
 
@@ -56,6 +58,12 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
   late final AnimationController _replayCtr; // 0→1 over _totalSec
   late final AnimationController _sweepCtr; // continuous radar sweep
   late final AnimationController _pulseCtr; // conflict pulse
+  final PilotRadioAudioService _radioAudio = PilotRadioAudioService.instance;
+  final RadioAudioSettingsService _audioSettings =
+      RadioAudioSettingsService.instance;
+  final Set<int> _playedCallIndexes = <int>{};
+  final Set<int> _playedWarningIndexes = <int>{};
+  double _lastReplaySec = 0;
 
   @override
   void initState() {
@@ -64,7 +72,7 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
     _replayCtr = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: (_totalSec * 1000).toInt()),
-    )..addListener(() => setState(() {}));
+    )..addListener(_onReplayTick);
 
     _sweepCtr = AnimationController(
       vsync: this,
@@ -80,14 +88,23 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
     Future.delayed(const Duration(milliseconds: 350), () {
       if (mounted) _replayCtr.forward();
     });
+
+    _audioSettings.ensureLoaded();
+    _radioAudio.initialize();
   }
 
   @override
   void dispose() {
+    _radioAudio.clearQueue(stopCurrent: true);
     _replayCtr.dispose();
     _sweepCtr.dispose();
     _pulseCtr.dispose();
     super.dispose();
+  }
+
+  void _onReplayTick() {
+    setState(() {});
+    _tickReplayAudio();
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -106,6 +123,10 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
   }
 
   void _restart() {
+    _playedCallIndexes.clear();
+    _playedWarningIndexes.clear();
+    _lastReplaySec = 0;
+    _radioAudio.clearQueue(stopCurrent: true);
     _replayCtr.reset();
     _replayCtr.forward();
   }
@@ -116,6 +137,65 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
       return;
     }
     _replayCtr.isAnimating ? _replayCtr.stop() : _replayCtr.forward();
+  }
+
+  void _tickReplayAudio() {
+    final settings = _audioSettings.settings.value;
+    if (!settings.replayAudioEnabled) {
+      _lastReplaySec = _t * _totalSec;
+      return;
+    }
+
+    final currentSec = _t * _totalSec;
+    if (currentSec < _lastReplaySec) {
+      _playedCallIndexes.clear();
+      _playedWarningIndexes.clear();
+    }
+
+    final calls = widget.replayData.pilotRadioCalls;
+    for (int i = 0; i < calls.length; i++) {
+      if (_playedCallIndexes.contains(i)) continue;
+      final e = calls[i];
+      if (e.timestampSec <= currentSec) {
+        _playedCallIndexes.add(i);
+        _radioAudio.enqueuePilotAck(
+          callsign: e.callsign,
+          spokenText: e.text,
+          ackDelay: Duration.zero,
+        );
+      }
+    }
+
+    final warnings = widget.replayData.warningCues.isNotEmpty
+        ? widget.replayData.warningCues
+        : <ReplayWarningCue>[
+            ReplayWarningCue(
+              timestampSec: max(0, widget.replayData.closestPointTimeSec),
+              type: 'conflict',
+            ),
+          ];
+
+    for (int i = 0; i < warnings.length; i++) {
+      if (_playedWarningIndexes.contains(i)) continue;
+      final e = warnings[i];
+      if (e.timestampSec <= currentSec) {
+        _playedWarningIndexes.add(i);
+        _radioAudio.enqueueWarning(_warningTypeFrom(e.type));
+      }
+    }
+
+    _lastReplaySec = currentSec;
+  }
+
+  RadioWarningType _warningTypeFrom(String type) {
+    switch (type) {
+      case 'runwayPressure':
+        return RadioWarningType.runwayPressure;
+      case 'overloadPeak':
+        return RadioWarningType.overloadPeak;
+      default:
+        return RadioWarningType.conflict;
+    }
   }
 
   Color _ratingColor() {
@@ -302,6 +382,42 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
               ),
             ),
 
+            ValueListenableBuilder<RadioAudioSettings>(
+              valueListenable: _audioSettings.settings,
+              builder: (context, settings, _) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: const Text('Replay radio',
+                              style: TextStyle(fontSize: 11)),
+                          value: settings.replayAudioEnabled,
+                          onChanged: (v) =>
+                              _audioSettings.setReplayAudioEnabled(v),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: const Text('Subtitles',
+                              style: TextStyle(fontSize: 11)),
+                          value: settings.subtitlesEnabled,
+                          onChanged: (v) =>
+                              _audioSettings.setSubtitlesEnabled(v),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
             // Legend
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -461,6 +577,39 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                   ],
                 ),
               ),
+            ),
+
+            ValueListenableBuilder<String?>(
+              valueListenable: _radioAudio.subtitle,
+              builder: (context, text, _) {
+                if (text == null || text.isEmpty)
+                  return const SizedBox.shrink();
+                if (!_audioSettings.settings.value.subtitlesEnabled) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                  child: Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.68),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.borderColor),
+                    ),
+                    child: Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),

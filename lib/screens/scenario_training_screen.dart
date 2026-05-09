@@ -8,7 +8,9 @@ import '../data/scenario_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
 import '../models/scenario_result.dart' as detailed;
+import '../services/pilot_radio_audio_service.dart';
 import '../services/progression_service.dart';
+import '../services/radio_audio_settings_service.dart';
 import '../services/scenario_engine.dart';
 import '../services/scoring_engine.dart';
 import '../widgets/pressure_bar.dart';
@@ -49,6 +51,15 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   detailed.DetailedScenarioResult? _detailedResult;
   DateTime? _scenarioStartedAt;
   int? _scoreDelta; // positive = improved, negative = regressed, null = first
+  final PilotRadioAudioService _radioAudio = PilotRadioAudioService.instance;
+  final RadioAudioSettingsService _audioSettings =
+      RadioAudioSettingsService.instance;
+  final Stopwatch _audioClock = Stopwatch();
+  final List<ReplayPilotRadioCall> _pilotRadioEvents = <ReplayPilotRadioCall>[];
+  final List<ReplayWarningCue> _warningAudioEvents = <ReplayWarningCue>[];
+  bool _playedConflictWarning = false;
+  bool _playedRunwayPressureWarning = false;
+  bool _playedOverloadWarning = false;
 
   // Timers
   Timer? _countdownTimer;
@@ -68,6 +79,14 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     _scoreDelta = null;
     _scenarioStartedAt = DateTime.now();
     _screenState = _ScreenState.playing;
+    _audioClock
+      ..reset()
+      ..start();
+    _pilotRadioEvents.clear();
+    _warningAudioEvents.clear();
+    _playedConflictWarning = false;
+    _playedRunwayPressureWarning = false;
+    _playedOverloadWarning = false;
   }
 
   void _startTimers() {
@@ -90,6 +109,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     super.initState();
     _scenarioIndex = widget.scenarioIndex;
     _initScenario();
+    _audioSettings.ensureLoaded();
+    _radioAudio.initialize();
 
     _sweepCtrl = AnimationController(
       vsync: this,
@@ -112,6 +133,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
             _endScenario(timedOut: false);
           }
         });
+        _tickPlaybackWarnings();
       }
       return true;
     });
@@ -126,48 +148,65 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
 
     // Build replay data snapshot for optional 3D replay
     final cmdType = _engine.firstCommandType;
-    final cmdCs   = _engine.firstCommandCallsign;
+    final cmdCs = _engine.firstCommandCallsign;
     final cmdSummary = cmdCs.isEmpty
         ? 'No command issued'
         : '${_commandLabel(cmdType)} on $cmdCs';
 
     final replay = ScenarioReplayData(
-      scenarioId:    _scenario.id,
+      scenarioId: _scenario.id,
       scenarioTitle: _scenario.title.en,
-      initialAircraft: _scenario.aircraft.map((a) => AircraftReplayState(
-        callsign: a.callsign, x: a.x, y: a.y,
-        heading: a.heading, speed: a.speed, altitude: a.altitude,
-        wasSelected: false, wasConflicting: false,
-      )).toList(),
-      finalAircraft: _engine.aircraft.map((a) => AircraftReplayState(
-        callsign: a.callsign, x: a.x, y: a.y,
-        heading: a.heading, speed: a.speed, altitude: a.altitude,
-        wasSelected:    _selectedCallsign == a.callsign,
-        wasConflicting: result.conflictPair.contains(a.callsign),
-      )).toList(),
+      initialAircraft: _scenario.aircraft
+          .map((a) => AircraftReplayState(
+                callsign: a.callsign,
+                x: a.x,
+                y: a.y,
+                heading: a.heading,
+                speed: a.speed,
+                altitude: a.altitude,
+                wasSelected: false,
+                wasConflicting: false,
+              ))
+          .toList(),
+      finalAircraft: _engine.aircraft
+          .map((a) => AircraftReplayState(
+                callsign: a.callsign,
+                x: a.x,
+                y: a.y,
+                heading: a.heading,
+                speed: a.speed,
+                altitude: a.altitude,
+                wasSelected: _selectedCallsign == a.callsign,
+                wasConflicting: result.conflictPair.contains(a.callsign),
+              ))
+          .toList(),
       conflictPairCallsigns: result.conflictPair,
-      closestPointPxX:       _engine.closestPairMidX,
-      closestPointPxY:       _engine.closestPairMidY,
-      closestPointTimeSec:   result.closestPointTimeSec,
+      closestPointPxX: _engine.closestPairMidX,
+      closestPointPxY: _engine.closestPairMidY,
+      closestPointTimeSec: result.closestPointTimeSec,
       thresholdHorizontalPx: _scenario.conflictRules.minHorizontalDistancePx,
-      thresholdVerticalFt:   _scenario.conflictRules.minVerticalSeparationFL * 100,
-      actionTimeSec:         result.reactionTimeSec,
-      userCommandSummary:    cmdSummary,
-      minHorizDist:          result.minHorizontalDistancePx,
-      hadLOS:                result.hadLOS,
-      score:                 result.score,
-      ratingKey:             result.ratingKey,
-      penaltyBreakdown:      result.penaltyBreakdown,
-      bonusBreakdown:        result.bonusBreakdown,
+      thresholdVerticalFt:
+          _scenario.conflictRules.minVerticalSeparationFL * 100,
+      actionTimeSec: result.reactionTimeSec,
+      userCommandSummary: cmdSummary,
+      minHorizDist: result.minHorizontalDistancePx,
+      hadLOS: result.hadLOS,
+      score: result.score,
+      ratingKey: result.ratingKey,
+      penaltyBreakdown: result.penaltyBreakdown,
+      bonusBreakdown: result.bonusBreakdown,
+      pilotRadioCalls: List<ReplayPilotRadioCall>.from(_pilotRadioEvents),
+      warningCues: List<ReplayWarningCue>.from(_warningAudioEvents),
     );
 
     // Build rich detailed result for the debrief screen
     final dr = ScoringEngine.fromExistingResult(
-      scenario:    _scenario,
-      result:      result,
-      replayData:  replay,
-      startedAt:   _scenarioStartedAt ?? DateTime.now().subtract(
-          Duration(seconds: _scenario.timeLimitSeconds - _timeLeft)),
+      scenario: _scenario,
+      result: result,
+      replayData: replay,
+      startedAt: _scenarioStartedAt ??
+          DateTime.now().subtract(
+              Duration(seconds: _scenario.timeLimitSeconds - _timeLeft)),
       completedAt: DateTime.now(),
     );
 
@@ -203,6 +242,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   @override
   void dispose() {
     _running = false;
+    _audioClock.stop();
+    _radioAudio.clearQueue(stopCurrent: true);
     _sweepCtrl.dispose();
     _stopTimers();
     super.dispose();
@@ -213,8 +254,70 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     final cs = _selectedCallsign;
     if (cs == null) return;
     final feedback = _engine.issueCommand(cs, command);
+    _enqueuePilotAck(cs, command);
     setState(() {});
     _showCommandFeedback(feedback);
+  }
+
+  void _enqueuePilotAck(String callsign, String command) {
+    final current = _engine.aircraft.firstWhere(
+      (a) => a.callsign == callsign,
+      orElse: () => _engine.aircraft.first,
+    );
+    final heading = current.heading.round() % 360;
+    final headingText = heading.toString().padLeft(3, '0');
+    final speedText = (current.speed * 200).round();
+    final altitudeFt = current.altitude * 100;
+
+    final text = switch (command) {
+      'left' => '$callsign turning heading $headingText',
+      'right' => '$callsign turning heading $headingText',
+      'climb' => '$callsign climbing $altitudeFt',
+      'descend' => '$callsign descending $altitudeFt',
+      'slow' => '$callsign reducing speed $speedText',
+      'fast' => '$callsign increasing speed $speedText',
+      _ => '$callsign roger',
+    };
+
+    _pilotRadioEvents.add(
+      ReplayPilotRadioCall(
+        timestampSec: _audioClock.elapsedMilliseconds / 1000.0,
+        callsign: callsign,
+        text: text,
+      ),
+    );
+    _radioAudio.enqueuePilotAck(callsign: callsign, spokenText: text);
+  }
+
+  void _tickPlaybackWarnings() {
+    if (!_audioSettings.settings.value.warningsEnabled) return;
+    final ts = _audioClock.elapsedMilliseconds / 1000.0;
+
+    if (!_playedConflictWarning &&
+        _engine.alertLevel.index >= AlertLevel.warning.index) {
+      _playedConflictWarning = true;
+      _warningAudioEvents.add(
+        ReplayWarningCue(timestampSec: ts, type: 'conflict'),
+      );
+      _radioAudio.enqueueWarning(RadioWarningType.conflict, interrupt: true);
+    }
+
+    if (!_playedRunwayPressureWarning && _timeLeft <= 12) {
+      _playedRunwayPressureWarning = true;
+      _warningAudioEvents.add(
+        ReplayWarningCue(timestampSec: ts, type: 'runwayPressure'),
+      );
+      _radioAudio.enqueueWarning(RadioWarningType.runwayPressure);
+    }
+
+    if (!_playedOverloadWarning && _engine.alertLevel == AlertLevel.los) {
+      _playedOverloadWarning = true;
+      _warningAudioEvents.add(
+        ReplayWarningCue(timestampSec: ts, type: 'overloadPeak'),
+      );
+      _radioAudio.enqueueWarning(RadioWarningType.overloadPeak,
+          interrupt: true);
+    }
   }
 
   void _showCommandFeedback(String feedback) {
@@ -229,23 +332,101 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   // Human-readable command name for replay summary
   static String _commandLabel(String cmd) {
     switch (cmd) {
-      case 'left':    return 'Turn left';
-      case 'right':   return 'Turn right';
-      case 'climb':   return 'Climb';
-      case 'descend': return 'Descend';
-      case 'slow':    return 'Slow';
-      case 'fast':    return 'Fast';
-      default:        return cmd;
+      case 'left':
+        return 'Turn left';
+      case 'right':
+        return 'Turn right';
+      case 'climb':
+        return 'Climb';
+      case 'descend':
+        return 'Descend';
+      case 'slow':
+        return 'Slow';
+      case 'fast':
+        return 'Fast';
+      default:
+        return cmd;
     }
   }
 
   String _skillLabel(AppLocalizations l10n) {
     switch (_scenario.skill) {
-      case 'altitude':   return l10n.skillAltitude;
-      case 'speed':      return l10n.skillSpeed;
-      case 'separation': return l10n.skillSeparation;
-      default:           return l10n.skillMixed;
+      case 'altitude':
+        return l10n.skillAltitude;
+      case 'speed':
+        return l10n.skillSpeed;
+      case 'separation':
+        return l10n.skillSeparation;
+      default:
+        return l10n.skillMixed;
     }
+  }
+
+  Future<void> _openAudioSettings() async {
+    await _audioSettings.ensureLoaded();
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: ValueListenableBuilder<RadioAudioSettings>(
+              valueListenable: _audioSettings.settings,
+              builder: (context, s, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pilot Radio Playback',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Voice volume ${(s.voiceVolume * 100).round()}%',
+                      style: const TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    Slider(
+                      value: s.voiceVolume,
+                      min: 0,
+                      max: 1,
+                      divisions: 10,
+                      onChanged: (v) => _audioSettings.setVoiceVolume(v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Warning audio'),
+                      value: s.warningsEnabled,
+                      onChanged: (v) => _audioSettings.setWarningsEnabled(v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Radio subtitles'),
+                      value: s.subtitlesEnabled,
+                      onChanged: (v) => _audioSettings.setSubtitlesEnabled(v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Replay radio audio'),
+                      value: s.replayAudioEnabled,
+                      onChanged: (v) => _audioSettings.setReplayAudioEnabled(v),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -287,13 +468,17 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                       : AppTheme.surface,
                   borderRadius: BorderRadius.circular(7),
                   border: Border.all(
-                    color: _timeLeft <= 10 ? AppTheme.danger : AppTheme.borderColor,
+                    color: _timeLeft <= 10
+                        ? AppTheme.danger
+                        : AppTheme.borderColor,
                   ),
                 ),
                 child: Text(
                   '${_timeLeft}s',
                   style: TextStyle(
-                    color: _timeLeft <= 10 ? AppTheme.danger : AppTheme.textPrimary,
+                    color: _timeLeft <= 10
+                        ? AppTheme.danger
+                        : AppTheme.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -315,6 +500,11 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               ),
             ),
           ),
+          IconButton(
+            tooltip: 'Radio audio settings',
+            onPressed: _openAudioSettings,
+            icon: const Icon(Icons.tune),
+          ),
         ],
       ),
       body: Stack(
@@ -332,7 +522,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               // ── Objective card ────────────────────────────────────────────
               Container(
                 margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(10),
@@ -340,7 +531,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.flag_outlined, color: AppTheme.secondary, size: 13),
+                    const Icon(Icons.flag_outlined,
+                        color: AppTheme.secondary, size: 13),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -360,20 +552,26 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               if (!_everSelected && _screenState == _ScreenState.playing)
                 Container(
                   margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppTheme.secondary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.secondary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppTheme.secondary.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.touch_app_outlined, color: AppTheme.secondary, size: 13),
+                      const Icon(Icons.touch_app_outlined,
+                          color: AppTheme.secondary, size: 13),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           l10n.radarV2HowTo,
-                          style: const TextStyle(color: AppTheme.secondary, fontSize: 10, height: 1.3),
+                          style: const TextStyle(
+                              color: AppTheme.secondary,
+                              fontSize: 10,
+                              height: 1.3),
                         ),
                       ),
                     ],
@@ -393,8 +591,12 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                     String? hit;
                     double minDist = 32;
                     for (final a in _engine.aircraft) {
-                      final dist = sqrt(pow(p.dx - a.x, 2) + pow(p.dy - a.y, 2));
-                      if (dist < minDist) { minDist = dist; hit = a.callsign; }
+                      final dist =
+                          sqrt(pow(p.dx - a.x, 2) + pow(p.dy - a.y, 2));
+                      if (dist < minDist) {
+                        minDist = dist;
+                        hit = a.callsign;
+                      }
                     }
                     setState(() {
                       _selectedCallsign = hit;
@@ -418,7 +620,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               ),
 
               // ── Selected aircraft info ────────────────────────────────────
-              if (_selectedCallsign != null && _screenState == _ScreenState.playing)
+              if (_selectedCallsign != null &&
+                  _screenState == _ScreenState.playing)
                 Builder(builder: (ctx) {
                   final sel = _engine.aircraft.firstWhere(
                     (a) => a.callsign == _selectedCallsign,
@@ -426,15 +629,18 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                   );
                   return Container(
                     margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: AppTheme.surface,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.yellowAccent.withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color: Colors.yellowAccent.withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.flight, color: Colors.yellowAccent, size: 13),
+                        const Icon(Icons.flight,
+                            color: Colors.yellowAccent, size: 13),
                         const SizedBox(width: 8),
                         Text(
                           '${sel.callsign}  FL${sel.altitude}  '
@@ -454,18 +660,43 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               // ── Commands ──────────────────────────────────────────────────
               if (_screenState == _ScreenState.playing)
                 Padding(
-                  padding: EdgeInsets.fromLTRB(12, 4, 12, MediaQuery.of(context).padding.bottom + 14),
+                  padding: EdgeInsets.fromLTRB(
+                      12, 4, 12, MediaQuery.of(context).padding.bottom + 14),
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     alignment: WrapAlignment.center,
                     children: [
-                      _cmdBtn(l10n.cmdTurnLeft,  _selectedCallsign != null ? () => _issueCommand('left')    : null),
-                      _cmdBtn(l10n.cmdTurnRight, _selectedCallsign != null ? () => _issueCommand('right')   : null),
-                      _cmdBtn(l10n.cmdClimb,     _selectedCallsign != null ? () => _issueCommand('climb')   : null),
-                      _cmdBtn(l10n.cmdDescend,   _selectedCallsign != null ? () => _issueCommand('descend') : null),
-                      _cmdBtn(l10n.cmdSlow,      _selectedCallsign != null ? () => _issueCommand('slow')    : null),
-                      _cmdBtn(l10n.cmdFast,      _selectedCallsign != null ? () => _issueCommand('fast')    : null),
+                      _cmdBtn(
+                          l10n.cmdTurnLeft,
+                          _selectedCallsign != null
+                              ? () => _issueCommand('left')
+                              : null),
+                      _cmdBtn(
+                          l10n.cmdTurnRight,
+                          _selectedCallsign != null
+                              ? () => _issueCommand('right')
+                              : null),
+                      _cmdBtn(
+                          l10n.cmdClimb,
+                          _selectedCallsign != null
+                              ? () => _issueCommand('climb')
+                              : null),
+                      _cmdBtn(
+                          l10n.cmdDescend,
+                          _selectedCallsign != null
+                              ? () => _issueCommand('descend')
+                              : null),
+                      _cmdBtn(
+                          l10n.cmdSlow,
+                          _selectedCallsign != null
+                              ? () => _issueCommand('slow')
+                              : null),
+                      _cmdBtn(
+                          l10n.cmdFast,
+                          _selectedCallsign != null
+                              ? () => _issueCommand('fast')
+                              : null),
                     ],
                   ),
                 ),
@@ -482,9 +713,46 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
               detailedResult: _detailedResult,
               scoreDelta: _scoreDelta,
               onRetry: _retryScenario,
-              onNext: _scenarioIndex < allScenarios.length - 1 ? _goToNext : null,
+              onNext:
+                  _scenarioIndex < allScenarios.length - 1 ? _goToNext : null,
               onDone: () => Navigator.pop(context),
             ),
+
+          ValueListenableBuilder<String?>(
+            valueListenable: _radioAudio.subtitle,
+            builder: (context, text, _) {
+              if (text == null || text.isEmpty) return const SizedBox.shrink();
+              if (!_audioSettings.settings.value.subtitlesEnabled) {
+                return const SizedBox.shrink();
+              }
+              return Positioned(
+                left: 12,
+                right: 12,
+                bottom: max(
+                  76,
+                  MediaQuery.of(context).viewPadding.bottom + 48,
+                ),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.68),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.borderColor),
+                  ),
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -496,7 +764,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
         foregroundColor: enabled ? AppTheme.primary : AppTheme.textSecondary,
-        side: BorderSide(color: enabled ? AppTheme.primary : AppTheme.borderColor),
+        side: BorderSide(
+            color: enabled ? AppTheme.primary : AppTheme.borderColor),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -549,7 +818,9 @@ class _CommandFeedbackBanner extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 14),
           const SizedBox(width: 8),
-          Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(text,
+              style: TextStyle(
+                  color: color, fontSize: 11, fontWeight: FontWeight.w600)),
         ],
       ),
     );

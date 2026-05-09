@@ -8,7 +8,9 @@ import '../data/radar_levels.dart';
 import '../l10n/app_localizations.dart';
 import '../models/radar_level_config.dart';
 import '../services/daily_challenge_service.dart';
+import '../services/pilot_radio_audio_service.dart';
 import '../services/progression_service.dart';
+import '../services/radio_audio_settings_service.dart';
 import '../widgets/radar_painter.dart';
 
 enum _ScenarioState { playing, success, failed }
@@ -41,6 +43,12 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
   int _conflictFreeTicks = 0;
   bool _everSelected = false;
   int _xpEarned = 0;
+  final PilotRadioAudioService _radioAudio = PilotRadioAudioService.instance;
+  final RadioAudioSettingsService _audioSettings =
+      RadioAudioSettingsService.instance;
+  bool _playedConflictWarning = false;
+  bool _playedRunwayPressureWarning = false;
+  bool _playedOverloadWarning = false;
 
   // ── Timers ────────────────────────────────────────────────────────────────
   Timer? _countdownTimer;
@@ -108,6 +116,8 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
     super.initState();
     _loadConfig();
     _initAircraft();
+    _audioSettings.ensureLoaded();
+    _radioAudio.initialize();
     _timeLeft = _config.timeLimitSeconds;
     _score = _config.startingScore;
 
@@ -140,6 +150,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
             _conflictFreeTicks = 0;
           }
         });
+        _tickPlaybackWarnings();
       }
       return true;
     });
@@ -161,13 +172,18 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
       _selected = null;
       _everSelected = false;
       _xpEarned = 0;
+      _playedConflictWarning = false;
+      _playedRunwayPressureWarning = false;
+      _playedOverloadWarning = false;
     });
+    _radioAudio.clearQueue(stopCurrent: true);
     _startTimers();
   }
 
   @override
   void dispose() {
     _running = false;
+    _radioAudio.clearQueue(stopCurrent: true);
     _sweepCtrl.dispose();
     _stopTimers();
     super.dispose();
@@ -194,6 +210,49 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
           a.speed = min(1.8, a.speed + 0.1);
       }
     });
+    _enqueuePilotAck(a, type);
+  }
+
+  void _enqueuePilotAck(Aircraft a, String command) {
+    final heading = a.heading.round() % 360;
+    final headingText = heading.toString().padLeft(3, '0');
+    final speedText = (a.speed * 200).round();
+    final altitudeFt = a.altitude * 100;
+
+    final text = switch (command) {
+      'left' => '${a.callsign} turning heading $headingText',
+      'right' => '${a.callsign} turning heading $headingText',
+      'climb' => '${a.callsign} climbing $altitudeFt',
+      'descend' => '${a.callsign} descending $altitudeFt',
+      'slow' => '${a.callsign} reducing speed $speedText',
+      'fast' => '${a.callsign} increasing speed $speedText',
+      _ => '${a.callsign} roger',
+    };
+    _radioAudio.enqueuePilotAck(callsign: a.callsign, spokenText: text);
+  }
+
+  void _tickPlaybackWarnings() {
+    if (!_audioSettings.settings.value.warningsEnabled ||
+        _state != _ScenarioState.playing) {
+      return;
+    }
+    final conflict = _hasConflict;
+
+    if (!_playedConflictWarning && conflict) {
+      _playedConflictWarning = true;
+      _radioAudio.enqueueWarning(RadioWarningType.conflict, interrupt: true);
+    }
+
+    if (!_playedRunwayPressureWarning && _timeLeft <= 12) {
+      _playedRunwayPressureWarning = true;
+      _radioAudio.enqueueWarning(RadioWarningType.runwayPressure);
+    }
+
+    if (!_playedOverloadWarning && _score <= 35) {
+      _playedOverloadWarning = true;
+      _radioAudio.enqueueWarning(RadioWarningType.overloadPeak,
+          interrupt: true);
+    }
   }
 
   // ── Score colour ──────────────────────────────────────────────────────────
@@ -366,6 +425,11 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                 ),
               ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Radio audio settings',
+            onPressed: _openAudioSettings,
+            icon: const Icon(Icons.tune),
           ),
         ],
       ),
@@ -654,8 +718,111 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                     : null,
               ),
             ),
+
+          ValueListenableBuilder<String?>(
+            valueListenable: _radioAudio.subtitle,
+            builder: (context, text, _) {
+              if (text == null || text.isEmpty) return const SizedBox.shrink();
+              if (!_audioSettings.settings.value.subtitlesEnabled) {
+                return const SizedBox.shrink();
+              }
+              return Positioned(
+                left: 12,
+                right: 12,
+                bottom: max(
+                  76,
+                  MediaQuery.of(context).viewPadding.bottom + 48,
+                ),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.68),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.borderColor),
+                  ),
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openAudioSettings() async {
+    await _audioSettings.ensureLoaded();
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: ValueListenableBuilder<RadioAudioSettings>(
+              valueListenable: _audioSettings.settings,
+              builder: (context, s, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pilot Radio Playback',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Voice volume ${(s.voiceVolume * 100).round()}%',
+                      style: const TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    Slider(
+                      value: s.voiceVolume,
+                      min: 0,
+                      max: 1,
+                      divisions: 10,
+                      onChanged: (v) => _audioSettings.setVoiceVolume(v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Warning audio'),
+                      value: s.warningsEnabled,
+                      onChanged: (v) => _audioSettings.setWarningsEnabled(v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Radio subtitles'),
+                      value: s.subtitlesEnabled,
+                      onChanged: (v) => _audioSettings.setSubtitlesEnabled(v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Replay radio audio'),
+                      value: s.replayAudioEnabled,
+                      onChanged: (v) => _audioSettings.setReplayAudioEnabled(v),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
