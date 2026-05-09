@@ -26,6 +26,7 @@ import 'scoring/radar_v2_score.dart';
 import 'training/radar_training_result.dart';
 import 'training/radar_training_result_screen.dart';
 import 'training/radar_training_progress_store.dart';
+import 'workflow/command_workflow_tracker.dart';
 
 class RadarV2DebugScreen extends StatefulWidget {
   final bool betaMode;
@@ -65,6 +66,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   SimulationSnapshot? _snapshot;
   final List<SimulationSnapshot> _replayHistory = <SimulationSnapshot>[];
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
+    final CommandWorkflowTracker _commandWorkflow = CommandWorkflowTracker();
   final WorkloadAudioController _audioController = WorkloadAudioController();
   final PilotRadioAudioService _radioAudio = PilotRadioAudioService.instance;
   late final AudioPlayer _cuePlayer = AudioPlayer(playerId: 'radar_cues');
@@ -184,6 +186,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _simulationAccumulatorSeconds = 0;
       _renderInterpolation = 0;
       _resetRadarView(definition.radarRangeNm);
+      _commandWorkflow.clear();
       _scenarioStarted = widget.betaMode;
       _paused = !widget.betaMode;
       _resultShown = false;
@@ -270,6 +273,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final runtime = _runtime;
     if (runtime == null) return;
     setState(() {
+      _commandWorkflow.clear();
       _scenarioStarted = true;
       _paused = false;
       _previousSnapshot = runtime.snapshot;
@@ -306,6 +310,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     runtime.updateAttentionFocus(selectedAircraftId: _selectedAircraftId);
     _previousSnapshot = snapshot;
     _snapshot = runtime.tick();
+    _commandWorkflow.onSnapshotTransition(
+      previous: snapshot,
+      current: _snapshot!,
+    );
     _reviewingReplay = false;
     _recordReplaySnapshot(_snapshot!);
     _scoreTracker.observe(_snapshot!);
@@ -336,6 +344,101 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     );
     runtime.updateAttentionFocus(selectedAircraftId: selected?.id);
     setState(() => _selectedAircraftId = selected?.id);
+  }
+
+  Future<void> _openQuickCommandRadial(
+    LongPressStartDetails details,
+    Size size,
+  ) async {
+    final snapshot = _snapshot;
+    final runtime = _runtime;
+    if (snapshot == null || runtime == null) return;
+    final selected = _nearestAircraft(
+      snapshot,
+      details.localPosition,
+      size,
+      runtime.definition.radarRangeNm,
+    );
+    if (selected == null) return;
+
+    runtime.updateAttentionFocus(selectedAircraftId: selected.id);
+    if (mounted) {
+      setState(() => _selectedAircraftId = selected.id);
+    }
+    final waypointIds = snapshot.waypoints.keys.take(6).toList(growable: false);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF081722),
+      builder: (context) {
+        return _QuickCommandRadialMenu(
+          aircraft: selected,
+          waypointIds: waypointIds,
+          onHeadingDelta: (delta) => _commandHeading(selected, delta),
+          onSpeedDelta: (delta) => _commandSpeed(selected, delta),
+          onAltitudeDelta: (delta) => _commandAltitude(selected, delta),
+          onDirect: (waypointId) => _commandDirect(selected, waypointId),
+          onVectorAndAltitude: () {
+            final commands = <ControllerCommand>[
+              AssignHeading(
+                aircraftId: selected.id,
+                issuedAt: _snapshot?.elapsed ?? Duration.zero,
+                headingDeg: _normalizeHeading(selected.headingDeg + 20),
+              ),
+              AssignAltitude(
+                aircraftId: selected.id,
+                issuedAt: _snapshot?.elapsed ?? Duration.zero,
+                altitudeFt: (selected.altitudeFt - 1000).clamp(2000, 45000),
+              ),
+            ];
+            _issueCommandChain(
+              selected,
+              commands,
+              '${selected.callsign} VECTOR+ALT',
+            );
+          },
+          onHeadingAndSpeed: () {
+            final commands = <ControllerCommand>[
+              AssignHeading(
+                aircraftId: selected.id,
+                issuedAt: _snapshot?.elapsed ?? Duration.zero,
+                headingDeg: _normalizeHeading(selected.headingDeg + 20),
+              ),
+              AssignSpeed(
+                aircraftId: selected.id,
+                issuedAt: _snapshot?.elapsed ?? Duration.zero,
+                speedKt:
+                    (selected.groundSpeedKt - 20).clamp(120, 480).toDouble(),
+              ),
+            ];
+            _issueCommandChain(
+              selected,
+              commands,
+              '${selected.callsign} HDG+SPD',
+            );
+          },
+          onDescendAndDirect: (waypointId) {
+            final commands = <ControllerCommand>[
+              AssignAltitude(
+                aircraftId: selected.id,
+                issuedAt: _snapshot?.elapsed ?? Duration.zero,
+                altitudeFt: (selected.altitudeFt - 1000).clamp(2000, 45000),
+              ),
+              DirectToWaypoint(
+                aircraftId: selected.id,
+                issuedAt: _snapshot?.elapsed ?? Duration.zero,
+                waypointId: waypointId,
+              ),
+            ];
+            _issueCommandChain(
+              selected,
+              commands,
+              '${selected.callsign} DES+DIRECT $waypointId',
+            );
+          },
+        );
+      },
+    );
   }
 
   AircraftState? _nearestAircraft(
@@ -450,7 +553,11 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     setState(() => _resetRadarView(runtime.definition.radarRangeNm));
   }
 
-  void _issueCommand(ControllerCommand command, String feedback) {
+  void _issueCommand(
+    ControllerCommand command,
+    String feedback, {
+    String? chainId,
+  }) {
     final runtime = _runtime;
     final snapshot = _snapshot;
     final l10n = AppLocalizations.of(context)!;
@@ -472,20 +579,36 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     }
     _commandCooldownUntil[cooldownKey] =
         now.add(const Duration(milliseconds: 450));
-    runtime.engine.applyCommand(command);
+    final stamped = _stampCommandIssuedAt(command, snapshot.elapsed);
+    runtime.engine.applyCommand(stamped);
+    _commandWorkflow.onCommandSent(
+      command: stamped,
+      aircraft: _aircraftForId(snapshot, stamped.aircraftId) ??
+          AircraftState(
+            id: stamped.aircraftId,
+            callsign: stamped.aircraftId,
+            xNm: 0,
+            yNm: 0,
+            altitudeFt: 0,
+            headingDeg: 0,
+            groundSpeedKt: 0,
+          ),
+      label: feedback,
+      chainId: chainId,
+    );
     _playButtonCue();
     if (!_muted) {
       _enqueuePilotAck(command, snapshot);
     }
     runtime.recordCommandTimestamp(snapshot.elapsed,
-        aircraftId: command.aircraftId);
-    _scoreTracker.recordCommand(command, snapshot);
+      aircraftId: stamped.aircraftId);
+    _scoreTracker.recordCommand(stamped, snapshot);
     _commandHighlightTimer?.cancel();
     setState(() {
       _snapshot = runtime.snapshot;
       _previousSnapshot = snapshot;
       _renderInterpolation = 1;
-      _recentlyCommandedAircraftId = command.aircraftId;
+      _recentlyCommandedAircraftId = stamped.aircraftId;
       _commandFlashUntil = now.add(const Duration(milliseconds: 900));
     });
     _commandHighlightTimer = Timer(const Duration(seconds: 2), () {
@@ -500,6 +623,66 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
           behavior: SnackBarBehavior.floating,
         ),
       );
+  }
+
+  ControllerCommand _stampCommandIssuedAt(
+    ControllerCommand command,
+    Duration issuedAt,
+  ) {
+    if (command is AssignHeading) {
+      return AssignHeading(
+        aircraftId: command.aircraftId,
+        issuedAt: issuedAt,
+        headingDeg: command.headingDeg,
+      );
+    }
+    if (command is AssignAltitude) {
+      return AssignAltitude(
+        aircraftId: command.aircraftId,
+        issuedAt: issuedAt,
+        altitudeFt: command.altitudeFt,
+      );
+    }
+    if (command is AssignSpeed) {
+      return AssignSpeed(
+        aircraftId: command.aircraftId,
+        issuedAt: issuedAt,
+        speedKt: command.speedKt,
+      );
+    }
+    if (command is DirectToWaypoint) {
+      return DirectToWaypoint(
+        aircraftId: command.aircraftId,
+        issuedAt: issuedAt,
+        waypointId: command.waypointId,
+      );
+    }
+    if (command is EnterHold) {
+      return EnterHold(
+        aircraftId: command.aircraftId,
+        issuedAt: issuedAt,
+        holdPatternId: command.holdPatternId,
+      );
+    }
+    if (command is ExitHold) {
+      return ExitHold(
+        aircraftId: command.aircraftId,
+        issuedAt: issuedAt,
+      );
+    }
+    return command;
+  }
+
+  void _issueCommandChain(
+    AircraftState aircraft,
+    List<ControllerCommand> commands,
+    String summary,
+  ) {
+    final baseChainId =
+        '${aircraft.id}:${_snapshot?.elapsed.inMilliseconds ?? 0}:${commands.length}';
+    for (final command in commands) {
+      _issueCommand(command, summary, chainId: baseChainId);
+    }
   }
 
   void _enqueuePilotAck(
@@ -606,6 +789,21 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         holdPatternId: hold.id,
       ),
       '${aircraft.callsign} HOLD AT ${hold.fixWaypointId}',
+    );
+  }
+
+  void _commandDirect(AircraftState aircraft, String waypointId) {
+    final snapshot = _snapshot;
+    if (snapshot == null || !snapshot.waypoints.containsKey(waypointId)) {
+      return;
+    }
+    _issueCommand(
+      DirectToWaypoint(
+        aircraftId: aircraft.id,
+        issuedAt: snapshot.elapsed,
+        waypointId: waypointId,
+      ),
+      '${aircraft.callsign} DIRECT $waypointId',
     );
   }
 
@@ -1102,6 +1300,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                             _onRadarScaleUpdate(details, size),
                                         onTapUp: (details) =>
                                             _selectAircraft(details, size),
+                                        onLongPressStart: (details) =>
+                                          _openQuickCommandRadial(
+                                            details, size),
                                         child: CustomPaint(
                                           painter: RadarV2Painter(
                                             snapshot: snapshot,
@@ -1339,7 +1540,19 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               onHeading: _commandHeading,
               onAltitude: _commandAltitude,
               onSpeed: _commandSpeed,
+                onDirect: _commandDirect,
               onHold: _commandHold,
+                onIssueChain: _issueCommandChain,
+                waypointIds: snapshot.waypoints.keys.toList(growable: false),
+                commandWorkflowEntries: _selectedAircraftId == null
+                  ? const []
+                  : _commandWorkflow.entriesForAircraft(_selectedAircraftId!),
+                activeWorkflowEntries: _selectedAircraftId == null
+                  ? const []
+                  : _commandWorkflow
+                    .activeRestrictionsForAircraft(_selectedAircraftId!),
+                replayCommandInsights:
+                  _commandWorkflow.replayInsights(snapshot.events),
               reviewEventLabel: _reviewEventLabel,
               recentlyAcknowledgedAircraftId: _recentlyAcknowledgedAircraftId,
             ),
@@ -1396,7 +1609,17 @@ class _DebugControls extends StatelessWidget {
   final void Function(AircraftState aircraft, int deltaDeg) onHeading;
   final void Function(AircraftState aircraft, int deltaFt) onAltitude;
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
+  final void Function(AircraftState aircraft, String waypointId) onDirect;
   final void Function(AircraftState aircraft) onHold;
+  final void Function(
+    AircraftState aircraft,
+    List<ControllerCommand> commands,
+    String summary,
+  ) onIssueChain;
+  final List<String> waypointIds;
+  final List<CommandWorkflowEntry> commandWorkflowEntries;
+  final List<CommandWorkflowEntry> activeWorkflowEntries;
+  final List<ReplayCommandInsight> replayCommandInsights;
   final String? reviewEventLabel;
   final String? recentlyAcknowledgedAircraftId;
 
@@ -1436,7 +1659,13 @@ class _DebugControls extends StatelessWidget {
     required this.onHeading,
     required this.onAltitude,
     required this.onSpeed,
+    required this.onDirect,
     required this.onHold,
+    required this.onIssueChain,
+    required this.waypointIds,
+    required this.commandWorkflowEntries,
+    required this.activeWorkflowEntries,
+    required this.replayCommandInsights,
     required this.reviewEventLabel,
     required this.recentlyAcknowledgedAircraftId,
   });
@@ -1605,6 +1834,10 @@ class _DebugControls extends StatelessWidget {
                 reviewEventLabel: reviewEventLabel,
               ),
             ],
+            if (!betaMode && replayCommandInsights.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _ReplayCommandInsightPanel(insights: replayCommandInsights),
+            ],
             if (!betaMode &&
                 snapshot.events.any((event) =>
                     event.type == 'commandIssued' ||
@@ -1632,10 +1865,15 @@ class _DebugControls extends StatelessWidget {
               const SizedBox(height: 10),
               _SelectedAircraftPanel(
                 aircraft: selectedAircraft!,
+                waypointIds: waypointIds,
                 onHeading: onHeading,
                 onAltitude: onAltitude,
                 onSpeed: onSpeed,
+                onDirect: onDirect,
                 onHold: onHold,
+                onIssueChain: onIssueChain,
+                workflowEntries: commandWorkflowEntries,
+                activeRestrictions: activeWorkflowEntries,
                 recentlyAcknowledged:
                     recentlyAcknowledgedAircraftId == selectedAircraft!.id,
               ),
@@ -2827,18 +3065,32 @@ class _ScenarioResultPanel extends StatelessWidget {
 
 class _SelectedAircraftPanel extends StatelessWidget {
   final AircraftState aircraft;
+  final List<String> waypointIds;
   final void Function(AircraftState aircraft, int deltaDeg) onHeading;
   final void Function(AircraftState aircraft, int deltaFt) onAltitude;
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
+  final void Function(AircraftState aircraft, String waypointId) onDirect;
   final void Function(AircraftState aircraft) onHold;
+  final void Function(
+    AircraftState aircraft,
+    List<ControllerCommand> commands,
+    String summary,
+  ) onIssueChain;
+  final List<CommandWorkflowEntry> workflowEntries;
+  final List<CommandWorkflowEntry> activeRestrictions;
   final bool recentlyAcknowledged;
 
   const _SelectedAircraftPanel({
     required this.aircraft,
+    required this.waypointIds,
     required this.onHeading,
     required this.onAltitude,
     required this.onSpeed,
+    required this.onDirect,
     required this.onHold,
+    required this.onIssueChain,
+    required this.workflowEntries,
+    required this.activeRestrictions,
     required this.recentlyAcknowledged,
   });
 
@@ -2893,6 +3145,52 @@ class _SelectedAircraftPanel extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _pendingIntentText(aircraft),
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final preset in const [-30, -20, -10, 10, 20, 30])
+                _PresetPill(
+                  label: preset > 0 ? 'HDG +$preset' : 'HDG $preset',
+                  onTap: () => onHeading(aircraft, preset),
+                ),
+              for (final preset in const [-40, -20, 20, 40])
+                _PresetPill(
+                  label: preset > 0 ? 'SPD +$preset' : 'SPD $preset',
+                  onTap: () => onSpeed(aircraft, preset),
+                ),
+              for (final preset in const [-2000, -1000, 1000, 2000])
+                _PresetPill(
+                  label: preset > 0 ? 'ALT +${preset ~/ 100}' : 'ALT ${preset ~/ 100}',
+                  onTap: () => onAltitude(aircraft, preset),
+                ),
+              for (final target in const [90, 180, 270, 360])
+                _PresetPill(
+                  label: 'VECTOR ${target.toString().padLeft(3, '0')}',
+                  onTap: () => onHeading(
+                    aircraft,
+                    _deltaToHeading(aircraft.headingDeg, target.toDouble()),
+                  ),
+                ),
+              if (waypointIds.isNotEmpty)
+                _PresetPill(
+                  label: 'DIRECT ${waypointIds.first}',
+                  onTap: () => onDirect(aircraft, waypointIds.first),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -2952,12 +3250,393 @@ class _SelectedAircraftPanel extends StatelessWidget {
                       label: aircraft.intent.hold ? 'EXIT HOLD' : 'HOLD',
                       onPressed: () => onHold(aircraft),
                     ),
+                    if (waypointIds.isNotEmpty)
+                      _CommandButton(
+                        icon: Icons.call_split,
+                        label: 'DIRECT',
+                        onPressed: () => onDirect(aircraft, waypointIds.first),
+                      ),
                   ],
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ChainButton(
+                label: 'HDG+SPD',
+                onPressed: () {
+                  onIssueChain(
+                    aircraft,
+                    [
+                      AssignHeading(
+                        aircraftId: aircraft.id,
+                        issuedAt: Duration.zero,
+                        headingDeg: aircraft.headingDeg + 20,
+                      ),
+                      AssignSpeed(
+                        aircraftId: aircraft.id,
+                        issuedAt: Duration.zero,
+                        speedKt: aircraft.groundSpeedKt - 20,
+                      ),
+                    ],
+                    '${aircraft.callsign} HDG+SPD',
+                  );
+                },
+              ),
+              _ChainButton(
+                label: 'VECTOR+ALT',
+                onPressed: () {
+                  onIssueChain(
+                    aircraft,
+                    [
+                      AssignHeading(
+                        aircraftId: aircraft.id,
+                        issuedAt: Duration.zero,
+                        headingDeg: aircraft.headingDeg + 20,
+                      ),
+                      AssignAltitude(
+                        aircraftId: aircraft.id,
+                        issuedAt: Duration.zero,
+                        altitudeFt: aircraft.altitudeFt - 1000,
+                      ),
+                    ],
+                    '${aircraft.callsign} VECTOR+ALT',
+                  );
+                },
+              ),
+              if (waypointIds.isNotEmpty)
+                _ChainButton(
+                  label: 'DES+DIRECT',
+                  onPressed: () {
+                    onIssueChain(
+                      aircraft,
+                      [
+                        AssignAltitude(
+                          aircraftId: aircraft.id,
+                          issuedAt: Duration.zero,
+                          altitudeFt: aircraft.altitudeFt - 1000,
+                        ),
+                        DirectToWaypoint(
+                          aircraftId: aircraft.id,
+                          issuedAt: Duration.zero,
+                          waypointId: waypointIds.first,
+                        ),
+                      ],
+                      '${aircraft.callsign} DES+DIRECT ${waypointIds.first}',
+                    );
+                  },
+                ),
+            ],
+          ),
+          if (activeRestrictions.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'ACTIVE RESTRICTIONS',
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final entry in activeRestrictions.take(4))
+                  _WorkflowChip(entry: entry),
+              ],
+            ),
+          ],
+          if (workflowEntries.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'RECENT COMMANDS',
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            for (final entry in workflowEntries.take(5))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${entry.commandType.toUpperCase()} ${entry.label}',
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    _WorkflowChip(entry: entry),
+                  ],
+                ),
+              ),
+          ],
         ],
+      ),
+    );
+  }
+
+  int _deltaToHeading(double current, double target) {
+    final normalizedCurrent = current % 360;
+    final raw = (target - normalizedCurrent + 540) % 360 - 180;
+    return raw.round();
+  }
+
+  String _pendingIntentText(AircraftState aircraft) {
+    final parts = <String>[];
+    final intent = aircraft.intent;
+    if (intent.assignedHeadingDeg != null) {
+      parts.add('HDG ${intent.assignedHeadingDeg!.round().toString().padLeft(3, '0')}');
+    }
+    if (intent.assignedAltitudeFt != null) {
+      parts.add('ALT ${intent.assignedAltitudeFt! ~/ 100}');
+    }
+    if (intent.assignedSpeedKt != null) {
+      parts.add('SPD ${intent.assignedSpeedKt!.round()}');
+    }
+    if (intent.directToWaypointId != null) {
+      parts.add('DIRECT ${intent.directToWaypointId}');
+    }
+    if (intent.hold) {
+      parts.add('HOLD ${intent.holdPatternId ?? ''}'.trim());
+    }
+    if (parts.isEmpty) {
+      return 'Pending Intentions: none';
+    }
+    return 'Pending Intentions: ${parts.join(' | ')}';
+  }
+}
+
+class _PresetPill extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _PresetPill({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0x2026B6FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x5555D6BE)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChainButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+
+  const _ChainButton({required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.tonalIcon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.link, size: 14),
+      label: Text(label),
+    );
+  }
+}
+
+class _WorkflowChip extends StatelessWidget {
+  final CommandWorkflowEntry entry;
+
+  const _WorkflowChip({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (entry.status) {
+      CommandWorkflowStatus.sent => ('SENT', const Color(0xFF62D2FF)),
+      CommandWorkflowStatus.awaitingAcknowledgement =>
+        ('AWAIT', const Color(0xFFFFD166)),
+      CommandWorkflowStatus.acknowledged =>
+        ('ACK', const Color(0xFF46F5A7)),
+      CommandWorkflowStatus.completed =>
+        ('DONE', const Color(0xFF8BC34A)),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReplayCommandInsightPanel extends StatelessWidget {
+  final List<ReplayCommandInsight> insights;
+
+  const _ReplayCommandInsightPanel({required this.insights});
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = insights.length > 5
+        ? insights.sublist(insights.length - 5)
+        : insights;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07131C),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Replay Command Timing',
+            style: TextStyle(
+              color: AppTheme.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final insight in visible)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                '${insight.aircraftId} ${insight.commandType.toUpperCase()} '
+                'delay ${insight.acknowledgementDelay.inSeconds}s '
+                '${insight.delayed ? 'DELAYED' : 'ON-TIME'} '
+                '${insight.interrupted ? 'INTERRUPTED' : 'CLEAR'}',
+                style: TextStyle(
+                  color: insight.interrupted
+                      ? AppTheme.warning
+                      : AppTheme.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickCommandRadialMenu extends StatelessWidget {
+  final AircraftState aircraft;
+  final List<String> waypointIds;
+  final ValueChanged<int> onHeadingDelta;
+  final ValueChanged<int> onSpeedDelta;
+  final ValueChanged<int> onAltitudeDelta;
+  final ValueChanged<String> onDirect;
+  final VoidCallback onHeadingAndSpeed;
+  final ValueChanged<String> onDescendAndDirect;
+  final VoidCallback onVectorAndAltitude;
+
+  const _QuickCommandRadialMenu({
+    required this.aircraft,
+    required this.waypointIds,
+    required this.onHeadingDelta,
+    required this.onSpeedDelta,
+    required this.onAltitudeDelta,
+    required this.onDirect,
+    required this.onHeadingAndSpeed,
+    required this.onDescendAndDirect,
+    required this.onVectorAndAltitude,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${aircraft.callsign} QUICK COMMANDS',
+              style: const TextStyle(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _PresetPill(label: 'L20', onTap: () => onHeadingDelta(-20)),
+                _PresetPill(label: 'R20', onTap: () => onHeadingDelta(20)),
+                _PresetPill(label: 'SPD -20', onTap: () => onSpeedDelta(-20)),
+                _PresetPill(label: 'SPD +20', onTap: () => onSpeedDelta(20)),
+                _PresetPill(
+                    label: 'DESC 10', onTap: () => onAltitudeDelta(-1000)),
+                _PresetPill(label: 'CLB 10', onTap: () => onAltitudeDelta(1000)),
+                if (waypointIds.isNotEmpty)
+                  _PresetPill(
+                    label: 'DIRECT ${waypointIds.first}',
+                    onTap: () => onDirect(waypointIds.first),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _ChainButton(label: 'HDG+SPD', onPressed: onHeadingAndSpeed),
+                _ChainButton(
+                  label: 'VECTOR+ALT',
+                  onPressed: onVectorAndAltitude,
+                ),
+                if (waypointIds.isNotEmpty)
+                  _ChainButton(
+                    label: 'DES+DIRECT',
+                    onPressed: () => onDescendAndDirect(waypointIds.first),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
