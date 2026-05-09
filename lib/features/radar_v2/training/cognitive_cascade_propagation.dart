@@ -45,12 +45,16 @@ class CascadePropagationEdge {
   final String toNodeId;
   final String explanation;
   final double confidence;
+  final double contributionStrength;
+  final List<String> evidenceFactors;
 
   const CascadePropagationEdge({
     required this.fromNodeId,
     required this.toNodeId,
     required this.explanation,
     required this.confidence,
+    required this.contributionStrength,
+    this.evidenceFactors = const [],
   });
 }
 
@@ -141,7 +145,7 @@ class CognitiveCascadePropagationBuilder {
       id: 'primary',
       title: 'Primary propagation chain',
       nodes: List.unmodifiable(nodes),
-      edges: List.unmodifiable(_edgesFor(nodes)),
+      edges: List.unmodifiable(_inferEdges(result, nodes)),
     );
   }
 
@@ -179,7 +183,7 @@ class CognitiveCascadePropagationBuilder {
         id: 'parallel-$i',
         title: 'Parallel chain ${i + 1}',
         nodes: List.unmodifiable(nodes),
-        edges: List.unmodifiable(_edgesFor(nodes)),
+        edges: List.unmodifiable(_inferEdges(result, nodes)),
       ));
     }
     return chains.take(2).toList();
@@ -432,52 +436,258 @@ class CognitiveCascadePropagationBuilder {
     );
   }
 
-  List<CascadePropagationEdge> _edgesFor(List<CascadePropagationNode> nodes) {
+  List<CascadePropagationEdge> _inferEdges(
+    RadarTrainingResult result,
+    List<CascadePropagationNode> nodes,
+  ) {
     final edges = <CascadePropagationEdge>[];
-    for (var i = 1; i < nodes.length; i++) {
-      final from = nodes[i - 1];
-      final to = nodes[i];
-      edges.add(CascadePropagationEdge(
-        fromNodeId: from.id,
-        toNodeId: to.id,
-        explanation: _edgeExplanation(from.type, to.type),
-        confidence: ((from.severity + to.severity) / 2).clamp(0.42, 0.92),
-      ));
+    for (var targetIndex = 1; targetIndex < nodes.length; targetIndex++) {
+      final target = nodes[targetIndex];
+      final candidates = <_EdgeCandidate>[];
+      for (var sourceIndex = 0; sourceIndex < targetIndex; sourceIndex++) {
+        final source = nodes[sourceIndex];
+        final candidate = _scoreCandidate(result, source, target, nodes);
+        if (candidate.score >= 0.26) candidates.add(candidate);
+      }
+      candidates.sort((a, b) => b.score.compareTo(a.score));
+      for (final candidate in candidates.take(2)) {
+        edges.add(CascadePropagationEdge(
+          fromNodeId: candidate.source.id,
+          toNodeId: target.id,
+          explanation: _edgeExplanation(
+            candidate.source,
+            target,
+            candidate.evidenceFactors,
+            candidate.interruptedByRecovery,
+          ),
+          confidence: candidate.confidence,
+          contributionStrength: candidate.score,
+          evidenceFactors: List.unmodifiable(candidate.evidenceFactors),
+        ));
+      }
     }
     return edges;
   }
 
-  String _edgeExplanation(
-    CascadePropagationNodeType from,
-    CascadePropagationNodeType to,
+  _EdgeCandidate _scoreCandidate(
+    RadarTrainingResult result,
+    CascadePropagationNode source,
+    CascadePropagationNode target,
+    List<CascadePropagationNode> nodes,
   ) {
-    if (from == CascadePropagationNodeType.fixation &&
-        to == CascadePropagationNodeType.scanNeglect) {
-      return 'Narrow focus reduced scan breadth, so unattended tracks stayed outside the active picture.';
+    final temporal = _temporalProximity(source, target);
+    final overlap = _durationOverlap(source, target);
+    final alertDensity = _alertDensity(result);
+    final workloadTrend = _workloadTrend(result, source, target);
+    final attentionOverlap =
+        _attentionDegradationOverlap(result, source, target);
+    final unresolvedConflict = _unresolvedConflictFactor(result, target);
+    final recoveryInterruption =
+        _recoveryInterruptionOverlap(nodes, source, target);
+    final typeCompatibility = _typeCompatibility(source.type, target.type);
+
+    var score = temporal * 0.22 +
+        overlap * 0.16 +
+        alertDensity * 0.12 +
+        workloadTrend * 0.14 +
+        attentionOverlap * 0.14 +
+        unresolvedConflict * 0.12 +
+        typeCompatibility * 0.18;
+
+    if (recoveryInterruption > 0) {
+      score *= (1 - recoveryInterruption * 0.42);
     }
-    if (from == CascadePropagationNodeType.scanNeglect &&
-        to == CascadePropagationNodeType.missedConflict) {
-      return 'Reduced scan coverage overlapped with an unresolved conflict cue.';
+    if (source.type == CascadePropagationNodeType.stabilization &&
+        target.type != CascadePropagationNodeType.recoveryBreakdown) {
+      score *= 0.52;
     }
-    if (to == CascadePropagationNodeType.overloadIncrease) {
-      return 'The unresolved issue added alert and command pressure, increasing workload.';
+    if (source.type == CascadePropagationNodeType.stabilization &&
+        target.type == CascadePropagationNodeType.recoveryBreakdown) {
+      score += 0.16;
     }
-    if (to == CascadePropagationNodeType.confidenceErosion) {
-      return 'Prediction confidence and self-check reliability weakened under pressure.';
+
+    final factors = <String>[
+      if (temporal >= 0.55) 'close timing',
+      if (overlap >= 0.25) 'duration overlap',
+      if (alertDensity >= 0.45) 'alert density',
+      if (workloadTrend >= 0.45) 'workload trend',
+      if (attentionOverlap >= 0.45) 'attention degradation overlap',
+      if (unresolvedConflict >= 0.45) 'unresolved conflict pressure',
+      if (recoveryInterruption > 0) 'recovery interruption reduced confidence',
+    ];
+    if (factors.isEmpty) factors.add('weak timing signal');
+
+    final confidence = (score * 0.72 + temporal * 0.14 + overlap * 0.14)
+        .clamp(0.18, recoveryInterruption > 0 ? 0.78 : 0.94)
+        .toDouble();
+    return _EdgeCandidate(
+      source: source,
+      score: score.clamp(0, 1).toDouble(),
+      confidence: confidence,
+      evidenceFactors: factors,
+      interruptedByRecovery: recoveryInterruption > 0,
+    );
+  }
+
+  String _edgeExplanation(
+    CascadePropagationNode from,
+    CascadePropagationNode to,
+    List<String> factors,
+    bool interruptedByRecovery,
+  ) {
+    final factorText = factors.take(3).join(', ');
+    final recoveryClause = interruptedByRecovery
+        ? ' Recovery activity weakens this inference.'
+        : '';
+    if (to.type == CascadePropagationNodeType.stabilization) {
+      return 'Evidence suggests ${from.label.toLowerCase()} was interrupted by recovery activity ($factorText).';
     }
-    if (to == CascadePropagationNodeType.delayedIntervention) {
-      return 'Recognition lag left less time for a clean recovery instruction.';
+    return 'Evidence suggests ${from.label.toLowerCase()} likely contributed to ${to.label.toLowerCase()} through $factorText.$recoveryClause';
+  }
+
+  double _temporalProximity(
+    CascadePropagationNode source,
+    CascadePropagationNode target,
+  ) {
+    final gap = target.timestamp - source.timestamp;
+    if (gap.isNegative) return 0;
+    final seconds = gap.inSeconds;
+    if (seconds <= 8) return 0.92;
+    if (seconds <= 24) return 0.78;
+    if (seconds <= 45) return 0.58;
+    if (seconds <= 90) return 0.32;
+    return 0.08;
+  }
+
+  double _durationOverlap(
+    CascadePropagationNode source,
+    CascadePropagationNode target,
+  ) {
+    final sourceEnd = source.timestamp + source.duration;
+    final targetEnd = target.timestamp + target.duration;
+    final start = source.timestamp > target.timestamp
+        ? source.timestamp
+        : target.timestamp;
+    final end = sourceEnd < targetEnd ? sourceEnd : targetEnd;
+    if (end <= start) return 0;
+    return ((end - start).inSeconds / target.duration.inSeconds.clamp(1, 600))
+        .clamp(0, 1)
+        .toDouble();
+  }
+
+  double _alertDensity(RadarTrainingResult result) {
+    final alertCount = result.snapshot.activeAlerts.length +
+        result.snapshot.operationalAlerts.length;
+    return (alertCount / 5).clamp(0, 1).toDouble();
+  }
+
+  double _workloadTrend(
+    RadarTrainingResult result,
+    CascadePropagationNode source,
+    CascadePropagationNode target,
+  ) {
+    final base =
+        (result.snapshot.cognitiveLoad.totalLoadScore / 10).clamp(0, 1);
+    final overload =
+        result.score.totalOverloadDuration > Duration.zero ? 0.22 : 0;
+    final later = target.timestamp >= source.timestamp ? 0.12 : 0;
+    return (base + overload + later).clamp(0, 1).toDouble();
+  }
+
+  double _attentionDegradationOverlap(
+    RadarTrainingResult result,
+    CascadePropagationNode source,
+    CascadePropagationNode target,
+  ) {
+    final attentionLoad =
+        (1 - result.snapshot.attentionFocus.scanCoverageQuality).clamp(0, 1);
+    final typeSignal = source.type == CascadePropagationNodeType.fixation ||
+            source.type == CascadePropagationNodeType.scanNeglect ||
+            target.type == CascadePropagationNodeType.missedConflict
+        ? 0.28
+        : 0;
+    return (attentionLoad + typeSignal).clamp(0, 1).toDouble();
+  }
+
+  double _unresolvedConflictFactor(
+    RadarTrainingResult result,
+    CascadePropagationNode target,
+  ) {
+    final conflictEvents = result.snapshot.events.where((event) {
+      final lower = '${event.type} ${event.label}'.toLowerCase();
+      return lower.contains('conflict') || lower.contains('separation');
+    }).length;
+    final scoreSignal =
+        result.score.separationLossCount + result.score.lateResolutionCount;
+    final targetSignal =
+        target.type == CascadePropagationNodeType.missedConflict ||
+                target.type == CascadePropagationNodeType.overloadIncrease ||
+                target.type == CascadePropagationNodeType.delayedIntervention
+            ? 0.24
+            : 0;
+    return ((conflictEvents + scoreSignal) / 4 + targetSignal)
+        .clamp(0, 1)
+        .toDouble();
+  }
+
+  double _recoveryInterruptionOverlap(
+    List<CascadePropagationNode> nodes,
+    CascadePropagationNode source,
+    CascadePropagationNode target,
+  ) {
+    final recoveryNodes = nodes.where((node) {
+      return (node.type == CascadePropagationNodeType.stabilization ||
+              node.type == CascadePropagationNodeType.recoveryInterruption) &&
+          node.timestamp > source.timestamp &&
+          node.timestamp < target.timestamp;
+    });
+    if (recoveryNodes.isEmpty) return 0;
+    return recoveryNodes
+        .map((node) => node.visualWeight)
+        .reduce((a, b) => a > b ? a : b)
+        .clamp(0.2, 1)
+        .toDouble();
+  }
+
+  double _typeCompatibility(
+    CascadePropagationNodeType source,
+    CascadePropagationNodeType target,
+  ) {
+    if (source == CascadePropagationNodeType.stabilization) {
+      return target == CascadePropagationNodeType.recoveryBreakdown
+          ? 0.72
+          : 0.18;
     }
-    if (to == CascadePropagationNodeType.recoveryInterruption) {
-      return 'Recovery was attempted while another problem still competed for attention.';
+    if (target == CascadePropagationNodeType.missedConflict &&
+        (source == CascadePropagationNodeType.scanNeglect ||
+            source == CascadePropagationNodeType.workingMemoryFailure ||
+            source == CascadePropagationNodeType.expectationDrift)) {
+      return 0.86;
     }
-    if (to == CascadePropagationNodeType.stabilization) {
-      return 'A recovery action interrupted the degradation chain and restored control margin.';
+    if (target == CascadePropagationNodeType.overloadIncrease &&
+        (source == CascadePropagationNodeType.missedConflict ||
+            source == CascadePropagationNodeType.workingMemoryFailure ||
+            source == CascadePropagationNodeType.scanNeglect)) {
+      return 0.78;
     }
-    if (to == CascadePropagationNodeType.recoveryBreakdown) {
-      return 'The recovery window remained unstable and degradation resumed.';
+    if (target == CascadePropagationNodeType.confidenceErosion &&
+        (source == CascadePropagationNodeType.overloadIncrease ||
+            source == CascadePropagationNodeType.expectationDrift)) {
+      return 0.72;
     }
-    return 'Timing and matching reports indicate this state contributed to the next degradation.';
+    if (target == CascadePropagationNodeType.delayedIntervention &&
+        (source == CascadePropagationNodeType.confidenceErosion ||
+            source == CascadePropagationNodeType.missedConflict ||
+            source == CascadePropagationNodeType.scanNeglect)) {
+      return 0.7;
+    }
+    if (target == CascadePropagationNodeType.recoveryBreakdown &&
+        (source == CascadePropagationNodeType.recoveryInterruption ||
+            source == CascadePropagationNodeType.overloadIncrease ||
+            source == CascadePropagationNodeType.delayedIntervention)) {
+      return 0.76;
+    }
+    return 0.34;
   }
 
   CascadePropagationNodeType _secondaryType(String label) {
@@ -541,4 +751,20 @@ class CognitiveCascadePropagationBuilder {
         result.snapshot.elapsed - Duration(seconds: secondsBeforeEnd);
     return elapsed < Duration.zero ? Duration.zero : elapsed;
   }
+}
+
+class _EdgeCandidate {
+  final CascadePropagationNode source;
+  final double score;
+  final double confidence;
+  final List<String> evidenceFactors;
+  final bool interruptedByRecovery;
+
+  const _EdgeCandidate({
+    required this.source,
+    required this.score,
+    required this.confidence,
+    required this.evidenceFactors,
+    required this.interruptedByRecovery,
+  });
 }

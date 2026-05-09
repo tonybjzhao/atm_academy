@@ -74,7 +74,7 @@ class _CognitiveCascadePropagationViewState
                   ),
                   if (i < chain.nodes.length - 1)
                     _PropagationEdgeColumn(
-                      edge: chain.edges[i],
+                      edge: _bridgeEdge(chain, i),
                       expanded: _selectedNodeId == chain.nodes[i].id ||
                           _selectedNodeId == chain.nodes[i + 1].id,
                     ),
@@ -91,6 +91,29 @@ class _CognitiveCascadePropagationViewState
   void _selectNode(CascadePropagationNode node) {
     setState(() => _selectedNodeId = node.id);
     widget.onJump(node.timestamp);
+  }
+
+  CascadePropagationEdge? _bridgeEdge(
+    CascadePropagationChain chain,
+    int sourceIndex,
+  ) {
+    final fromNode = chain.nodes[sourceIndex];
+    final toNode = chain.nodes[sourceIndex + 1];
+    final direct = chain.edges.where(
+      (edge) => edge.fromNodeId == fromNode.id && edge.toNodeId == toNode.id,
+    );
+    if (direct.isNotEmpty) return _strongest(direct);
+    final incoming = chain.edges.where((edge) => edge.toNodeId == toNode.id);
+    if (incoming.isNotEmpty) return _strongest(incoming);
+    final outgoing =
+        chain.edges.where((edge) => edge.fromNodeId == fromNode.id);
+    return outgoing.isEmpty ? null : _strongest(outgoing);
+  }
+
+  CascadePropagationEdge _strongest(Iterable<CascadePropagationEdge> edges) {
+    return edges.reduce(
+      (a, b) => a.contributionStrength >= b.contributionStrength ? a : b,
+    );
   }
 }
 
@@ -206,7 +229,7 @@ class _PropagationNodeCard extends StatelessWidget {
 }
 
 class _PropagationEdgeColumn extends StatelessWidget {
-  final CascadePropagationEdge edge;
+  final CascadePropagationEdge? edge;
   final bool expanded;
 
   const _PropagationEdgeColumn({
@@ -225,13 +248,15 @@ class _PropagationEdgeColumn extends StatelessWidget {
           children: [
             Icon(
               Icons.arrow_forward,
-              color: AppTheme.primary.withValues(alpha: 0.75),
+              color: AppTheme.primary.withValues(
+                alpha: edge == null ? 0.28 : 0.45 + edge!.confidence * 0.35,
+              ),
               size: 18,
             ),
             const SizedBox(height: 8),
-            if (expanded)
+            if (expanded && edge != null)
               Text(
-                edge.explanation,
+                edge!.explanation,
                 maxLines: 5,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -243,11 +268,11 @@ class _PropagationEdgeColumn extends StatelessWidget {
               )
             else
               Container(
-                height: 3,
-                width: 28,
+                height: edge == null ? 2 : 2 + edge!.contributionStrength * 4,
+                width: edge == null ? 20 : 22 + edge!.contributionStrength * 18,
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withValues(
-                    alpha: 0.28 + edge.confidence * 0.34,
+                    alpha: edge == null ? 0.18 : 0.22 + edge!.confidence * 0.42,
                   ),
                   borderRadius: BorderRadius.circular(99),
                 ),

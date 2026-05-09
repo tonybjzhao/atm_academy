@@ -576,6 +576,49 @@ void main() {
       expect(data.chains.first.edges.first.explanation, isNotEmpty);
       expect(data.chains.first.edges.first.confidence, greaterThan(0));
     });
+
+    test('missed conflict can have competing inferred causes', () {
+      final data = const CognitiveCascadePropagationBuilder().build(
+        _timelineResult(),
+      );
+      final missedConflictEdges = data.chains.first.edges.where(
+        (edge) => edge.toNodeId == 'missed-conflict',
+      );
+
+      expect(missedConflictEdges.length, greaterThan(1));
+      expect(
+        missedConflictEdges.map((edge) => edge.contributionStrength),
+        everyElement(greaterThan(0)),
+      );
+    });
+
+    test('recovery interruption weakens downstream confidence', () {
+      final data = const CognitiveCascadePropagationBuilder().build(
+        _recoveryInterruptedResult(),
+      );
+      final weakenedEdge = data.chains.first.edges.firstWhere(
+        (edge) => edge.evidenceFactors.any(
+          (factor) => factor.contains('recovery interruption'),
+        ),
+      );
+
+      expect(weakenedEdge.confidence, lessThan(0.8));
+      expect(
+        weakenedEdge.explanation,
+        contains('weakens this inference'),
+      );
+    });
+
+    test('edge explanations preserve probabilistic wording', () {
+      final data = const CognitiveCascadePropagationBuilder().build(
+        _timelineResult(),
+      );
+
+      expect(
+        data.chains.first.edges.map((edge) => edge.explanation).join(' '),
+        anyOf(contains('likely contributed'), contains('Evidence suggests')),
+      );
+    });
   });
 }
 
@@ -636,6 +679,16 @@ RadarTrainingResult _timelineResult() {
           label: 'Scan blind period opened.',
         ),
         SimulationEvent(
+          elapsed: Duration(seconds: 62),
+          type: 'workingMemoryInterrupted',
+          label: 'Sequencing task was interrupted.',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 66),
+          type: 'expectationMismatch',
+          label: 'Expectation mismatch appeared before conflict.',
+        ),
+        SimulationEvent(
           elapsed: Duration(seconds: 72),
           type: 'separationWarning',
           label: 'Separation warning developed.',
@@ -653,6 +706,55 @@ RadarTrainingResult _timelineResult() {
         reportLines: ['Critical alert ignored for 21s.'],
       ),
       attentionReportLines: ['Critical alert ignored for 21s.'],
+    ),
+  );
+}
+
+RadarTrainingResult _recoveryInterruptedResult() {
+  return RadarTrainingResultBuilder.build(
+    scenarioTitle: 'Recovery Interruption Scenario',
+    scenarioId: 'recovery_interruption',
+    score: const RadarV2ScoreSnapshot(
+      score: 52,
+      commandCount: 8,
+      separationLossCount: 1,
+      lateResolutionCount: 1,
+      spacingStability: 44,
+      throughputEfficiency: 58,
+      weatherManagement: 70,
+      commandEfficiency: 62,
+      anticipationScore: 40,
+      lastDelta: -25,
+      lastReason: 'Separation loss',
+      penalties: ['Separation loss'],
+      totalOverloadDuration: Duration(seconds: 34),
+    ),
+    snapshot: const SimulationSnapshot(
+      tick: 1,
+      elapsed: Duration(seconds: 120),
+      aircraft: [],
+      separation: [],
+      events: [
+        SimulationEvent(
+          elapsed: Duration(seconds: 24),
+          type: 'attentionScanBlind',
+          label: 'Scan blind period opened.',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 48),
+          type: 'metaSuccessfulRecovery',
+          label: 'Recovery action briefly stabilized flow.',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 86),
+          type: 'separationWarning',
+          label: 'Separation warning returned after recovery.',
+        ),
+      ],
+      attentionFocus: AttentionFocusState(
+        scanCoverageQuality: 0.48,
+        scanBlindDuration: Duration(seconds: 24),
+      ),
     ),
   );
 }
