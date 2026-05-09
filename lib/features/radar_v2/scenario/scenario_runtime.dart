@@ -77,9 +77,9 @@ class ScenarioRuntime {
   final ExpectationTracker _expectationTracker = ExpectationTracker();
   final PredictiveMentalModelEngine _predictiveMentalModelEngine =
       PredictiveMentalModelEngine();
-    final CognitiveCascadeEngine _cognitiveCascadeEngine =
+  final CognitiveCascadeEngine _cognitiveCascadeEngine =
       CognitiveCascadeEngine();
-    late final MetaCognitionEngine _metaCognitionEngine;
+  late final MetaCognitionEngine _metaCognitionEngine;
   late final ControllerArchetypeEngine _controllerArchetypeEngine;
   late final TraitScenarioInteractionEngine _traitScenarioInteractionEngine;
   final WorkingMemoryEngine _workingMemoryEngine = WorkingMemoryEngine();
@@ -97,11 +97,10 @@ class ScenarioRuntime {
   ScenarioPsychologyState _lastPsychologyState = ScenarioPsychologyState.idle;
   ControllerExpectationState _lastExpectationState =
       ControllerExpectationState.idle;
-    PredictiveMentalModelState _lastPredictiveMentalModelState =
+  PredictiveMentalModelState _lastPredictiveMentalModelState =
       PredictiveMentalModelState.idle;
-    CognitiveCascadeState _lastCognitiveCascadeState =
-      CognitiveCascadeState.idle;
-    MetaCognitionState _lastMetaCognitionState = MetaCognitionState.idle;
+  CognitiveCascadeState _lastCognitiveCascadeState = CognitiveCascadeState.idle;
+  MetaCognitionState _lastMetaCognitionState = MetaCognitionState.idle;
   ControllerArchetypeState _lastControllerArchetypeState =
       ControllerArchetypeState.idle;
   TraitScenarioInteractionState _lastTraitScenarioInteractionState =
@@ -109,8 +108,8 @@ class ScenarioRuntime {
   WorkingMemoryState _lastWorkingMemoryState = WorkingMemoryState.idle;
   WorkingMemoryState _previousWorkingMemoryState = WorkingMemoryState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
-    Duration? _stickyFocusUntil;
-    String? _stickyFocusTarget;
+  Duration? _stickyFocusUntil;
+  String? _stickyFocusTarget;
   // Rolling command timestamps for recent-command-density tracking
   final List<Duration> _recentCommandTimestamps = [];
   int _totalGoAroundCount = 0;
@@ -128,10 +127,14 @@ class ScenarioRuntime {
               holdPatterns: definition.holdPatterns,
               altitudeRestrictions: definition.altitudeRestrictions,
               maxControllerLoad: definition.maxControllerLoad,
+              commandAcknowledgementDelay:
+                  _commandAcknowledgementDelayFor(definition),
             ) {
-    final normalizedDifficulty = ((definition.difficulty - 1) / 4).clamp(0.0, 1.0);
+    final normalizedDifficulty =
+        ((definition.difficulty - 1) / 4).clamp(0.0, 1.0);
     final experienceLevel = (1.0 - normalizedDifficulty).clamp(0.1, 0.95);
-    _metaCognitionEngine = MetaCognitionEngine(experienceLevel: experienceLevel);
+    _metaCognitionEngine =
+        MetaCognitionEngine(experienceLevel: experienceLevel);
     _controllerArchetypeEngine = ControllerArchetypeEngine.fromLabel(
       _archetypeLabelForDifficulty(normalizedDifficulty),
     );
@@ -147,10 +150,22 @@ class ScenarioRuntime {
   ) {
     // Seed a default archetype from difficulty so different scenarios
     // exercise different trait profiles without requiring user configuration.
-    if (normalizedDifficulty < 0.25) return ControllerArchetypeLabel.calmStabilizer;
-    if (normalizedDifficulty < 0.50) return ControllerArchetypeLabel.scanDisciplinedVeteran;
-    if (normalizedDifficulty < 0.75) return ControllerArchetypeLabel.reactiveFirefighter;
+    if (normalizedDifficulty < 0.25)
+      return ControllerArchetypeLabel.calmStabilizer;
+    if (normalizedDifficulty < 0.50)
+      return ControllerArchetypeLabel.scanDisciplinedVeteran;
+    if (normalizedDifficulty < 0.75)
+      return ControllerArchetypeLabel.reactiveFirefighter;
     return ControllerArchetypeLabel.highCapacityButFragile;
+  }
+
+  static Duration _commandAcknowledgementDelayFor(ScenarioDefinition def) {
+    if (def.difficulty <= 2) return const Duration(milliseconds: 1500);
+    if (def.difficulty == 3) return const Duration(milliseconds: 2300);
+    if (def.weatherMode == 'low_visibility') {
+      return const Duration(milliseconds: 3200);
+    }
+    return const Duration(milliseconds: 2800);
   }
 
   static List<ArrivalFlow> _effectiveArrivalFlows(ScenarioDefinition def) {
@@ -609,9 +624,9 @@ class ScenarioRuntime {
   ControllerExpectationState get lastExpectationState => _lastExpectationState;
   PredictiveMentalModelState get lastPredictiveMentalModelState =>
       _lastPredictiveMentalModelState;
-    CognitiveCascadeState get lastCognitiveCascadeState =>
+  CognitiveCascadeState get lastCognitiveCascadeState =>
       _lastCognitiveCascadeState;
-    MetaCognitionState get lastMetaCognitionState => _lastMetaCognitionState;
+  MetaCognitionState get lastMetaCognitionState => _lastMetaCognitionState;
   WorkingMemoryState get lastWorkingMemoryState => _lastWorkingMemoryState;
 
   void _applyPredictiveMentalModelEffects({
@@ -655,7 +670,8 @@ class ScenarioRuntime {
         engine.recordEvent(SimulationEvent(
           elapsed: elapsed,
           type: 'predictionLateRecognition',
-          label: 'Late recognition of abnormal behavior for ${mismatch.aircraftId}',
+          label:
+              'Late recognition of abnormal behavior for ${mismatch.aircraftId}',
           aircraftId: mismatch.aircraftId,
         ));
       }
@@ -670,7 +686,8 @@ class ScenarioRuntime {
       ));
     }
 
-    if (state.surpriseLoad >= 0.72 && state.newlyDetectedMismatches.isNotEmpty) {
+    if (state.surpriseLoad >= 0.72 &&
+        state.newlyDetectedMismatches.isNotEmpty) {
       engine.recordEvent(SimulationEvent(
         elapsed: elapsed,
         type: 'predictionSurpriseOverload',
@@ -701,7 +718,8 @@ class ScenarioRuntime {
       }
     }
     if (state.chainEndedThisTick) {
-      final recent = state.chainHistory.isEmpty ? null : state.chainHistory.last;
+      final recent =
+          state.chainHistory.isEmpty ? null : state.chainHistory.last;
       engine.recordEvent(SimulationEvent(
         elapsed: elapsed,
         type: 'cognitiveCascadeRecovery',
@@ -728,7 +746,8 @@ class ScenarioRuntime {
       engine.recordEvent(SimulationEvent(
         elapsed: elapsed,
         type: 'attentionScanDisruption',
-        label: 'Cascade scan penalty ${(state.scanQualityPenalty * 100).round()}%',
+        label:
+            'Cascade scan penalty ${(state.scanQualityPenalty * 100).round()}%',
       ));
     }
     if (state.recoveryInstabilityActive) {
@@ -745,10 +764,10 @@ class ScenarioRuntime {
     required MetaCognitionState state,
   }) {
     final assessment = state.latestAssessment;
-    final actualWorkload = (engine.snapshot.sectorPressureIndex / 4).clamp(0.0, 1.0);
+    final actualWorkload =
+        (engine.snapshot.sectorPressureIndex / 4).clamp(0.0, 1.0);
 
-    final workloadError =
-        (assessment.estimatedWorkload - actualWorkload).abs();
+    final workloadError = (assessment.estimatedWorkload - actualWorkload).abs();
     final scanError = (assessment.estimatedScanQuality -
             _lastAttentionFocusState.scanCoverageQuality)
         .abs();
@@ -775,7 +794,8 @@ class ScenarioRuntime {
       engine.recordEvent(SimulationEvent(
         elapsed: elapsed,
         type: 'metaRecoveryAction',
-        label: '${action.action} (eff ${action.effectiveness.toStringAsFixed(2)})',
+        label:
+            '${action.action} (eff ${action.effectiveness.toStringAsFixed(2)})',
       ));
 
       if (action.action == 'widen scan deliberately' &&
@@ -803,7 +823,8 @@ class ScenarioRuntime {
           action.effectiveness > 0.55) {
         _activeDistractionUntil.removeWhere(
           (key, expiry) =>
-              key.startsWith('cascade:') && expiry - elapsed < const Duration(seconds: 10),
+              key.startsWith('cascade:') &&
+              expiry - elapsed < const Duration(seconds: 10),
         );
       }
     }
@@ -1743,7 +1764,8 @@ class ScenarioRuntime {
       engine.recordEvent(SimulationEvent(
         elapsed: elapsed,
         type: 'attentionScanBlind',
-        label: 'Scan blind period reached ${current.scanBlindDuration.inSeconds}s',
+        label:
+            'Scan blind period reached ${current.scanBlindDuration.inSeconds}s',
       ));
     }
     if (current.focusDuration >= const Duration(seconds: 20) &&
@@ -1752,7 +1774,8 @@ class ScenarioRuntime {
       engine.recordEvent(SimulationEvent(
         elapsed: elapsed,
         type: 'attentionFixationWindow',
-        label: 'Fixation window opened on ${current.currentFocusTarget ?? 'unknown'}',
+        label:
+            'Fixation window opened on ${current.currentFocusTarget ?? 'unknown'}',
       ));
     }
   }

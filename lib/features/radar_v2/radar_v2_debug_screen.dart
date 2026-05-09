@@ -311,7 +311,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('Command channel busy. Confirm previous instruction.'),
+            content:
+                Text('Command channel busy. Confirm previous instruction.'),
             duration: Duration(milliseconds: 700),
             behavior: SnackBarBehavior.floating,
           ),
@@ -340,7 +341,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(feedback),
+          content: Text('Command sent: $feedback'),
           duration: const Duration(milliseconds: 1300),
           behavior: SnackBarBehavior.floating,
         ),
@@ -492,9 +493,11 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     if (current.events.length <= previous.events.length) return;
     final newEvents = current.events.skip(previous.events.length);
     String? acknowledgedAircraftId;
+    String? acknowledgementLabel;
     for (final event in newEvents) {
       if (event.type == 'commandAcknowledged' && event.aircraftId != null) {
         acknowledgedAircraftId = event.aircraftId;
+        acknowledgementLabel = event.label;
       }
     }
     if (acknowledgedAircraftId == null) return;
@@ -507,6 +510,17 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       if (!mounted) return;
       setState(() => _recentlyAcknowledgedAircraftId = null);
     });
+    if (acknowledgementLabel != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Acknowledged: $acknowledgementLabel'),
+            duration: const Duration(milliseconds: 950),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   void _setCommandFilterAircraftId(String? aircraftId) {
@@ -717,8 +731,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                             snapshot: snapshot,
                                             previousSnapshot: _previousSnapshot,
                                             interpolation: _renderInterpolation,
-                                            rangeNm:
-                                                _runtime!.definition.radarRangeNm,
+                                            rangeNm: _runtime!
+                                                .definition.radarRangeNm,
                                             selectedAircraftId:
                                                 _selectedAircraftId,
                                             recentlyCommandedAircraftId:
@@ -745,8 +759,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                       ),
                                     ),
                                     if (_commandFlashUntil != null &&
-                                        DateTime.now().isBefore(
-                                            _commandFlashUntil!))
+                                        DateTime.now()
+                                            .isBefore(_commandFlashUntil!))
                                       const Positioned(
                                         top: 74,
                                         left: 0,
@@ -759,7 +773,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                         ),
                                       ),
                                     if (_ackFlashUntil != null &&
-                                        DateTime.now().isBefore(_ackFlashUntil!))
+                                        DateTime.now()
+                                            .isBefore(_ackFlashUntil!))
                                       const Positioned(
                                         top: 104,
                                         left: 0,
@@ -2295,8 +2310,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: const Color(0x3346F5A7),
                   borderRadius: BorderRadius.circular(4),
@@ -2368,7 +2382,8 @@ class _SelectedAircraftPanel extends StatelessWidget {
                   label: 'FLOW',
                   children: [
                     _CommandButton(
-                      icon: aircraft.intent.hold ? Icons.play_arrow : Icons.loop,
+                      icon:
+                          aircraft.intent.hold ? Icons.play_arrow : Icons.loop,
                       label: aircraft.intent.hold ? 'EXIT HOLD' : 'HOLD',
                       onPressed: () => onHold(aircraft),
                     ),

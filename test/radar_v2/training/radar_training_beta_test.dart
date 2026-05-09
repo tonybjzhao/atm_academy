@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:atm_flutter/features/radar_v2/commands/controller_command.dart';
 import 'package:atm_flutter/features/radar_v2/core/attention/attention_focus_state.dart';
 import 'package:atm_flutter/features/radar_v2/core/cognitive_load/cognitive_load_level.dart';
 import 'package:atm_flutter/features/radar_v2/core/cognitive_load/cognitive_load_state.dart';
@@ -235,12 +236,59 @@ void main() {
       expect(
         explanation,
         anyOf(
-          contains('Weather compression'),
+          contains('Weather compressed'),
           contains('Late speed control'),
           contains('Runway occupancy extended'),
-          contains('Pilot response delay'),
+          contains('Delayed acknowledgement'),
         ),
       );
+    });
+
+    test('beginner pilot delay is shorter than storm scenario', () {
+      final beginnerDelay =
+          _commandAcknowledgementDelayFor('beginner_crossing_conflict');
+      final stormDelay =
+          _commandAcknowledgementDelayFor('melbourne_storm_arrival_rush');
+
+      expect(beginnerDelay, lessThan(stormDelay));
+      expect(beginnerDelay, lessThanOrEqualTo(const Duration(seconds: 3)));
+      expect(stormDelay, greaterThanOrEqualTo(const Duration(seconds: 4)));
+    });
+
+    test('command sent feedback appears immediately and acknowledgement later',
+        () {
+      const loader = ScenarioLoader();
+      final scenario = RadarTrainingCatalog.byId('beginner_crossing_conflict');
+      final definition =
+          loader.parse(File(scenario.assetPath).readAsStringSync());
+      final runtime = ScenarioRuntime(definition: definition)..tick();
+
+      runtime.engine.applyCommand(
+        AssignHeading(
+          aircraftId: 'qfa214',
+          issuedAt: runtime.snapshot.elapsed,
+          headingDeg: 120,
+        ),
+      );
+
+      final immediateEvents = runtime.snapshot.events;
+      final issued = immediateEvents.lastWhere(
+        (event) => event.type == 'commandIssued',
+      );
+      expect(issued.label, contains('Command sent'));
+      expect(
+        immediateEvents.where((event) => event.type == 'commandAcknowledged'),
+        isEmpty,
+      );
+
+      SimulationSnapshot snapshot = runtime.tick();
+      for (var i = 0; i < 5; i++) {
+        snapshot = runtime.tick();
+      }
+      final acknowledged = snapshot.events.lastWhere(
+        (event) => event.type == 'commandAcknowledged',
+      );
+      expect(acknowledged.elapsed, greaterThan(issued.elapsed));
     });
 
     test('result summary is generated from final score and snapshot', () {
@@ -339,8 +387,7 @@ void main() {
             SimulationEvent(
               elapsed: Duration(seconds: 80),
               type: 'weatherCompression',
-              label:
-                  'Weather compression reduced spacing stability near the merge.',
+              label: 'Weather compressed spacing near the merge.',
             ),
             SimulationEvent(
               elapsed: Duration(seconds: 96),
@@ -351,7 +398,7 @@ void main() {
         ),
       );
 
-      expect(explanation.join(' '), contains('Weather compression'));
+      expect(explanation.join(' '), contains('Weather compressed'));
       expect(explanation.join(' '), contains('Late speed control'));
     });
 
@@ -1201,4 +1248,32 @@ SimulationSnapshot _ecologySnapshot() {
       ignoredAlerts: [],
     ),
   );
+}
+
+Duration _commandAcknowledgementDelayFor(String scenarioId) {
+  const loader = ScenarioLoader();
+  final scenario = RadarTrainingCatalog.byId(scenarioId);
+  final definition = loader.parse(File(scenario.assetPath).readAsStringSync());
+  final runtime = ScenarioRuntime(definition: definition)..tick();
+  runtime.engine.applyCommand(
+    AssignHeading(
+      aircraftId: 'qfa214',
+      issuedAt: runtime.snapshot.elapsed,
+      headingDeg: 120,
+    ),
+  );
+  final issued = runtime.snapshot.events.lastWhere(
+    (event) => event.type == 'commandIssued',
+  );
+  SimulationSnapshot snapshot = runtime.tick();
+  for (var i = 0; i < 10; i++) {
+    snapshot = runtime.tick();
+    final acknowledged = snapshot.events.where(
+      (event) => event.type == 'commandAcknowledged',
+    );
+    if (acknowledged.isNotEmpty) {
+      return acknowledged.first.elapsed - issued.elapsed;
+    }
+  }
+  throw StateError('No acknowledgement captured for $scenarioId');
 }

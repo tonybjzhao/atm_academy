@@ -173,7 +173,7 @@ class SimulationEngine {
       _recordBehaviorEvent(
         key: 'pilot_delay:${aircraft.id}',
         type: 'pilotResponseDelay',
-        label: 'Pilot response delay increased command follow-through time.',
+        label: 'Delayed acknowledgement increased follow-through time.',
         aircraftId: aircraft.id,
       );
     }
@@ -458,8 +458,7 @@ class SimulationEngine {
         _recordBehaviorEvent(
           key: 'weather_compression:${aircraft.id}',
           type: 'weatherCompression',
-          label:
-              'Weather compression reduced spacing stability near the merge.',
+          label: 'Weather compressed spacing near the merge.',
           aircraftId: aircraft.id,
         );
       }
@@ -647,24 +646,24 @@ class SimulationEngine {
 
   String _commandIssuedLabel(ControllerCommand command) {
     if (command is AssignHeading) {
-      return 'Issued heading ${command.headingDeg.round()}';
+      return 'Command sent: heading ${command.headingDeg.round()}';
     }
     if (command is AssignAltitude) {
-      return 'Issued altitude ${command.altitudeFt ~/ 100}';
+      return 'Command sent: altitude ${command.altitudeFt ~/ 100}';
     }
     if (command is AssignSpeed) {
-      return 'Issued speed ${command.speedKt.round()}';
+      return 'Command sent: speed ${command.speedKt.round()}';
     }
     if (command is DirectToWaypoint) {
-      return 'Issued direct ${command.waypointId}';
+      return 'Command sent: direct ${command.waypointId}';
     }
     if (command is EnterHold) {
-      return 'Issued hold ${command.holdPatternId}';
+      return 'Command sent: hold ${command.holdPatternId}';
     }
     if (command is ExitHold) {
-      return 'Issued exit hold';
+      return 'Command sent: exit hold';
     }
-    return 'Issued command';
+    return 'Command sent';
   }
 
   bool _isVectoring(AircraftState aircraft) {
@@ -764,7 +763,7 @@ class SimulationEngine {
       _recordBehaviorEvent(
         key: 'weather_wobble:${aircraft.id}',
         type: 'weatherInteraction',
-        label: 'Weather compression reduced spacing stability near the merge.',
+        label: 'Weather compressed spacing near the merge.',
         aircraftId: aircraft.id,
       );
     }
