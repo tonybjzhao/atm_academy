@@ -7,6 +7,8 @@ import 'package:atm_flutter/features/radar_v2/radar_v2_debug_screen.dart';
 import 'package:atm_flutter/features/radar_v2/scenario/scenario_loader.dart';
 import 'package:atm_flutter/features/radar_v2/scoring/radar_v2_score.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_catalog.dart';
+import 'package:atm_flutter/features/radar_v2/training/debrief_insight.dart';
+import 'package:atm_flutter/features/radar_v2/training/debrief_salience_engine.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_beta_screen.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_briefing_screen.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_progress_store.dart';
@@ -275,7 +277,8 @@ void main() {
       }
     });
 
-    testWidgets('briefing start button triggers scenario start', (tester) async {
+    testWidgets('briefing start button triggers scenario start',
+        (tester) async {
       var started = false;
       await tester.pumpWidget(
         MaterialApp(
@@ -298,7 +301,8 @@ void main() {
       expect(started, isTrue);
     });
 
-    testWidgets('progress stars update from persisted best score', (tester) async {
+    testWidgets('progress stars update from persisted best score',
+        (tester) async {
       SharedPreferences.setMockInitialValues({
         'radar_beta_best_score_beginner_crossing_conflict': 92,
         'radar_beta_best_grade_beginner_crossing_conflict': 'A',
@@ -319,7 +323,8 @@ void main() {
       expect(starIcons, findsWidgets);
     });
 
-    testWidgets('friendly scenario-load error shows retry action', (tester) async {
+    testWidgets('friendly scenario-load error shows retry action',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: RadarV2DebugScreen(
@@ -338,4 +343,156 @@ void main() {
       expect(find.text('Retry'), findsOneWidget);
     });
   });
+
+  group('Debrief salience filter', () {
+    const engine = DebriefSalienceEngine();
+
+    test('highest severity insight appears first', () {
+      final result = engine.rankInsights([
+        _insight(
+          id: 'medium',
+          body: 'Command count was higher than ideal.',
+          severity: DebriefInsightSeverity.medium,
+        ),
+        _insight(
+          id: 'critical',
+          title: 'Separation Risk',
+          body: 'Separation loss occurred at T+82s.',
+          severity: DebriefInsightSeverity.critical,
+          category: DebriefInsightCategory.safety,
+        ),
+      ]);
+
+      expect(result.primaryInsights.first.id, 'critical');
+    });
+
+    test('duplicate insights are merged', () {
+      final result = engine.rankInsights([
+        _insight(
+          id: 'a',
+          title: 'Ignored Alert',
+          body: 'Critical alert ignored for 21s.',
+          severity: DebriefInsightSeverity.high,
+        ),
+        _insight(
+          id: 'b',
+          title: 'Ignored Alert',
+          body: 'Critical alert ignored for 22s.',
+          severity: DebriefInsightSeverity.high,
+        ),
+      ]);
+
+      expect(
+        [
+          ...result.primaryInsights,
+          ...result.secondaryInsights,
+          ...result.hiddenInsights,
+        ],
+        hasLength(1),
+      );
+    });
+
+    test('only top 3 primary insights are shown', () {
+      final result = engine.rankInsights([
+        _insight(
+          id: 'safety-separation',
+          title: 'Separation Risk',
+          body: 'Separation loss occurred at T+42s.',
+          severity: DebriefInsightSeverity.critical,
+          category: DebriefInsightCategory.safety,
+        ),
+        _insight(
+          id: 'safety-runway',
+          title: 'Runway Flow Risk',
+          body: 'Runway occupancy alert ignored at T+51s.',
+          severity: DebriefInsightSeverity.high,
+          category: DebriefInsightCategory.safety,
+        ),
+        _insight(
+          id: 'safety-overload',
+          title: 'Workload Spike',
+          body: 'Overload spike compressed arrival sequencing at T+64s.',
+          severity: DebriefInsightSeverity.high,
+          category: DebriefInsightCategory.workload,
+        ),
+        for (var i = 0; i < 3; i++)
+          _insight(
+            id: 'attention-$i',
+            title: 'Attention $i',
+            body: 'Attention scan warning $i at T+${80 + i}s.',
+            severity: DebriefInsightSeverity.high,
+            category: DebriefInsightCategory.attention,
+          ),
+      ]);
+
+      expect(result.primaryInsights, hasLength(3));
+      expect(result.secondaryInsights, isNotEmpty);
+    });
+
+    test('low-confidence insights go to details', () {
+      final result = engine.rankInsights([
+        _insight(
+          id: 'low-confidence',
+          body: 'Trait profile may have contributed to scan narrowing.',
+          severity: DebriefInsightSeverity.high,
+          confidence: 0.32,
+        ),
+        _insight(
+          id: 'strong',
+          body: 'Runway occupancy alert ignored for 18s.',
+          severity: DebriefInsightSeverity.high,
+          category: DebriefInsightCategory.safety,
+        ),
+      ]);
+
+      expect(
+        result.primaryInsights.map((insight) => insight.id),
+        isNot(contains('low-confidence')),
+      );
+      expect(
+        result.secondaryInsights.map((insight) => insight.id),
+        contains('low-confidence'),
+      );
+    });
+
+    test('trait-scenario lines do not overwhelm safety-critical lines', () {
+      final result = engine.rank(
+        traitScenarioReports: [
+          'Trait profile amplified cascade propagation.',
+          'Trait handled well under pressure.',
+          'Recovery tendency delayed recovery initiation.',
+        ],
+        attentionReports: [
+          'Critical alert ignored for 21s while scanning narrowed.',
+        ],
+      );
+
+      expect(
+          result.primaryInsights.first.category, DebriefInsightCategory.safety);
+      expect(
+        result.primaryInsights.map((insight) => insight.sourceSystem),
+        isNot(everyElement('trait-scenario')),
+      );
+    });
+  });
+}
+
+DebriefInsight _insight({
+  required String id,
+  String title = 'Training Insight',
+  required String body,
+  DebriefInsightCategory category = DebriefInsightCategory.attention,
+  DebriefInsightSeverity severity = DebriefInsightSeverity.medium,
+  double confidence = 0.82,
+}) {
+  return DebriefInsight(
+    id: id,
+    title: title,
+    body: body,
+    category: category,
+    severity: severity,
+    timestamp: null,
+    confidence: confidence,
+    sourceSystem: category.name,
+  );
 }

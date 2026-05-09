@@ -3,6 +3,8 @@ import '../scoring/radar_v2_score.dart';
 import '../core/mental_model/controller_archetype_engine.dart';
 import '../core/mental_model/trait_scenario_interaction_engine.dart';
 import '../core/mental_model/trait_scenario_interaction_state.dart';
+import 'debrief_insight.dart';
+import 'debrief_salience_engine.dart';
 
 class RadarTrainingResult {
   final String scenarioTitle;
@@ -38,6 +40,7 @@ class RadarTrainingResult {
   final List<String> confidenceCalibrationQuality;
   final List<String> archetypeDebrief;
   final List<String> traitScenarioInteraction;
+  final DebriefSalienceResult debriefSalience;
   final String topMistake;
   final String bestRecovery;
 
@@ -75,6 +78,7 @@ class RadarTrainingResult {
     required this.confidenceCalibrationQuality,
     required this.archetypeDebrief,
     required this.traitScenarioInteraction,
+    required this.debriefSalience,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -113,6 +117,19 @@ class RadarTrainingResultBuilder {
     required SimulationSnapshot snapshot,
   }) {
     final replayExplanation = buildReplayExplanation(snapshot);
+    final archetypeDebrief = buildArchetypeDebrief(snapshot);
+    final traitScenarioInteraction = buildTraitScenarioInteraction(snapshot);
+    final topMistake = buildTopMistake(score, snapshot);
+    final bestRecovery = buildBestRecovery(score, snapshot, replayExplanation);
+    final debriefSalience = buildDebriefSalience(
+      score: score,
+      snapshot: snapshot,
+      replayExplanation: replayExplanation,
+      archetypeDebrief: archetypeDebrief,
+      traitScenarioInteraction: traitScenarioInteraction,
+      topMistake: topMistake,
+      bestRecovery: bestRecovery,
+    );
     return RadarTrainingResult(
       scenarioTitle: scenarioTitle,
       scenarioId: scenarioId,
@@ -146,10 +163,51 @@ class RadarTrainingResultBuilder {
       unnoticedOverload: buildUnnoticedOverload(snapshot),
       successfulSelfRecovery: buildSuccessfulSelfRecovery(snapshot),
       confidenceCalibrationQuality: buildConfidenceCalibrationQuality(snapshot),
-      archetypeDebrief: buildArchetypeDebrief(snapshot),
-      traitScenarioInteraction: buildTraitScenarioInteraction(snapshot),
-      topMistake: buildTopMistake(score, snapshot),
-      bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
+      archetypeDebrief: archetypeDebrief,
+      traitScenarioInteraction: traitScenarioInteraction,
+      debriefSalience: debriefSalience,
+      topMistake: topMistake,
+      bestRecovery: bestRecovery,
+    );
+  }
+
+  static DebriefSalienceResult buildDebriefSalience({
+    required RadarV2ScoreSnapshot score,
+    required SimulationSnapshot snapshot,
+    required List<String> replayExplanation,
+    required List<String> archetypeDebrief,
+    required List<String> traitScenarioInteraction,
+    required String topMistake,
+    required String bestRecovery,
+    String? scenarioLearningGoal,
+  }) {
+    final workloadReports = <String>[
+      topMistake,
+      bestRecovery,
+      ...replayExplanation,
+      if (score.separationLossCount > 0)
+        '${score.separationLossCount} separation loss event(s).',
+      if (score.ignoredCriticalAlertCount > 0)
+        '${score.ignoredCriticalAlertCount} critical alert(s) ignored.',
+      if (score.totalOverloadDuration > Duration.zero)
+        'Overload lasted ${score.totalOverloadDuration.inSeconds}s.',
+      if (score.lateResolutionCount > 0)
+        '${score.lateResolutionCount} late conflict resolution(s).',
+      ...score.penalties,
+    ];
+    return const DebriefSalienceEngine().rank(
+      workloadReports: workloadReports,
+      attentionReports: [
+        ...snapshot.attentionReportLines,
+        ...snapshot.attentionFocus.reportLines,
+      ],
+      workingMemoryReports: snapshot.workingMemoryReportLines,
+      predictiveModelReports: snapshot.predictiveMentalModelReportLines,
+      cascadeReports: snapshot.cognitiveCascadeReportLines,
+      metaCognitionReports: snapshot.metaCognitionReportLines,
+      archetypeReports: archetypeDebrief,
+      traitScenarioReports: traitScenarioInteraction,
+      scenarioLearningGoal: scenarioLearningGoal,
     );
   }
 
@@ -162,7 +220,8 @@ class RadarTrainingResultBuilder {
       lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
       if (lines.length == 3) break;
     }
-    if (lines.isEmpty && snapshot.metaCognitionState.inaccurateSelfAssessmentMoments > 0) {
+    if (lines.isEmpty &&
+        snapshot.metaCognitionState.inaccurateSelfAssessmentMoments > 0) {
       lines.add(
         'Inaccurate self-assessment moments: '
         '${snapshot.metaCognitionState.inaccurateSelfAssessmentMoments}.',
@@ -178,7 +237,8 @@ class RadarTrainingResultBuilder {
       lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
       if (lines.length == 3) break;
     }
-    if (lines.isEmpty && snapshot.metaCognitionState.unnoticedOverloadMoments > 0) {
+    if (lines.isEmpty &&
+        snapshot.metaCognitionState.unnoticedOverloadMoments > 0) {
       lines.add(
         'Unnoticed overload moments: '
         '${snapshot.metaCognitionState.unnoticedOverloadMoments}.',
@@ -246,7 +306,8 @@ class RadarTrainingResultBuilder {
     return engine.buildDebriefLines();
   }
 
-  static List<String> buildTraitScenarioInteraction(SimulationSnapshot snapshot) {
+  static List<String> buildTraitScenarioInteraction(
+      SimulationSnapshot snapshot) {
     final state = snapshot.traitScenarioInteractionState;
     final traits = snapshot.controllerArchetypeState.traits;
     // Reconstruct the engine from the final state to regenerate debrief lines.
@@ -282,7 +343,8 @@ class RadarTrainingResultBuilder {
       lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
       if (lines.length == 3) break;
     }
-    if (lines.isEmpty && snapshot.cognitiveCascadeState.chainHistory.isNotEmpty) {
+    if (lines.isEmpty &&
+        snapshot.cognitiveCascadeState.chainHistory.isNotEmpty) {
       lines.add(
         'Cascade chains recorded: ${snapshot.cognitiveCascadeState.chainHistory.length}.',
       );
@@ -300,7 +362,8 @@ class RadarTrainingResultBuilder {
     return ['Root surprise event: $root.'];
   }
 
-  static List<String> buildSecondaryFailuresCaused(SimulationSnapshot snapshot) {
+  static List<String> buildSecondaryFailuresCaused(
+      SimulationSnapshot snapshot) {
     final lines = <String>[];
     for (final event in snapshot.events) {
       if (event.type != 'cognitiveCascadeSecondaryFailure') continue;
@@ -310,7 +373,10 @@ class RadarTrainingResultBuilder {
     if (lines.isEmpty) {
       final history = snapshot.cognitiveCascadeState.chainHistory;
       if (history.isNotEmpty && history.last.secondaryFailures.isNotEmpty) {
-        lines.add('Secondary failures: ${history.last.secondaryFailures.join(', ')}.');
+        lines.add(
+          'Secondary effects contributed to by cascade pressure: '
+          '${history.last.secondaryFailures.join(', ')}.',
+        );
       }
     }
     return List.unmodifiable(lines);
@@ -323,8 +389,10 @@ class RadarTrainingResultBuilder {
       lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
       if (lines.length == 2) break;
     }
-    if (lines.isEmpty && snapshot.cognitiveCascadeState.chainHistory.isNotEmpty) {
-      final quality = snapshot.cognitiveCascadeState.chainHistory.last.recoveryQuality;
+    if (lines.isEmpty &&
+        snapshot.cognitiveCascadeState.chainHistory.isNotEmpty) {
+      final quality =
+          snapshot.cognitiveCascadeState.chainHistory.last.recoveryQuality;
       lines.add('Recovery quality score: ${quality.toStringAsFixed(2)}.');
     }
     return List.unmodifiable(lines);
@@ -345,14 +413,16 @@ class RadarTrainingResultBuilder {
     return List.unmodifiable(lines);
   }
 
-  static List<String> buildLateAbnormalRecognition(SimulationSnapshot snapshot) {
+  static List<String> buildLateAbnormalRecognition(
+      SimulationSnapshot snapshot) {
     final lines = <String>[];
     for (final event in snapshot.events) {
       if (event.type != 'predictionLateRecognition') continue;
       lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
       if (lines.length == 3) break;
     }
-    if (lines.isEmpty && snapshot.predictiveMentalModelState.lateRecognitionCount > 0) {
+    if (lines.isEmpty &&
+        snapshot.predictiveMentalModelState.lateRecognitionCount > 0) {
       lines.add(
         'Late abnormal recognition count: '
         '${snapshot.predictiveMentalModelState.lateRecognitionCount}.',
@@ -361,14 +431,16 @@ class RadarTrainingResultBuilder {
     return List.unmodifiable(lines);
   }
 
-  static List<String> buildSurpriseOverloadMoments(SimulationSnapshot snapshot) {
+  static List<String> buildSurpriseOverloadMoments(
+      SimulationSnapshot snapshot) {
     final lines = <String>[];
     for (final event in snapshot.events) {
       if (event.type != 'predictionSurpriseOverload') continue;
       lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
       if (lines.length == 3) break;
     }
-    if (lines.isEmpty && snapshot.predictiveMentalModelState.surpriseOverloadMoments > 0) {
+    if (lines.isEmpty &&
+        snapshot.predictiveMentalModelState.surpriseOverloadMoments > 0) {
       lines.add(
         'Surprise overload moments: '
         '${snapshot.predictiveMentalModelState.surpriseOverloadMoments}.',
@@ -378,7 +450,8 @@ class RadarTrainingResultBuilder {
   }
 
   static List<String> buildAssumptionDrivenErrors(SimulationSnapshot snapshot) {
-    final count = snapshot.predictiveMentalModelState.assumptionDrivenErrorCount;
+    final count =
+        snapshot.predictiveMentalModelState.assumptionDrivenErrorCount;
     if (count == 0) return const [];
     return [
       'Assumption-driven errors: $count (high-confidence expectations violated).',
@@ -456,7 +529,8 @@ class RadarTrainingResultBuilder {
   static List<String> buildNeglectedAircraft(SimulationSnapshot snapshot) {
     final neglected = snapshot.attentionFocus.neglectedAircraftIds;
     if (neglected.isEmpty) {
-      if (snapshot.attentionFocus.longestNeglect >= const Duration(seconds: 18)) {
+      if (snapshot.attentionFocus.longestNeglect >=
+          const Duration(seconds: 18)) {
         return [
           'No specific neglected track IDs captured, but max unseen interval '
               'reached ${snapshot.attentionFocus.longestNeglect.inSeconds}s.',
@@ -479,7 +553,8 @@ class RadarTrainingResultBuilder {
       if (periods.length == 3) break;
     }
     if (periods.isEmpty &&
-        snapshot.attentionFocus.scanBlindDuration >= const Duration(seconds: 12)) {
+        snapshot.attentionFocus.scanBlindDuration >=
+            const Duration(seconds: 12)) {
       periods.add(
         'Late-session scan blind period reached '
         '${snapshot.attentionFocus.scanBlindDuration.inSeconds}s.',
@@ -503,14 +578,16 @@ class RadarTrainingResultBuilder {
     return List.unmodifiable(windows);
   }
 
-  static List<String> buildDelayedAwarenessMoments(SimulationSnapshot snapshot) {
+  static List<String> buildDelayedAwarenessMoments(
+      SimulationSnapshot snapshot) {
     final moments = <String>[];
     for (final event in snapshot.events) {
       if (event.type != 'attentionDelayedRecognition') continue;
       moments.add('${event.label} (T+${event.elapsed.inSeconds}s).');
       if (moments.length == 3) break;
     }
-    if (moments.isEmpty && snapshot.attentionFocus.delayedAwarenessMoments > 0) {
+    if (moments.isEmpty &&
+        snapshot.attentionFocus.delayedAwarenessMoments > 0) {
       moments.add(
         'Delayed awareness moments observed: '
         '${snapshot.attentionFocus.delayedAwarenessMoments}.',
@@ -520,8 +597,10 @@ class RadarTrainingResultBuilder {
   }
 
   static List<String> buildCommandTimingQuality(SimulationSnapshot snapshot) {
-    final issued = snapshot.events.where((e) => e.type == 'commandIssued').toList();
-    final acked = snapshot.events.where((e) => e.type == 'commandAcknowledged').toList();
+    final issued =
+        snapshot.events.where((e) => e.type == 'commandIssued').toList();
+    final acked =
+        snapshot.events.where((e) => e.type == 'commandAcknowledged').toList();
     if (issued.isEmpty) {
       return const ['No radio cadence sample available.'];
     }
@@ -544,29 +623,40 @@ class RadarTrainingResultBuilder {
 
     final avg = latencies.reduce((a, b) => a + b) / latencies.length;
     final sorted = [...latencies]..sort();
-    final p90 = sorted[(sorted.length * 0.9).floor().clamp(0, sorted.length - 1)];
-    final onCadencePct = (latencies.where((s) => s <= 5).length * 100 / latencies.length).round();
+    final p90 =
+        sorted[(sorted.length * 0.9).floor().clamp(0, sorted.length - 1)];
+    final onCadencePct =
+        (latencies.where((s) => s <= 5).length * 100 / latencies.length)
+            .round();
     final insights = <String>[];
     if (avg <= 2.5) {
-      insights.add('Cadence was tight: avg readback ${avg.toStringAsFixed(1)}s.');
+      insights
+          .add('Cadence was tight: avg readback ${avg.toStringAsFixed(1)}s.');
     } else if (avg <= 4.5) {
-      insights.add('Cadence stayed workable: avg readback ${avg.toStringAsFixed(1)}s.');
+      insights.add(
+          'Cadence stayed workable: avg readback ${avg.toStringAsFixed(1)}s.');
     } else if (avg <= 6.5) {
-      insights.add('Cadence started to stretch: avg readback ${avg.toStringAsFixed(1)}s.');
+      insights.add(
+          'Cadence started to stretch: avg readback ${avg.toStringAsFixed(1)}s.');
     } else {
-      insights.add('Cadence was behind traffic demand: avg readback ${avg.toStringAsFixed(1)}s.');
+      insights.add(
+          'Cadence was behind traffic demand: avg readback ${avg.toStringAsFixed(1)}s.');
     }
-    insights.add('On-cadence readbacks (<=5s): $onCadencePct%. Tail latency: ${p90}s.');
+    insights.add(
+        'On-cadence readbacks (<=5s): $onCadencePct%. Tail latency: ${p90}s.');
 
     final delayedCount = latencies.where((s) => s >= 6).length;
     if (delayedCount > 0) {
-      insights.add('$delayedCount late readback(s) (>=6s) during higher workload moments.');
+      insights.add(
+          '$delayedCount late readback(s) (>=6s) during higher workload moments.');
     }
     return List.unmodifiable(insights);
   }
 
   static List<String> buildHesitationWindows(SimulationSnapshot snapshot) {
-    final issued = snapshot.events.where((e) => e.type == 'commandIssued').toList()
+    final issued = snapshot.events
+        .where((e) => e.type == 'commandIssued')
+        .toList()
       ..sort((a, b) => a.elapsed.compareTo(b.elapsed));
     if (issued.length < 2) return const [];
 
@@ -585,11 +675,14 @@ class RadarTrainingResultBuilder {
 
   static List<String> buildLateVectorRecognition(SimulationSnapshot snapshot) {
     final vectors = snapshot.events.where((e) {
-      return e.type == 'commandIssued' && e.label.toLowerCase().contains('heading');
+      return e.type == 'commandIssued' &&
+          e.label.toLowerCase().contains('heading');
     }).toList();
     final conflictCues = snapshot.events.where((e) {
       final l = e.label.toLowerCase();
-      return e.type == 'separationLoss' || e.type == 'separationWarning' || l.contains('conflict');
+      return e.type == 'separationLoss' ||
+          e.type == 'separationWarning' ||
+          l.contains('conflict');
     }).toList()
       ..sort((a, b) => a.elapsed.compareTo(b.elapsed));
     if (vectors.isEmpty || conflictCues.isEmpty) return const [];
@@ -624,7 +717,8 @@ class RadarTrainingResultBuilder {
     if (score.lateResolutionCount > 0) {
       notes.add('Late intervention on at least one conflict pair.');
     }
-    if (score.proactiveStabilizationBonus > 0 || score.anticipationScore >= 72) {
+    if (score.proactiveStabilizationBonus > 0 ||
+        score.anticipationScore >= 72) {
       notes.add('Good anticipation during workload transitions.');
     }
     if (score.commandEfficiency >= 82 && score.commandCount <= 8) {
@@ -634,7 +728,8 @@ class RadarTrainingResultBuilder {
       notes.add('Expectation drift observed; maintain broad scan discipline.');
     }
     if (notes.isEmpty) {
-      notes.add('Control inputs were stable; continue earlier threat detection.');
+      notes.add(
+          'Control inputs were stable; continue earlier threat detection.');
     }
     return List.unmodifiable(notes.take(4));
   }

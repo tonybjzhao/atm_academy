@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import 'debrief_insight.dart';
 import 'radar_training_result.dart';
 
 class RadarTrainingResultScreen extends StatefulWidget {
@@ -45,209 +46,17 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             const SizedBox(height: 14),
             _Metrics(result: result),
             const SizedBox(height: 18),
-            _InsightCard(
-              icon: Icons.error_outline,
-              title: 'Top mistake',
-              body: result.topMistake,
-              accent: AppTheme.warning,
-            ),
-            const SizedBox(height: 10),
-            _InsightCard(
-              icon: Icons.healing,
-              title: 'Best recovery',
-              body: result.bestRecovery,
-              accent: AppTheme.primary,
-            ),
-            const SizedBox(height: 18),
-            const _SectionTitle('Controller Evaluation'),
+            const _SectionTitle('Main Debrief'),
             const SizedBox(height: 8),
-            for (final line in result.controllerEvaluation)
-              _EvaluationChip(text: line),
-            const SizedBox(height: 18),
-            const _SectionTitle('Timeline Summary'),
-            const SizedBox(height: 8),
-            for (final line in result.timelineSummary)
-              _TimelineLine(text: line),
-            const SizedBox(height: 18),
-            const _SectionTitle('Replay Explanation'),
-            const SizedBox(height: 8),
-            for (final line in result.replayExplanation)
-              _ExplanationCard(text: line),
-            if (result.commandTimingQuality.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Radio Cadence Debrief'),
-              const SizedBox(height: 8),
-              for (final line in result.commandTimingQuality)
-                _EvaluationChip(text: line),
-            ],
-            if (result.hesitationWindows.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Command Gap Windows'),
-              const SizedBox(height: 8),
-              for (final line in result.hesitationWindows)
-                _EvaluationChip(text: line),
-            ],
-            if (result.lateVectorRecognition.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Late Vector Calls'),
-              const SizedBox(height: 8),
-              for (final line in result.lateVectorRecognition)
-                _EvaluationChip(text: line),
-            ],
-            if (result.neglectedAircraft.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Neglected Tracks'),
-              const SizedBox(height: 8),
-              for (final line in result.neglectedAircraft)
-                _EvaluationChip(text: line),
-            ],
-            if (result.scanBlindPeriods.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Scan Blind Periods'),
-              const SizedBox(height: 8),
-              for (final line in result.scanBlindPeriods)
-                _EvaluationChip(text: line),
-            ],
-            if (result.fixationWindows.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Fixation Windows'),
-              const SizedBox(height: 8),
-              for (final line in result.fixationWindows)
-                _EvaluationChip(text: line),
-            ],
-            if (result.delayedAwarenessMoments.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Delayed Awareness'),
-              const SizedBox(height: 8),
-              for (final line in result.delayedAwarenessMoments)
-                _EvaluationChip(text: line),
-            ],
-            if (result.forgottenIntentions.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Forgotten Intentions'),
-              const SizedBox(height: 8),
-              for (final line in result.forgottenIntentions)
-                _EvaluationChip(text: line),
-            ],
-            if (result.interruptedWorkflows.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Interrupted Workflows'),
-              const SizedBox(height: 8),
-              for (final line in result.interruptedWorkflows)
-                _EvaluationChip(text: line),
-            ],
-            if (result.delayedFollowThrough.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Delayed Follow-Through'),
-              const SizedBox(height: 8),
-              for (final line in result.delayedFollowThrough)
-                _EvaluationChip(text: line),
-            ],
-            if (result.intentionRecovery.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Intention Recovery'),
-              const SizedBox(height: 8),
-              for (final line in result.intentionRecovery)
-                _EvaluationChip(text: line),
-            ],
-            if (result.expectationMismatches.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Expectation Mismatches'),
-              const SizedBox(height: 8),
-              for (final line in result.expectationMismatches)
-                _EvaluationChip(text: line),
-            ],
-            if (result.lateAbnormalRecognition.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Late Abnormal Recognition'),
-              const SizedBox(height: 8),
-              for (final line in result.lateAbnormalRecognition)
-                _EvaluationChip(text: line),
-            ],
-            if (result.surpriseOverloadMoments.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Surprise Overload Moments'),
-              const SizedBox(height: 8),
-              for (final line in result.surpriseOverloadMoments)
-                _EvaluationChip(text: line),
-            ],
-            if (result.assumptionDrivenErrors.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Assumption-Driven Errors'),
-              const SizedBox(height: 8),
-              for (final line in result.assumptionDrivenErrors)
-                _EvaluationChip(text: line),
-            ],
-            if (result.cognitiveCascadeChains.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Cognitive Cascade Chains'),
-              const SizedBox(height: 8),
-              for (final line in result.cognitiveCascadeChains)
-                _EvaluationChip(text: line),
-            ],
-            if (result.rootSurpriseEvent.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Root Surprise Event'),
-              const SizedBox(height: 8),
-              for (final line in result.rootSurpriseEvent)
-                _EvaluationChip(text: line),
-            ],
-            if (result.secondaryFailuresCaused.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Secondary Failures Caused'),
-              const SizedBox(height: 8),
-              for (final line in result.secondaryFailuresCaused)
-                _EvaluationChip(text: line),
-            ],
-            if (result.recoveryQuality.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Recovery Quality'),
-              const SizedBox(height: 8),
-              for (final line in result.recoveryQuality)
-                _EvaluationChip(text: line),
-            ],
-            if (result.inaccurateSelfAssessmentMoments.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Inaccurate Self-Assessment'),
-              const SizedBox(height: 8),
-              for (final line in result.inaccurateSelfAssessmentMoments)
-                _EvaluationChip(text: line),
-            ],
-            if (result.unnoticedOverload.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Unnoticed Overload'),
-              const SizedBox(height: 8),
-              for (final line in result.unnoticedOverload)
-                _EvaluationChip(text: line),
-            ],
-            if (result.successfulSelfRecovery.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Successful Self-Recovery'),
-              const SizedBox(height: 8),
-              for (final line in result.successfulSelfRecovery)
-                _EvaluationChip(text: line),
-            ],
-            if (result.confidenceCalibrationQuality.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Confidence Calibration Quality'),
-              const SizedBox(height: 8),
-              for (final line in result.confidenceCalibrationQuality)
-                _EvaluationChip(text: line),
-            ],
-            if (result.archetypeDebrief.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Controller Archetype Profile'),
-              const SizedBox(height: 8),
-              for (final line in result.archetypeDebrief)
-                _EvaluationChip(text: line),
-            ],
-            if (result.traitScenarioInteraction.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionTitle('Trait–Scenario Interaction'),
-              const SizedBox(height: 8),
-              for (final line in result.traitScenarioInteraction)
-                _EvaluationChip(text: line),
-            ],
+            for (final insight in result.debriefSalience.primaryInsights)
+              _DebriefInsightCard(insight: insight),
+            if (result.debriefSalience.primaryInsights.isEmpty)
+              const _ExplanationCard(
+                text:
+                    'Traffic flow remained stable with no major debrief item.',
+              ),
+            const SizedBox(height: 12),
+            _MoreDetails(result: result),
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),
@@ -480,6 +289,201 @@ class _InsightCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _DebriefInsightCard extends StatelessWidget {
+  final DebriefInsight insight;
+
+  const _DebriefInsightCard({required this.insight});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = _severityColor(insight.severity);
+    final timestamp =
+        insight.timestamp == null ? null : 'T+${insight.timestamp!.inSeconds}s';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: _Panel(
+        accent: accent,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(_categoryIcon(insight.category), color: accent, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          insight.title,
+                          style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      if (timestamp != null)
+                        Text(
+                          timestamp,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    insight.body,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _severityColor(DebriefInsightSeverity severity) {
+    return switch (severity) {
+      DebriefInsightSeverity.critical => AppTheme.danger,
+      DebriefInsightSeverity.high => AppTheme.warning,
+      DebriefInsightSeverity.medium => AppTheme.primary,
+      DebriefInsightSeverity.low => AppTheme.textSecondary,
+    };
+  }
+
+  IconData _categoryIcon(DebriefInsightCategory category) {
+    return switch (category) {
+      DebriefInsightCategory.safety => Icons.warning_amber_rounded,
+      DebriefInsightCategory.workload => Icons.speed,
+      DebriefInsightCategory.attention => Icons.center_focus_strong,
+      DebriefInsightCategory.workingMemory => Icons.pending_actions,
+      DebriefInsightCategory.predictiveModel => Icons.query_stats,
+      DebriefInsightCategory.cascade => Icons.account_tree_outlined,
+      DebriefInsightCategory.metaCognition => Icons.psychology_alt,
+      DebriefInsightCategory.archetype => Icons.badge_outlined,
+      DebriefInsightCategory.traitScenario => Icons.tune,
+      DebriefInsightCategory.recovery => Icons.healing,
+      DebriefInsightCategory.flow => Icons.merge_type,
+    };
+  }
+}
+
+class _MoreDetails extends StatelessWidget {
+  final RadarTrainingResult result;
+
+  const _MoreDetails({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final extraInsights = [
+      ...result.debriefSalience.secondaryInsights,
+      ...result.debriefSalience.hiddenInsights,
+    ];
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: _Panel(
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(top: 8),
+          iconColor: AppTheme.primary,
+          collapsedIconColor: AppTheme.textSecondary,
+          title: const Text(
+            'More details',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          subtitle: const Text(
+            'Advanced analysis and replay context',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+          ),
+          children: [
+            _InsightCard(
+              icon: Icons.error_outline,
+              title: 'Top mistake',
+              body: result.topMistake,
+              accent: AppTheme.warning,
+            ),
+            const SizedBox(height: 8),
+            _InsightCard(
+              icon: Icons.healing,
+              title: 'Best recovery',
+              body: result.bestRecovery,
+              accent: AppTheme.primary,
+            ),
+            if (extraInsights.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const _SectionTitle('Additional Debrief'),
+              const SizedBox(height: 8),
+              for (final insight in extraInsights.take(6))
+                _DebriefInsightCard(insight: insight),
+            ],
+            const SizedBox(height: 12),
+            const _SectionTitle('Timeline Summary'),
+            const SizedBox(height: 8),
+            for (final line in result.timelineSummary)
+              _TimelineLine(text: line),
+            const SizedBox(height: 12),
+            const _SectionTitle('Replay Explanation'),
+            const SizedBox(height: 8),
+            for (final line in result.replayExplanation)
+              _ExplanationCard(text: line),
+            const SizedBox(height: 12),
+            const _SectionTitle('Controller Evaluation'),
+            const SizedBox(height: 8),
+            for (final line in _advancedLines(result).take(18))
+              _EvaluationChip(text: line),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<String> _advancedLines(RadarTrainingResult result) {
+    return [
+      ...result.controllerEvaluation,
+      ...result.commandTimingQuality,
+      ...result.hesitationWindows,
+      ...result.lateVectorRecognition,
+      ...result.neglectedAircraft,
+      ...result.scanBlindPeriods,
+      ...result.fixationWindows,
+      ...result.delayedAwarenessMoments,
+      ...result.forgottenIntentions,
+      ...result.interruptedWorkflows,
+      ...result.delayedFollowThrough,
+      ...result.intentionRecovery,
+      ...result.expectationMismatches,
+      ...result.lateAbnormalRecognition,
+      ...result.surpriseOverloadMoments,
+      ...result.assumptionDrivenErrors,
+      ...result.cognitiveCascadeChains,
+      ...result.rootSurpriseEvent,
+      ...result.secondaryFailuresCaused,
+      ...result.recoveryQuality,
+      ...result.inaccurateSelfAssessmentMoments,
+      ...result.unnoticedOverload,
+      ...result.successfulSelfRecovery,
+      ...result.confidenceCalibrationQuality,
+      ...result.archetypeDebrief,
+      ...result.traitScenarioInteraction,
+    ];
   }
 }
 
