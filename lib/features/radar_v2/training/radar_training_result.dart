@@ -87,7 +87,7 @@ class RadarTrainingResultBuilder {
     final issued = snapshot.events.where((e) => e.type == 'commandIssued').toList();
     final acked = snapshot.events.where((e) => e.type == 'commandAcknowledged').toList();
     if (issued.isEmpty) {
-      return const ['No command timing sample available.'];
+      return const ['No radio cadence sample available.'];
     }
 
     final latencies = <int>[];
@@ -103,22 +103,28 @@ class RadarTrainingResultBuilder {
     }
 
     if (latencies.isEmpty) {
-      return const ['Command acknowledgements were delayed beyond 12s.'];
+      return const ['No timely readbacks captured (all beyond 12s).'];
     }
 
     final avg = latencies.reduce((a, b) => a + b) / latencies.length;
+    final sorted = [...latencies]..sort();
+    final p90 = sorted[(sorted.length * 0.9).floor().clamp(0, sorted.length - 1)];
+    final onCadencePct = (latencies.where((s) => s <= 5).length * 100 / latencies.length).round();
     final insights = <String>[];
-    if (avg <= 3) {
-      insights.add('Command timing quality: crisp (${avg.toStringAsFixed(1)}s avg acknowledgement).');
-    } else if (avg <= 5) {
-      insights.add('Command timing quality: acceptable (${avg.toStringAsFixed(1)}s avg acknowledgement).');
+    if (avg <= 2.5) {
+      insights.add('Cadence was tight: avg readback ${avg.toStringAsFixed(1)}s.');
+    } else if (avg <= 4.5) {
+      insights.add('Cadence stayed workable: avg readback ${avg.toStringAsFixed(1)}s.');
+    } else if (avg <= 6.5) {
+      insights.add('Cadence started to stretch: avg readback ${avg.toStringAsFixed(1)}s.');
     } else {
-      insights.add('Command timing quality: slow (${avg.toStringAsFixed(1)}s avg acknowledgement).');
+      insights.add('Cadence was behind traffic demand: avg readback ${avg.toStringAsFixed(1)}s.');
     }
+    insights.add('On-cadence readbacks (<=5s): $onCadencePct%. Tail latency: ${p90}s.');
 
     final delayedCount = latencies.where((s) => s >= 6).length;
     if (delayedCount > 0) {
-      insights.add('$delayedCount command(s) acknowledged late (>=6s).');
+      insights.add('$delayedCount late readback(s) (>=6s) during higher workload moments.');
     }
     return List.unmodifiable(insights);
   }
@@ -131,10 +137,10 @@ class RadarTrainingResultBuilder {
     final windows = <String>[];
     for (var i = 1; i < issued.length; i++) {
       final gap = issued[i].elapsed - issued[i - 1].elapsed;
-      if (gap < const Duration(seconds: 12)) continue;
+      if (gap < const Duration(seconds: 15)) continue;
       windows.add(
-        'Hesitation window at T+${issued[i - 1].elapsed.inSeconds}s '
-        'to T+${issued[i].elapsed.inSeconds}s (${gap.inSeconds}s).',
+        'Command gap ${gap.inSeconds}s between T+${issued[i - 1].elapsed.inSeconds}s '
+        'and T+${issued[i].elapsed.inSeconds}s; scan likely narrowed here.',
       );
       if (windows.length == 3) break;
     }
@@ -145,25 +151,29 @@ class RadarTrainingResultBuilder {
     final vectors = snapshot.events.where((e) {
       return e.type == 'commandIssued' && e.label.toLowerCase().contains('heading');
     }).toList();
-    final conflicts = snapshot.events.where((e) {
+    final conflictCues = snapshot.events.where((e) {
       final l = e.label.toLowerCase();
-      return e.type == 'separationLoss' || l.contains('conflict');
-    }).toList();
-    if (vectors.isEmpty || conflicts.isEmpty) return const [];
+      return e.type == 'separationLoss' || e.type == 'separationWarning' || l.contains('conflict');
+    }).toList()
+      ..sort((a, b) => a.elapsed.compareTo(b.elapsed));
+    if (vectors.isEmpty || conflictCues.isEmpty) return const [];
 
     final lines = <String>[];
-    for (final vector in vectors) {
-      final recentConflict = conflicts.where((conflict) {
-        if (conflict.aircraftId != null && vector.aircraftId != conflict.aircraftId) {
+    for (final cue in conflictCues) {
+      final candidate = vectors.where((vector) {
+        if (cue.aircraftId != null && vector.aircraftId != cue.aircraftId) {
           return false;
         }
-        final delta = vector.elapsed - conflict.elapsed;
-        return delta >= const Duration(seconds: 0) &&
-            delta <= const Duration(seconds: 22);
+        final delta = vector.elapsed - cue.elapsed;
+        return delta >= const Duration(seconds: 6) &&
+            delta <= const Duration(seconds: 30);
       });
-      if (recentConflict.isEmpty) continue;
+      if (candidate.isEmpty) continue;
+      final vector = candidate.first;
+      final lag = (vector.elapsed - cue.elapsed).inSeconds;
       lines.add(
-        'Late vector recognition near T+${vector.elapsed.inSeconds}s (${vector.label}).',
+        'Vector call came ${lag}s after conflict cue at T+${cue.elapsed.inSeconds}s '
+        '(issued T+${vector.elapsed.inSeconds}s).',
       );
       if (lines.length == 2) break;
     }
