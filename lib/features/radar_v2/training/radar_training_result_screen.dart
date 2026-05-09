@@ -241,6 +241,13 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               for (final line in result.archetypeDebrief)
                 _EvaluationChip(text: line),
             ],
+            if (result.traitScenarioInteraction.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Trait–Scenario Interaction'),
+              const SizedBox(height: 8),
+              for (final line in result.traitScenarioInteraction)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),

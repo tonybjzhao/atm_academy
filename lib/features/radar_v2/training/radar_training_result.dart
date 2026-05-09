@@ -1,6 +1,8 @@
 import '../models/simulation_snapshot.dart';
 import '../scoring/radar_v2_score.dart';
 import '../core/mental_model/controller_archetype_engine.dart';
+import '../core/mental_model/trait_scenario_interaction_engine.dart';
+import '../core/mental_model/trait_scenario_interaction_state.dart';
 
 class RadarTrainingResult {
   final String scenarioTitle;
@@ -35,6 +37,7 @@ class RadarTrainingResult {
   final List<String> successfulSelfRecovery;
   final List<String> confidenceCalibrationQuality;
   final List<String> archetypeDebrief;
+  final List<String> traitScenarioInteraction;
   final String topMistake;
   final String bestRecovery;
 
@@ -71,6 +74,7 @@ class RadarTrainingResult {
     required this.successfulSelfRecovery,
     required this.confidenceCalibrationQuality,
     required this.archetypeDebrief,
+    required this.traitScenarioInteraction,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -143,6 +147,7 @@ class RadarTrainingResultBuilder {
       successfulSelfRecovery: buildSuccessfulSelfRecovery(snapshot),
       confidenceCalibrationQuality: buildConfidenceCalibrationQuality(snapshot),
       archetypeDebrief: buildArchetypeDebrief(snapshot),
+      traitScenarioInteraction: buildTraitScenarioInteraction(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
@@ -237,6 +242,35 @@ class RadarTrainingResultBuilder {
     }
     for (var i = 0; i < state.recoveryDelayTicks; i++) {
       engine.injectRecoveryDelayTick();
+    }
+    return engine.buildDebriefLines();
+  }
+
+  static List<String> buildTraitScenarioInteraction(SimulationSnapshot snapshot) {
+    final state = snapshot.traitScenarioInteractionState;
+    final traits = snapshot.controllerArchetypeState.traits;
+    // Reconstruct the engine from the final state to regenerate debrief lines.
+    // The engine accumulator data is encoded in the patternRecords.
+    final engine = TraitScenarioInteractionEngine(
+      topology: state.topology,
+      traits: traits,
+    );
+    // Inject the accumulated tick data from the snapshot state.
+    for (final record in state.patternRecords) {
+      for (var i = 0; i < record.degradationTicks; i++) {
+        engine.injectDegradationTick(record.pattern);
+      }
+      for (var i = 0; i < record.resilientTicks; i++) {
+        engine.injectResilientTick(record.pattern);
+      }
+    }
+    // Inject first-destabilisation if available.
+    if (state.firstDestabilisedSystem != FirstDestabilisedSystem.none &&
+        state.firstDestabilisationAt != null) {
+      engine.injectFirstDestabilisation(
+        system: state.firstDestabilisedSystem,
+        at: state.firstDestabilisationAt!,
+      );
     }
     return engine.buildDebriefLines();
   }

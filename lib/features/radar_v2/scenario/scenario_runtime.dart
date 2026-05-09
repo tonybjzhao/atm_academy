@@ -18,6 +18,9 @@ import '../core/mental_model/meta_cognition_engine.dart';
 import '../core/mental_model/meta_cognition_state.dart';
 import '../core/mental_model/predictive_mental_model_engine.dart';
 import '../core/mental_model/predictive_mental_model_state.dart';
+import '../core/mental_model/scenario_pressure_topology.dart';
+import '../core/mental_model/trait_scenario_interaction_engine.dart';
+import '../core/mental_model/trait_scenario_interaction_state.dart';
 import '../core/mental_model/working_memory_engine.dart';
 import '../core/mental_model/working_memory_state.dart';
 import '../core/pressure/attention_competition_engine.dart' as pressure;
@@ -78,6 +81,7 @@ class ScenarioRuntime {
       CognitiveCascadeEngine();
     late final MetaCognitionEngine _metaCognitionEngine;
   late final ControllerArchetypeEngine _controllerArchetypeEngine;
+  late final TraitScenarioInteractionEngine _traitScenarioInteractionEngine;
   final WorkingMemoryEngine _workingMemoryEngine = WorkingMemoryEngine();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
@@ -100,6 +104,8 @@ class ScenarioRuntime {
     MetaCognitionState _lastMetaCognitionState = MetaCognitionState.idle;
   ControllerArchetypeState _lastControllerArchetypeState =
       ControllerArchetypeState.idle;
+  TraitScenarioInteractionState _lastTraitScenarioInteractionState =
+      TraitScenarioInteractionState.idle;
   WorkingMemoryState _lastWorkingMemoryState = WorkingMemoryState.idle;
   WorkingMemoryState _previousWorkingMemoryState = WorkingMemoryState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
@@ -128,6 +134,11 @@ class ScenarioRuntime {
     _metaCognitionEngine = MetaCognitionEngine(experienceLevel: experienceLevel);
     _controllerArchetypeEngine = ControllerArchetypeEngine.fromLabel(
       _archetypeLabelForDifficulty(normalizedDifficulty),
+    );
+    final topology = ScenarioPressureTopology.fromDefinition(definition);
+    _traitScenarioInteractionEngine = TraitScenarioInteractionEngine(
+      topology: topology,
+      traits: _controllerArchetypeEngine.traits,
     );
   }
 
@@ -289,6 +300,16 @@ class ScenarioRuntime {
       cascade: _lastCognitiveCascadeState,
       metaCognition: _lastMetaCognitionState,
     );
+    _lastTraitScenarioInteractionState =
+        _traitScenarioInteractionEngine.evaluate(
+      snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
+      attention: _lastAttentionFocusState,
+      workingMemory: _lastWorkingMemoryState,
+      predictive: _lastPredictiveMentalModelState,
+      cascade: _lastCognitiveCascadeState,
+      metaCognition: _lastMetaCognitionState,
+      archetypeState: _lastControllerArchetypeState,
+    );
 
     // Feed analytics tracker
     _analyticsTracker.recordTick(ReplayWorkloadFrame(
@@ -351,6 +372,7 @@ class ScenarioRuntime {
       workingMemoryReportLines:
           List<String>.from(_lastWorkingMemoryState.reportLines),
       controllerArchetypeState: _lastControllerArchetypeState,
+      traitScenarioInteractionState: _lastTraitScenarioInteractionState,
     );
   }
 
