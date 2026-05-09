@@ -179,8 +179,9 @@ class HomeScreen extends StatelessWidget {
                   AtmCard(
                     icon: Icons.radar_outlined,
                     iconColor: AppTheme.primary,
-                    title: 'Radar Training Beta',
-                    subtitle: 'Internal tester flow',
+                    title: AppLocalizations.of(context)!.radarTrainingBetaTitle,
+                    subtitle: AppLocalizations.of(context)!
+                        .homeCardRadarTrainingBetaSub,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(

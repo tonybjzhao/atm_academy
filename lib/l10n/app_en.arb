@@ -1039,6 +1039,96 @@
   "@scenarioLOSResult": {},
   "scenarioSafeResult": "SEPARATION MAINTAINED",
   "@scenarioSafeResult": {},
+  "scenarioNoCommandIssued": "No command issued",
+  "@scenarioNoCommandIssued": {},
+  "scenarioCommandTurnLeft": "Turn left",
+  "@scenarioCommandTurnLeft": {},
+  "scenarioCommandTurnRight": "Turn right",
+  "@scenarioCommandTurnRight": {},
+  "scenarioCommandClimb": "Climb",
+  "@scenarioCommandClimb": {},
+  "scenarioCommandDescend": "Descend",
+  "@scenarioCommandDescend": {},
+  "scenarioCommandSlow": "Slow",
+  "@scenarioCommandSlow": {},
+  "scenarioCommandFast": "Fast",
+  "@scenarioCommandFast": {},
+  "scenarioCommandOn": "{command} on {callsign}",
+  "@scenarioCommandOn": {
+    "placeholders": {
+      "command": {"type": "String"},
+      "callsign": {"type": "String"}
+    }
+  },
+  "radioSettingsTitle": "Pilot Radio Playback",
+  "@radioSettingsTitle": {},
+  "radioSettingsTooltip": "Radio audio settings",
+  "@radioSettingsTooltip": {},
+  "radioSettingsVoiceVolume": "Voice volume {percent}%",
+  "@radioSettingsVoiceVolume": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "radioSettingsWarningAudio": "Warning audio",
+  "@radioSettingsWarningAudio": {},
+  "radioSettingsSubtitles": "Radio subtitles",
+  "@radioSettingsSubtitles": {},
+  "radioSettingsReplayAudio": "Replay radio audio",
+  "@radioSettingsReplayAudio": {},
+  "replayComplete": "REPLAY COMPLETE",
+  "@replayComplete": {},
+  "replayToggleReplayRadio": "Replay radio",
+  "@replayToggleReplayRadio": {},
+  "replayToggleSubtitles": "Subtitles",
+  "@replayToggleSubtitles": {},
+  "replayLegendClosestApproach": "Closest approach",
+  "@replayLegendClosestApproach": {},
+  "replayLegendYourAction": "Your action",
+  "@replayLegendYourAction": {},
+  "replayActionLabel": "Action",
+  "@replayActionLabel": {},
+  "pilotAckTurningHeading": "{callsign} turning heading {heading}",
+  "@pilotAckTurningHeading": {
+    "placeholders": {
+      "callsign": {"type": "String"},
+      "heading": {"type": "String"}
+    }
+  },
+  "pilotAckClimbing": "{callsign} climbing {altitude}",
+  "@pilotAckClimbing": {
+    "placeholders": {
+      "callsign": {"type": "String"},
+      "altitude": {"type": "int"}
+    }
+  },
+  "pilotAckDescending": "{callsign} descending {altitude}",
+  "@pilotAckDescending": {
+    "placeholders": {
+      "callsign": {"type": "String"},
+      "altitude": {"type": "int"}
+    }
+  },
+  "pilotAckReducingSpeed": "{callsign} reducing speed {speed}",
+  "@pilotAckReducingSpeed": {
+    "placeholders": {
+      "callsign": {"type": "String"},
+      "speed": {"type": "int"}
+    }
+  },
+  "pilotAckIncreasingSpeed": "{callsign} increasing speed {speed}",
+  "@pilotAckIncreasingSpeed": {
+    "placeholders": {
+      "callsign": {"type": "String"},
+      "speed": {"type": "int"}
+    }
+  },
+  "pilotAckRoger": "{callsign} roger",
+  "@pilotAckRoger": {
+    "placeholders": {
+      "callsign": {"type": "String"}
+    }
+  },
 
   "radarTrainingBetaTitle": "Radar Training Beta",
   "@radarTrainingBetaTitle": {},
@@ -1387,5 +1477,72 @@
   "radarTrainingCascadeFactorRecoveryInterruption": "recovery interruption reduced confidence",
   "@radarTrainingCascadeFactorRecoveryInterruption": {},
   "radarTrainingCascadeFactorWeakTiming": "weak timing signal",
-  "@radarTrainingCascadeFactorWeakTiming": {}
+  "@radarTrainingCascadeFactorWeakTiming": {},
+
+  "onboardingTitle1": "Your job is simple.",
+  "@onboardingTitle1": {},
+  "onboardingBody1": "Keep aircraft safely separated.",
+  "@onboardingBody1": {},
+  "onboardingTitle2": "Control aircraft.",
+  "@onboardingTitle2": {},
+  "onboardingBody2": "Tap an aircraft on the radar,\nthen give a heading or altitude command.",
+  "@onboardingBody2": {},
+  "onboardingTitle3": "Avoid conflicts.",
+  "@onboardingTitle3": {},
+  "onboardingBody3": "If aircraft get too close, separation is lost\nand you lose points.",
+  "@onboardingBody3": {},
+  "onboardingTitle4": "Think ahead.",
+  "@onboardingTitle4": {},
+  "onboardingBody4": "Earlier decisions = safer skies.\nAct before the warning triggers.",
+  "@onboardingBody4": {},
+  "onboardingSkip": "Skip",
+  "@onboardingSkip": {},
+  "onboardingStartTraining": "Start Training",
+  "@onboardingStartTraining": {},
+  "scenarioResultRestartReplay": "Restart replay",
+  "@scenarioResultRestartReplay": {},
+  "scenarioResultViewLabel": "View:",
+  "@scenarioResultViewLabel": {},
+  "scenarioResultViewActual": "Actual",
+  "@scenarioResultViewActual": {},
+  "scenarioResultViewIdeal": "Ideal",
+  "@scenarioResultViewIdeal": {},
+  "scenarioResultEarlierActionHint": "(earlier action)",
+  "@scenarioResultEarlierActionHint": {},
+  "scenarioViewFullDebrief": "View Full Debrief",
+  "@scenarioViewFullDebrief": {},
+  "homeCardRadarTrainingBetaSub": "Internal tester flow",
+  "@homeCardRadarTrainingBetaSub": {},
+
+  "scenarioHowToImprove": "How to Improve",
+  "@scenarioHowToImprove": {},
+  "scenarioPointsAbbrev": "pts",
+  "@scenarioPointsAbbrev": {},
+  "scenarioBetterAlternative": "BETTER ALTERNATIVE",
+  "@scenarioBetterAlternative": {},
+  "scenarioProjectedLabel": "Projected",
+  "@scenarioProjectedLabel": {},
+  "scenarioSafeShort": "Safe",
+  "@scenarioSafeShort": {},
+  "scenarioStillTight": "Still tight",
+  "@scenarioStillTight": {},
+  "scenarioThresholdPx": "threshold {value} px",
+  "@scenarioThresholdPx": {"placeholders": {"value": {"type": "int"}}},
+  "scenarioThresholdFt": "threshold {value} ft",
+  "@scenarioThresholdFt": {"placeholders": {"value": {"type": "int"}}},
+  "scenarioImprovedVsLastAttempt": "↑ Improved vs last attempt  (+{delta} pts)",
+  "@scenarioImprovedVsLastAttempt": {"placeholders": {"delta": {"type": "int"}}},
+  "scenarioSameScoreAsLastAttempt": "Same score as last attempt",
+  "@scenarioSameScoreAsLastAttempt": {},
+  "scenarioLowerThanLastAttempt": "↓ {delta} pts lower than last attempt  - keep practising",
+  "@scenarioLowerThanLastAttempt": {"placeholders": {"delta": {"type": "int"}}},
+
+  "radarTrainingPilotDelayFollowThrough": "Delayed acknowledgement increased follow-through time.",
+  "@radarTrainingPilotDelayFollowThrough": {},
+  "radarTrainingRunwayRecoveryWindowExtended": "Runway occupancy extended the recovery window.",
+  "@radarTrainingRunwayRecoveryWindowExtended": {},
+  "radarTrainingWeatherMergeCompression": "Weather compressed spacing near the merge.",
+  "@radarTrainingWeatherMergeCompression": {},
+  "radarTrainingLateSpeedControlClosureRate": "Late speed control allowed closure rate to build.",
+  "@radarTrainingLateSpeedControlClosureRate": {}
 }

@@ -149,9 +149,10 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     // Build replay data snapshot for optional 3D replay
     final cmdType = _engine.firstCommandType;
     final cmdCs = _engine.firstCommandCallsign;
+    final l10n = AppLocalizations.of(context)!;
     final cmdSummary = cmdCs.isEmpty
-        ? 'No command issued'
-        : '${_commandLabel(cmdType)} on $cmdCs';
+        ? l10n.scenarioNoCommandIssued
+        : l10n.scenarioCommandOn(_commandLabel(l10n, cmdType), cmdCs);
 
     final replay = ScenarioReplayData(
       scenarioId: _scenario.id,
@@ -260,6 +261,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   }
 
   void _enqueuePilotAck(String callsign, String command) {
+    final l10n = AppLocalizations.of(context)!;
     final current = _engine.aircraft.firstWhere(
       (a) => a.callsign == callsign,
       orElse: () => _engine.aircraft.first,
@@ -270,13 +272,13 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     final altitudeFt = current.altitude * 100;
 
     final text = switch (command) {
-      'left' => '$callsign turning heading $headingText',
-      'right' => '$callsign turning heading $headingText',
-      'climb' => '$callsign climbing $altitudeFt',
-      'descend' => '$callsign descending $altitudeFt',
-      'slow' => '$callsign reducing speed $speedText',
-      'fast' => '$callsign increasing speed $speedText',
-      _ => '$callsign roger',
+      'left' => l10n.pilotAckTurningHeading(callsign, headingText),
+      'right' => l10n.pilotAckTurningHeading(callsign, headingText),
+      'climb' => l10n.pilotAckClimbing(callsign, altitudeFt),
+      'descend' => l10n.pilotAckDescending(callsign, altitudeFt),
+      'slow' => l10n.pilotAckReducingSpeed(callsign, speedText),
+      'fast' => l10n.pilotAckIncreasingSpeed(callsign, speedText),
+      _ => l10n.pilotAckRoger(callsign),
     };
 
     _pilotRadioEvents.add(
@@ -330,20 +332,20 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
 
   // ── Skill label ───────────────────────────────────────────────────────────
   // Human-readable command name for replay summary
-  static String _commandLabel(String cmd) {
+  static String _commandLabel(AppLocalizations l10n, String cmd) {
     switch (cmd) {
       case 'left':
-        return 'Turn left';
+        return l10n.scenarioCommandTurnLeft;
       case 'right':
-        return 'Turn right';
+        return l10n.scenarioCommandTurnRight;
       case 'climb':
-        return 'Climb';
+        return l10n.scenarioCommandClimb;
       case 'descend':
-        return 'Descend';
+        return l10n.scenarioCommandDescend;
       case 'slow':
-        return 'Slow';
+        return l10n.scenarioCommandSlow;
       case 'fast':
-        return 'Fast';
+        return l10n.scenarioCommandFast;
       default:
         return cmd;
     }
@@ -384,14 +386,15 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Pilot Radio Playback',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    Text(
+                      AppLocalizations.of(context)!.radioSettingsTitle,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Voice volume ${(s.voiceVolume * 100).round()}%',
+                      AppLocalizations.of(context)!.radioSettingsVoiceVolume(
+                          (s.voiceVolume * 100).round()),
                       style: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     Slider(
@@ -403,19 +406,22 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Warning audio'),
+                      title: Text(AppLocalizations.of(context)!
+                          .radioSettingsWarningAudio),
                       value: s.warningsEnabled,
                       onChanged: (v) => _audioSettings.setWarningsEnabled(v),
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Radio subtitles'),
+                      title: Text(
+                          AppLocalizations.of(context)!.radioSettingsSubtitles),
                       value: s.subtitlesEnabled,
                       onChanged: (v) => _audioSettings.setSubtitlesEnabled(v),
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Replay radio audio'),
+                      title: Text(AppLocalizations.of(context)!
+                          .radioSettingsReplayAudio),
                       value: s.replayAudioEnabled,
                       onChanged: (v) => _audioSettings.setReplayAudioEnabled(v),
                     ),
@@ -501,7 +507,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
             ),
           ),
           IconButton(
-            tooltip: 'Radio audio settings',
+            tooltip: l10n.radioSettingsTooltip,
             onPressed: _openAudioSettings,
             icon: const Icon(Icons.tune),
           ),

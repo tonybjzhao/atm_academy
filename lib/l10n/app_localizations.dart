@@ -3100,6 +3100,162 @@ abstract class AppLocalizations {
   /// **'SEPARATION MAINTAINED'**
   String get scenarioSafeResult;
 
+  /// No description provided for @scenarioNoCommandIssued.
+  ///
+  /// In en, this message translates to:
+  /// **'No command issued'**
+  String get scenarioNoCommandIssued;
+
+  /// No description provided for @scenarioCommandTurnLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn left'**
+  String get scenarioCommandTurnLeft;
+
+  /// No description provided for @scenarioCommandTurnRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn right'**
+  String get scenarioCommandTurnRight;
+
+  /// No description provided for @scenarioCommandClimb.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb'**
+  String get scenarioCommandClimb;
+
+  /// No description provided for @scenarioCommandDescend.
+  ///
+  /// In en, this message translates to:
+  /// **'Descend'**
+  String get scenarioCommandDescend;
+
+  /// No description provided for @scenarioCommandSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow'**
+  String get scenarioCommandSlow;
+
+  /// No description provided for @scenarioCommandFast.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get scenarioCommandFast;
+
+  /// No description provided for @scenarioCommandOn.
+  ///
+  /// In en, this message translates to:
+  /// **'{command} on {callsign}'**
+  String scenarioCommandOn(String command, String callsign);
+
+  /// No description provided for @radioSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot Radio Playback'**
+  String get radioSettingsTitle;
+
+  /// No description provided for @radioSettingsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Radio audio settings'**
+  String get radioSettingsTooltip;
+
+  /// No description provided for @radioSettingsVoiceVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice volume {percent}%'**
+  String radioSettingsVoiceVolume(int percent);
+
+  /// No description provided for @radioSettingsWarningAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning audio'**
+  String get radioSettingsWarningAudio;
+
+  /// No description provided for @radioSettingsSubtitles.
+  ///
+  /// In en, this message translates to:
+  /// **'Radio subtitles'**
+  String get radioSettingsSubtitles;
+
+  /// No description provided for @radioSettingsReplayAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay radio audio'**
+  String get radioSettingsReplayAudio;
+
+  /// No description provided for @replayComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'REPLAY COMPLETE'**
+  String get replayComplete;
+
+  /// No description provided for @replayToggleReplayRadio.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay radio'**
+  String get replayToggleReplayRadio;
+
+  /// No description provided for @replayToggleSubtitles.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitles'**
+  String get replayToggleSubtitles;
+
+  /// No description provided for @replayLegendClosestApproach.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest approach'**
+  String get replayLegendClosestApproach;
+
+  /// No description provided for @replayLegendYourAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Your action'**
+  String get replayLegendYourAction;
+
+  /// No description provided for @replayActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get replayActionLabel;
+
+  /// No description provided for @pilotAckTurningHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'{callsign} turning heading {heading}'**
+  String pilotAckTurningHeading(String callsign, String heading);
+
+  /// No description provided for @pilotAckClimbing.
+  ///
+  /// In en, this message translates to:
+  /// **'{callsign} climbing {altitude}'**
+  String pilotAckClimbing(String callsign, int altitude);
+
+  /// No description provided for @pilotAckDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'{callsign} descending {altitude}'**
+  String pilotAckDescending(String callsign, int altitude);
+
+  /// No description provided for @pilotAckReducingSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'{callsign} reducing speed {speed}'**
+  String pilotAckReducingSpeed(String callsign, int speed);
+
+  /// No description provided for @pilotAckIncreasingSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'{callsign} increasing speed {speed}'**
+  String pilotAckIncreasingSpeed(String callsign, int speed);
+
+  /// No description provided for @pilotAckRoger.
+  ///
+  /// In en, this message translates to:
+  /// **'{callsign} roger'**
+  String pilotAckRoger(String callsign);
+
   /// No description provided for @radarTrainingBetaTitle.
   ///
   /// In en, this message translates to:
@@ -4120,6 +4276,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'weak timing signal'**
   String get radarTrainingCascadeFactorWeakTiming;
+
+  /// No description provided for @onboardingTitle1.
+  ///
+  /// In en, this message translates to:
+  /// **'Your job is simple.'**
+  String get onboardingTitle1;
+
+  /// No description provided for @onboardingBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep aircraft safely separated.'**
+  String get onboardingBody1;
+
+  /// No description provided for @onboardingTitle2.
+  ///
+  /// In en, this message translates to:
+  /// **'Control aircraft.'**
+  String get onboardingTitle2;
+
+  /// No description provided for @onboardingBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an aircraft on the radar,\nthen give a heading or altitude command.'**
+  String get onboardingBody2;
+
+  /// No description provided for @onboardingTitle3.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid conflicts.'**
+  String get onboardingTitle3;
+
+  /// No description provided for @onboardingBody3.
+  ///
+  /// In en, this message translates to:
+  /// **'If aircraft get too close, separation is lost\nand you lose points.'**
+  String get onboardingBody3;
+
+  /// No description provided for @onboardingTitle4.
+  ///
+  /// In en, this message translates to:
+  /// **'Think ahead.'**
+  String get onboardingTitle4;
+
+  /// No description provided for @onboardingBody4.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier decisions = safer skies.\nAct before the warning triggers.'**
+  String get onboardingBody4;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingStartTraining.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Training'**
+  String get onboardingStartTraining;
+
+  /// No description provided for @scenarioResultRestartReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart replay'**
+  String get scenarioResultRestartReplay;
+
+  /// No description provided for @scenarioResultViewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View:'**
+  String get scenarioResultViewLabel;
+
+  /// No description provided for @scenarioResultViewActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get scenarioResultViewActual;
+
+  /// No description provided for @scenarioResultViewIdeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Ideal'**
+  String get scenarioResultViewIdeal;
+
+  /// No description provided for @scenarioResultEarlierActionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'(earlier action)'**
+  String get scenarioResultEarlierActionHint;
+
+  /// No description provided for @scenarioViewFullDebrief.
+  ///
+  /// In en, this message translates to:
+  /// **'View Full Debrief'**
+  String get scenarioViewFullDebrief;
+
+  /// No description provided for @homeCardRadarTrainingBetaSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal tester flow'**
+  String get homeCardRadarTrainingBetaSub;
+
+  /// No description provided for @scenarioHowToImprove.
+  ///
+  /// In en, this message translates to:
+  /// **'How to Improve'**
+  String get scenarioHowToImprove;
+
+  /// No description provided for @scenarioPointsAbbrev.
+  ///
+  /// In en, this message translates to:
+  /// **'pts'**
+  String get scenarioPointsAbbrev;
+
+  /// No description provided for @scenarioBetterAlternative.
+  ///
+  /// In en, this message translates to:
+  /// **'BETTER ALTERNATIVE'**
+  String get scenarioBetterAlternative;
+
+  /// No description provided for @scenarioProjectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Projected'**
+  String get scenarioProjectedLabel;
+
+  /// No description provided for @scenarioSafeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe'**
+  String get scenarioSafeShort;
+
+  /// No description provided for @scenarioStillTight.
+  ///
+  /// In en, this message translates to:
+  /// **'Still tight'**
+  String get scenarioStillTight;
+
+  /// No description provided for @scenarioThresholdPx.
+  ///
+  /// In en, this message translates to:
+  /// **'threshold {value} px'**
+  String scenarioThresholdPx(int value);
+
+  /// No description provided for @scenarioThresholdFt.
+  ///
+  /// In en, this message translates to:
+  /// **'threshold {value} ft'**
+  String scenarioThresholdFt(int value);
+
+  /// No description provided for @scenarioImprovedVsLastAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'↑ Improved vs last attempt  (+{delta} pts)'**
+  String scenarioImprovedVsLastAttempt(int delta);
+
+  /// No description provided for @scenarioSameScoreAsLastAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Same score as last attempt'**
+  String get scenarioSameScoreAsLastAttempt;
+
+  /// No description provided for @scenarioLowerThanLastAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'↓ {delta} pts lower than last attempt  - keep practising'**
+  String scenarioLowerThanLastAttempt(int delta);
+
+  /// No description provided for @radarTrainingPilotDelayFollowThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Delayed acknowledgement increased follow-through time.'**
+  String get radarTrainingPilotDelayFollowThrough;
+
+  /// No description provided for @radarTrainingRunwayRecoveryWindowExtended.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway occupancy extended the recovery window.'**
+  String get radarTrainingRunwayRecoveryWindowExtended;
+
+  /// No description provided for @radarTrainingWeatherMergeCompression.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather compressed spacing near the merge.'**
+  String get radarTrainingWeatherMergeCompression;
+
+  /// No description provided for @radarTrainingLateSpeedControlClosureRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Late speed control allowed closure rate to build.'**
+  String get radarTrainingLateSpeedControlClosureRate;
 }
 
 class _AppLocalizationsDelegate

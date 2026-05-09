@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import '../models/replay_event.dart';
 import '../models/scenario_result.dart';
 
@@ -7,9 +8,9 @@ import '../models/scenario_result.dart';
 /// Exposes [progressNotifier] so [RadarReplayView] can stay in sync.
 class ReplayTimeline extends StatelessWidget {
   final DetailedScenarioResult result;
-  final ValueNotifier<double>  progressNotifier; // 0→1
+  final ValueNotifier<double> progressNotifier; // 0→1
   final bool isPlaying;
-  final int  speedMultiplier; // 1 | 2 | 4
+  final int speedMultiplier; // 1 | 2 | 4
   final VoidCallback onPlayPause;
   final VoidCallback onCycleSpeed;
 
@@ -25,6 +26,7 @@ class ReplayTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ValueListenableBuilder<double>(
       valueListenable: progressNotifier,
       builder: (_, t, __) => Column(
@@ -39,7 +41,10 @@ class ReplayTimeline extends StatelessWidget {
                 children: [
                   // Track background
                   Positioned(
-                    top: 10, left: 0, right: 0, height: 4,
+                    top: 10,
+                    left: 0,
+                    right: 0,
+                    height: 4,
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppTheme.surface,
@@ -49,7 +54,10 @@ class ReplayTimeline extends StatelessWidget {
                   ),
                   // Progress fill
                   Positioned(
-                    top: 10, left: 0, width: w * t, height: 4,
+                    top: 10,
+                    left: 0,
+                    width: w * t,
+                    height: 4,
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppTheme.primary,
@@ -70,11 +78,13 @@ class ReplayTimeline extends StatelessWidget {
                     left: (w * t - 6).clamp(0, w - 12),
                     child: GestureDetector(
                       onHorizontalDragUpdate: (d) {
-                        final frac = ((d.localPosition.dx + w * t) / w).clamp(0.0, 1.0);
+                        final frac =
+                            ((d.localPosition.dx + w * t) / w).clamp(0.0, 1.0);
                         progressNotifier.value = frac;
                       },
                       child: Container(
-                        width: 12, height: 16,
+                        width: 12,
+                        height: 16,
                         decoration: BoxDecoration(
                           color: AppTheme.primary,
                           borderRadius: BorderRadius.circular(3),
@@ -104,14 +114,16 @@ class ReplayTimeline extends StatelessWidget {
               Text(
                 '${(t * result.totalDurationSeconds).toStringAsFixed(1)} / '
                 '${result.totalDurationSeconds.toStringAsFixed(0)} s',
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                style: const TextStyle(
+                    color: AppTheme.textSecondary, fontSize: 10),
               ),
 
               // Speed selector
               GestureDetector(
                 onTap: onCycleSpeed,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppTheme.surface,
                     borderRadius: BorderRadius.circular(6),
@@ -134,12 +146,18 @@ class ReplayTimeline extends StatelessWidget {
 
           // ── Legend ────────────────────────────────────────────────────────
           Row(
-            children: const [
-              _LegendDot(color: Color(0xFFFF1744), label: 'Conflict'),
-              SizedBox(width: 12),
-              _LegendDot(color: Colors.yellowAccent, label: 'Your action'),
-              SizedBox(width: 12),
-              _LegendDot(color: Color(0xFF00E676), label: 'Resolved'),
+            children: [
+              _LegendDot(
+                  color: const Color(0xFFFF1744),
+                  label: l10n.replayLegendClosestApproach),
+              const SizedBox(width: 12),
+              _LegendDot(
+                  color: Colors.yellowAccent,
+                  label: l10n.replayLegendYourAction),
+              const SizedBox(width: 12),
+              _LegendDot(
+                  color: const Color(0xFF00E676),
+                  label: l10n.scoreRowResolvedEarly),
             ],
           ),
         ],
@@ -163,13 +181,18 @@ class _EventMarker extends StatelessWidget {
 
   Color get _color {
     switch (event.eventType) {
-      case ReplayEventType.separationLoss:       return AppTheme.danger;
-      case ReplayEventType.conflictWarning:      return AppTheme.warning;
+      case ReplayEventType.separationLoss:
+        return AppTheme.danger;
+      case ReplayEventType.conflictWarning:
+        return AppTheme.warning;
       case ReplayEventType.userVector:
       case ReplayEventType.userAltitudeChange:
-      case ReplayEventType.userSpeedChange:      return Colors.yellowAccent;
-      case ReplayEventType.recovered:            return AppTheme.primary;
-      default:                                   return AppTheme.textSecondary;
+      case ReplayEventType.userSpeedChange:
+        return Colors.yellowAccent;
+      case ReplayEventType.recovered:
+        return AppTheme.primary;
+      default:
+        return AppTheme.textSecondary;
     }
   }
 
@@ -182,7 +205,8 @@ class _EventMarker extends StatelessWidget {
       child: Tooltip(
         message: event.label ?? event.eventType.name,
         child: Container(
-          width: 10, height: 10,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: _color,
@@ -196,9 +220,10 @@ class _EventMarker extends StatelessWidget {
 
 class _CtrlBtn extends StatelessWidget {
   final IconData icon;
-  final Color    color;
+  final Color color;
   final VoidCallback onTap;
-  const _CtrlBtn({required this.icon, required this.color, required this.onTap});
+  const _CtrlBtn(
+      {required this.icon, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -216,7 +241,7 @@ class _CtrlBtn extends StatelessWidget {
 }
 
 class _LegendDot extends StatelessWidget {
-  final Color  color;
+  final Color color;
   final String label;
   const _LegendDot({required this.color, required this.label});
 
@@ -224,10 +249,14 @@ class _LegendDot extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 7, height: 7,
+          Container(
+              width: 7,
+              height: 7,
               decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+          Text(label,
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
         ],
       );
 }

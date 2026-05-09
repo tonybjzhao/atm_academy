@@ -1547,6 +1547,100 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scenarioSafeResult => '间隔维持';
 
   @override
+  String get scenarioNoCommandIssued => '未下达指令';
+
+  @override
+  String get scenarioCommandTurnLeft => '左转';
+
+  @override
+  String get scenarioCommandTurnRight => '右转';
+
+  @override
+  String get scenarioCommandClimb => '爬升';
+
+  @override
+  String get scenarioCommandDescend => '下降';
+
+  @override
+  String get scenarioCommandSlow => '减速';
+
+  @override
+  String get scenarioCommandFast => '加速';
+
+  @override
+  String scenarioCommandOn(String command, String callsign) {
+    return '对 $callsign 执行$command';
+  }
+
+  @override
+  String get radioSettingsTitle => '飞行员无线电回放';
+
+  @override
+  String get radioSettingsTooltip => '无线电音频设置';
+
+  @override
+  String radioSettingsVoiceVolume(int percent) {
+    return '语音音量 $percent%';
+  }
+
+  @override
+  String get radioSettingsWarningAudio => '警告音效';
+
+  @override
+  String get radioSettingsSubtitles => '无线电字幕';
+
+  @override
+  String get radioSettingsReplayAudio => '回放无线电音频';
+
+  @override
+  String get replayComplete => '回放完成';
+
+  @override
+  String get replayToggleReplayRadio => '回放无线电';
+
+  @override
+  String get replayToggleSubtitles => '字幕';
+
+  @override
+  String get replayLegendClosestApproach => '最近接近点';
+
+  @override
+  String get replayLegendYourAction => '你的操作';
+
+  @override
+  String get replayActionLabel => '操作';
+
+  @override
+  String pilotAckTurningHeading(String callsign, String heading) {
+    return '$callsign 转向航向 $heading';
+  }
+
+  @override
+  String pilotAckClimbing(String callsign, int altitude) {
+    return '$callsign 爬升至 $altitude';
+  }
+
+  @override
+  String pilotAckDescending(String callsign, int altitude) {
+    return '$callsign 下降至 $altitude';
+  }
+
+  @override
+  String pilotAckReducingSpeed(String callsign, int speed) {
+    return '$callsign 减速至 $speed';
+  }
+
+  @override
+  String pilotAckIncreasingSpeed(String callsign, int speed) {
+    return '$callsign 加速至 $speed';
+  }
+
+  @override
+  String pilotAckRoger(String callsign) {
+    return '$callsign 收到';
+  }
+
+  @override
   String get radarTrainingBetaTitle => '雷达训练测试版';
 
   @override
@@ -2089,4 +2183,108 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get radarTrainingCascadeFactorWeakTiming => '弱时间信号';
+
+  @override
+  String get onboardingTitle1 => '你的任务很简单。';
+
+  @override
+  String get onboardingBody1 => '确保航空器之间保持安全间隔。';
+
+  @override
+  String get onboardingTitle2 => '控制航空器。';
+
+  @override
+  String get onboardingBody2 => '在雷达上点击一架航空器，\n然后下达航向或高度指令。';
+
+  @override
+  String get onboardingTitle3 => '避免冲突。';
+
+  @override
+  String get onboardingBody3 => '如果航空器过于接近，将发生间隔丢失\n并扣分。';
+
+  @override
+  String get onboardingTitle4 => '提前思考。';
+
+  @override
+  String get onboardingBody4 => '越早决策，天空越安全。\n在警告触发前采取行动。';
+
+  @override
+  String get onboardingSkip => '跳过';
+
+  @override
+  String get onboardingStartTraining => '开始训练';
+
+  @override
+  String get scenarioResultRestartReplay => '重新播放';
+
+  @override
+  String get scenarioResultViewLabel => '视图：';
+
+  @override
+  String get scenarioResultViewActual => '实际';
+
+  @override
+  String get scenarioResultViewIdeal => '理想';
+
+  @override
+  String get scenarioResultEarlierActionHint => '（更早行动）';
+
+  @override
+  String get scenarioViewFullDebrief => '查看完整复盘';
+
+  @override
+  String get homeCardRadarTrainingBetaSub => '内部测试流程';
+
+  @override
+  String get scenarioHowToImprove => '如何改进';
+
+  @override
+  String get scenarioPointsAbbrev => '分';
+
+  @override
+  String get scenarioBetterAlternative => '更优方案';
+
+  @override
+  String get scenarioProjectedLabel => '预测';
+
+  @override
+  String get scenarioSafeShort => '安全';
+
+  @override
+  String get scenarioStillTight => '仍偏紧';
+
+  @override
+  String scenarioThresholdPx(int value) {
+    return '阈值 $value px';
+  }
+
+  @override
+  String scenarioThresholdFt(int value) {
+    return '阈值 $value ft';
+  }
+
+  @override
+  String scenarioImprovedVsLastAttempt(int delta) {
+    return '↑ 比上次更好（+$delta 分）';
+  }
+
+  @override
+  String get scenarioSameScoreAsLastAttempt => '与上次得分相同';
+
+  @override
+  String scenarioLowerThanLastAttempt(int delta) {
+    return '↓ 比上次低 $delta 分 - 继续练习';
+  }
+
+  @override
+  String get radarTrainingPilotDelayFollowThrough => '延迟确认导致后续执行时间增加。';
+
+  @override
+  String get radarTrainingRunwayRecoveryWindowExtended => '跑道占用延长了恢复窗口。';
+
+  @override
+  String get radarTrainingWeatherMergeCompression => '天气使汇合点附近的间隔被压缩。';
+
+  @override
+  String get radarTrainingLateSpeedControlClosureRate => '速度控制过晚导致闭合率上升。';
 }

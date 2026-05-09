@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import '../models/projected_outcome.dart';
 import '../models/scenario_result.dart';
 import '../models/score_penalty.dart';
@@ -14,8 +15,10 @@ class ScoreExplanationPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(14, 8, 14, MediaQuery.of(context).padding.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+          14, 8, 14, MediaQuery.of(context).padding.bottom + 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -28,7 +31,7 @@ class ScoreExplanationPanel extends StatelessWidget {
             _SectionTitle(
               icon: Icons.remove_circle_outline,
               color: AppTheme.danger,
-              text: 'Why You Lost Points',
+              text: l10n.scenarioPenalties,
             ),
             const SizedBox(height: 8),
             ...result.penalties.asMap().entries.map((e) {
@@ -45,7 +48,7 @@ class ScoreExplanationPanel extends StatelessWidget {
             _SectionTitle(
               icon: Icons.add_circle_outline,
               color: AppTheme.primary,
-              text: 'What You Did Well',
+              text: l10n.scenarioBonuses,
             ),
             const SizedBox(height: 8),
             ...result.bonuses.map((b) => _BonusCard(bonus: b)),
@@ -57,7 +60,7 @@ class ScoreExplanationPanel extends StatelessWidget {
             _SectionTitle(
               icon: Icons.lightbulb_outline,
               color: AppTheme.secondary,
-              text: 'How to Improve',
+              text: l10n.scenarioHowToImprove,
             ),
             const SizedBox(height: 8),
             Container(
@@ -66,7 +69,8 @@ class ScoreExplanationPanel extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppTheme.secondary.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.secondary.withValues(alpha: 0.3)),
+                border: Border.all(
+                    color: AppTheme.secondary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,15 +111,20 @@ class _ScoreHeader extends StatelessWidget {
 
   Color _gradeColor() {
     switch (result.grade) {
-      case ScenarioGrade.excellent:      return AppTheme.primary;
-      case ScenarioGrade.good:           return Colors.greenAccent;
-      case ScenarioGrade.needsPractice:  return AppTheme.warning;
-      case ScenarioGrade.reviewRequired: return AppTheme.danger;
+      case ScenarioGrade.excellent:
+        return AppTheme.primary;
+      case ScenarioGrade.good:
+        return Colors.greenAccent;
+      case ScenarioGrade.needsPractice:
+        return AppTheme.warning;
+      case ScenarioGrade.reviewRequired:
+        return AppTheme.danger;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final color = _gradeColor();
     return Container(
       padding: const EdgeInsets.all(14),
@@ -153,13 +162,19 @@ class _ScoreHeader extends StatelessWidget {
               children: [
                 Text(result.grade.label,
                     style: TextStyle(
-                        color: color, fontSize: 16, fontWeight: FontWeight.w800)),
-                Text('${result.finalScore} / ${result.maxScore} pts',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                        color: color,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800)),
+                Text(
+                    '${result.finalScore} / ${result.maxScore} ${l10n.scenarioPointsAbbrev}',
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 12)),
                 const SizedBox(height: 4),
                 Text(result.summaryText,
                     style: const TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 11, height: 1.4)),
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        height: 1.4)),
               ],
             ),
           ),
@@ -173,9 +188,10 @@ class _ScoreHeader extends StatelessWidget {
 
 class _SectionTitle extends StatelessWidget {
   final IconData icon;
-  final Color    color;
-  final String   text;
-  const _SectionTitle({required this.icon, required this.color, required this.text});
+  final Color color;
+  final String text;
+  const _SectionTitle(
+      {required this.icon, required this.color, required this.text});
 
   @override
   Widget build(BuildContext context) => Row(
@@ -184,8 +200,10 @@ class _SectionTitle extends StatelessWidget {
           const SizedBox(width: 6),
           Text(text,
               style: TextStyle(
-                  color: color, fontSize: 11,
-                  fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5)),
         ],
       );
 }
@@ -193,7 +211,7 @@ class _SectionTitle extends StatelessWidget {
 // ── Penalty card ───────────────────────────────────────────────────────────────
 
 class _PenaltyCard extends StatefulWidget {
-  final ScorePenalty     penalty;
+  final ScorePenalty penalty;
   final ProjectedOutcome? projected;
   const _PenaltyCard({required this.penalty, this.projected});
 
@@ -223,7 +241,8 @@ class _PenaltyCardState extends State<_PenaltyCard> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.danger.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(5),
@@ -231,18 +250,23 @@ class _PenaltyCardState extends State<_PenaltyCard> {
                   child: Text(
                     '−${p.pointsLost}',
                     style: const TextStyle(
-                        color: AppTheme.danger, fontSize: 11, fontWeight: FontWeight.w800),
+                        color: AppTheme.danger,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(p.title,
                       style: const TextStyle(
-                          color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                          color: AppTheme.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                 ),
                 if (p.timestampSeconds > 0)
                   Text('${p.timestampSeconds.toStringAsFixed(1)}s',
-                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+                      style: const TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 10)),
                 const SizedBox(width: 6),
                 Icon(_expanded ? Icons.expand_less : Icons.expand_more,
                     color: AppTheme.textSecondary, size: 16),
@@ -251,18 +275,24 @@ class _PenaltyCardState extends State<_PenaltyCard> {
             if (_expanded) ...[
               const SizedBox(height: 8),
               Text(p.explanation,
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11, height: 1.5)),
+                  style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 11,
+                      height: 1.5)),
               const SizedBox(height: 6),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.arrow_forward, color: AppTheme.secondary, size: 12),
+                  const Icon(Icons.arrow_forward,
+                      color: AppTheme.secondary, size: 12),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(p.recommendation,
                         style: const TextStyle(
-                            color: AppTheme.secondary, fontSize: 11,
-                            fontStyle: FontStyle.italic, height: 1.4)),
+                            color: AppTheme.secondary,
+                            fontSize: 11,
+                            fontStyle: FontStyle.italic,
+                            height: 1.4)),
                   ),
                 ],
               ),
@@ -270,7 +300,10 @@ class _PenaltyCardState extends State<_PenaltyCard> {
               // ── Better Alternative ────────────────────────────────────────
               if (widget.projected != null) ...[
                 const SizedBox(height: 10),
-                _BetterAlternative(outcome: widget.projected!),
+                _BetterAlternative(
+                  outcome: widget.projected!,
+                  localizations: AppLocalizations.of(context)!,
+                ),
               ],
             ],
           ],
@@ -284,7 +317,10 @@ class _PenaltyCardState extends State<_PenaltyCard> {
 
 class _BetterAlternative extends StatelessWidget {
   final ProjectedOutcome outcome;
-  const _BetterAlternative({required this.outcome});
+  final AppLocalizations localizations;
+
+  const _BetterAlternative(
+      {required this.outcome, required this.localizations});
 
   @override
   Widget build(BuildContext context) {
@@ -306,8 +342,8 @@ class _BetterAlternative extends StatelessWidget {
           Row(children: [
             const Icon(Icons.lightbulb, color: AppTheme.primary, size: 12),
             const SizedBox(width: 5),
-            const Text(
-              'BETTER ALTERNATIVE',
+            Text(
+              localizations.scenarioBetterAlternative,
               style: TextStyle(
                 color: AppTheme.primary,
                 fontSize: 9,
@@ -354,13 +390,16 @@ class _BetterAlternative extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      resolved ? Icons.check_circle_outline : Icons.warning_amber_outlined,
-                      color: sepColor, size: 11,
+                      resolved
+                          ? Icons.check_circle_outline
+                          : Icons.warning_amber_outlined,
+                      color: sepColor,
+                      size: 11,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Projected: ${outcome.projectedSeparation.toStringAsFixed(0)} px  '
-                      '${resolved ? "✓ Safe" : "⚠ Still tight"}',
+                      '${localizations.scenarioProjectedLabel}: ${outcome.projectedSeparation.toStringAsFixed(0)} px  '
+                      '${resolved ? "✓ ${localizations.scenarioSafeShort}" : "⚠ ${localizations.scenarioStillTight}"}',
                       style: TextStyle(
                         color: sepColor,
                         fontSize: 10,
@@ -416,7 +455,9 @@ class _BonusCard extends StatelessWidget {
               child: Text(
                 '+${bonus.pointsGained}',
                 style: const TextStyle(
-                    color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.w800),
+                    color: AppTheme.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800),
               ),
             ),
             const SizedBox(width: 8),
@@ -426,9 +467,14 @@ class _BonusCard extends StatelessWidget {
                 children: [
                   Text(bonus.title,
                       style: const TextStyle(
-                          color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                          color: AppTheme.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                   Text(bonus.explanation,
-                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11, height: 1.4)),
+                      style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                          height: 1.4)),
                 ],
               ),
             ),

@@ -7,7 +7,8 @@ class RadarTrainingTextLocalizer {
     final text = input.trim();
     if (text.isEmpty) return text;
 
-    final timelineOverload = RegExp(r'^Overload lasted (\d+)s$').firstMatch(text);
+    final timelineOverload =
+        RegExp(r'^Overload lasted (\d+)s$').firstMatch(text);
     if (timelineOverload != null) {
       return l10n.radarTrainingTimelineOverload(
         int.parse(timelineOverload.group(1)!),
@@ -30,13 +31,15 @@ class RadarTrainingTextLocalizer {
       );
     }
 
-    final rootSurprise = RegExp(r'^Root surprise event: (.+)\.$').firstMatch(text);
+    final rootSurprise =
+        RegExp(r'^Root surprise event: (.+)\.$').firstMatch(text);
     if (rootSurprise != null) {
       return l10n.radarTrainingRootSurpriseEvent(rootSurprise.group(1)!);
     }
 
     final recoveredTasks =
-        RegExp(r'^Recovered tasks: (\d+); unrecovered: (\d+)\.$').firstMatch(text);
+        RegExp(r'^Recovered tasks: (\d+); unrecovered: (\d+)\.$')
+            .firstMatch(text);
     if (recoveredTasks != null) {
       return l10n.radarTrainingRecoveredTasks(
         int.parse(recoveredTasks.group(1)!),
@@ -70,10 +73,11 @@ class RadarTrainingTextLocalizer {
           ? ' ${l10n.radarTrainingCascadeEvidenceRecoveryWeakens}'
           : '';
       return l10n.radarTrainingCascadeEvidenceContributed(
-        fromLabel,
-        toLabel,
-        localizedFactor,
-      ) + recoveryPart;
+            fromLabel,
+            toLabel,
+            localizedFactor,
+          ) +
+          recoveryPart;
     }
 
     final conflictLateResolution = RegExp(
@@ -83,9 +87,9 @@ class RadarTrainingTextLocalizer {
       return l10n.radarTrainingCascadeLateResolution;
     }
 
-    final workloadCompetition = RegExp(
-            r'^Workload rose as unresolved alerts and commands competed\.$')
-        .firstMatch(text);
+    final workloadCompetition =
+        RegExp(r'^Workload rose as unresolved alerts and commands competed\.$')
+            .firstMatch(text);
     if (workloadCompetition != null) {
       return l10n.radarTrainingCascadeWorkloadCompetition;
     }
@@ -110,8 +114,7 @@ class RadarTrainingTextLocalizer {
           'radarTrainingTimelineExpectationDrift',
       'Traffic remained inside planned operating limits':
           'radarTrainingTimelineStable',
-      'No radio cadence sample available.':
-          'radarTrainingNoRadioCadenceSample',
+      'No radio cadence sample available.': 'radarTrainingNoRadioCadenceSample',
       'No timely readbacks captured (all beyond 12s).':
           'radarTrainingNoTimelyReadbacks',
       'Traffic flow remained stable with no major debrief item.':
@@ -121,6 +124,14 @@ class RadarTrainingTextLocalizer {
       'No major replay markers captured.': 'radarTrainingNoMajorReplayMarkers',
       'No cascade propagation detected in this replay.':
           'radarTrainingNoCascadePropagationDetected',
+      'Delayed acknowledgement increased follow-through time.':
+          'radarTrainingPilotDelayFollowThrough',
+      'Runway occupancy extended the recovery window.':
+          'radarTrainingRunwayRecoveryWindowExtended',
+      'Weather compressed spacing near the merge.':
+          'radarTrainingWeatherMergeCompression',
+      'Late speed control allowed closure rate to build.':
+          'radarTrainingLateSpeedControlClosureRate',
       'Primary propagation chain': 'radarTrainingPrimaryPropagationChain',
       'Top mistake': 'radarTrainingTopMistake',
       'Best recovery': 'radarTrainingBestRecovery',
@@ -163,7 +174,8 @@ class RadarTrainingTextLocalizer {
       'Fixation risk': 'radarTrainingLabelFixationRisk',
       'Scan narrowing': 'radarTrainingLabelScanNarrowing',
       'Confidence collapse': 'radarTrainingLabelConfidenceCollapse',
-      'Self-assessment divergence': 'radarTrainingLabelSelfAssessmentDivergence',
+      'Self-assessment divergence':
+          'radarTrainingLabelSelfAssessmentDivergence',
     };
 
     final method = directMap[text];
@@ -304,6 +316,14 @@ class RadarTrainingTextLocalizer {
         return l10n.radarTrainingNoMajorReplayMarkers;
       case 'radarTrainingNoCascadePropagationDetected':
         return l10n.radarTrainingNoCascadePropagationDetected;
+      case 'radarTrainingPilotDelayFollowThrough':
+        return l10n.radarTrainingPilotDelayFollowThrough;
+      case 'radarTrainingRunwayRecoveryWindowExtended':
+        return l10n.radarTrainingRunwayRecoveryWindowExtended;
+      case 'radarTrainingWeatherMergeCompression':
+        return l10n.radarTrainingWeatherMergeCompression;
+      case 'radarTrainingLateSpeedControlClosureRate':
+        return l10n.radarTrainingLateSpeedControlClosureRate;
       case 'radarTrainingPrimaryPropagationChain':
         return l10n.radarTrainingPrimaryPropagationChain;
       case 'radarTrainingTopMistake':

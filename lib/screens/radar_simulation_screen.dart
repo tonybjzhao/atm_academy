@@ -214,19 +214,20 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
   }
 
   void _enqueuePilotAck(Aircraft a, String command) {
+    final l10n = AppLocalizations.of(context)!;
     final heading = a.heading.round() % 360;
     final headingText = heading.toString().padLeft(3, '0');
     final speedText = (a.speed * 200).round();
     final altitudeFt = a.altitude * 100;
 
     final text = switch (command) {
-      'left' => '${a.callsign} turning heading $headingText',
-      'right' => '${a.callsign} turning heading $headingText',
-      'climb' => '${a.callsign} climbing $altitudeFt',
-      'descend' => '${a.callsign} descending $altitudeFt',
-      'slow' => '${a.callsign} reducing speed $speedText',
-      'fast' => '${a.callsign} increasing speed $speedText',
-      _ => '${a.callsign} roger',
+      'left' => l10n.pilotAckTurningHeading(a.callsign, headingText),
+      'right' => l10n.pilotAckTurningHeading(a.callsign, headingText),
+      'climb' => l10n.pilotAckClimbing(a.callsign, altitudeFt),
+      'descend' => l10n.pilotAckDescending(a.callsign, altitudeFt),
+      'slow' => l10n.pilotAckReducingSpeed(a.callsign, speedText),
+      'fast' => l10n.pilotAckIncreasingSpeed(a.callsign, speedText),
+      _ => l10n.pilotAckRoger(a.callsign),
     };
     _radioAudio.enqueuePilotAck(callsign: a.callsign, spokenText: text);
   }
@@ -427,7 +428,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
             ),
           ),
           IconButton(
-            tooltip: 'Radio audio settings',
+            tooltip: l10n.radioSettingsTooltip,
             onPressed: _openAudioSettings,
             icon: const Icon(Icons.tune),
           ),
@@ -781,14 +782,15 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Pilot Radio Playback',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    Text(
+                      AppLocalizations.of(context)!.radioSettingsTitle,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Voice volume ${(s.voiceVolume * 100).round()}%',
+                      AppLocalizations.of(context)!.radioSettingsVoiceVolume(
+                          (s.voiceVolume * 100).round()),
                       style: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     Slider(
@@ -800,19 +802,22 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Warning audio'),
+                      title: Text(AppLocalizations.of(context)!
+                          .radioSettingsWarningAudio),
                       value: s.warningsEnabled,
                       onChanged: (v) => _audioSettings.setWarningsEnabled(v),
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Radio subtitles'),
+                      title: Text(
+                          AppLocalizations.of(context)!.radioSettingsSubtitles),
                       value: s.subtitlesEnabled,
                       onChanged: (v) => _audioSettings.setSubtitlesEnabled(v),
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Replay radio audio'),
+                      title: Text(AppLocalizations.of(context)!
+                          .radioSettingsReplayAudio),
                       value: s.replayAudioEnabled,
                       onChanged: (v) => _audioSettings.setReplayAudioEnabled(v),
                     ),

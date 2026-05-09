@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 
 const _onboardingKey = 'hasSeenOnboarding';
 
@@ -16,33 +17,33 @@ Future<void> markOnboardingSeen() async {
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
-const _pages = [
-  _Page(
-    icon: Icons.airplanemode_active,
-    title: 'Your job is simple.',
-    body: 'Keep aircraft safely separated.',
-  ),
-  _Page(
-    icon: Icons.touch_app_outlined,
-    title: 'Control aircraft.',
-    body: 'Tap an aircraft on the radar,\nthen give a heading or altitude command.',
-  ),
-  _Page(
-    icon: Icons.warning_amber_outlined,
-    title: 'Avoid conflicts.',
-    body: 'If aircraft get too close, separation is lost\nand you lose points.',
-  ),
-  _Page(
-    icon: Icons.timer_outlined,
-    title: 'Think ahead.',
-    body: 'Earlier decisions = safer skies.\nAct before the warning triggers.',
-  ),
-];
+List<_Page> _pages(AppLocalizations l10n) => [
+      _Page(
+        icon: Icons.airplanemode_active,
+        title: l10n.onboardingTitle1,
+        body: l10n.onboardingBody1,
+      ),
+      _Page(
+        icon: Icons.touch_app_outlined,
+        title: l10n.onboardingTitle2,
+        body: l10n.onboardingBody2,
+      ),
+      _Page(
+        icon: Icons.warning_amber_outlined,
+        title: l10n.onboardingTitle3,
+        body: l10n.onboardingBody3,
+      ),
+      _Page(
+        icon: Icons.timer_outlined,
+        title: l10n.onboardingTitle4,
+        body: l10n.onboardingBody4,
+      ),
+    ];
 
 class _Page {
   final IconData icon;
-  final String   title;
-  final String   body;
+  final String title;
+  final String body;
   const _Page({required this.icon, required this.title, required this.body});
 }
 
@@ -63,7 +64,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _current = 0;
 
   void _next() {
-    if (_current < _pages.length - 1) {
+    final pageCount = _pages(AppLocalizations.of(context)!).length;
+    if (_current < pageCount - 1) {
       _ctrl.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -86,7 +88,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLast = _current == _pages.length - 1;
+    final l10n = AppLocalizations.of(context)!;
+    final pages = _pages(l10n);
+    final isLast = _current == pages.length - 1;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -98,9 +102,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         actions: [
           TextButton(
             onPressed: _finish,
-            child: const Text(
-              'Skip',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+            child: Text(
+              l10n.onboardingSkip,
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),
           ),
         ],
@@ -113,21 +118,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Expanded(
               child: PageView.builder(
                 controller: _ctrl,
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 onPageChanged: (i) => setState(() => _current = i),
-                itemBuilder: (_, i) => _PageView(page: _pages[i]),
+                itemBuilder: (_, i) => _PageView(page: pages[i]),
               ),
             ),
 
             // Dot indicator
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_pages.length, (i) {
+              children: List.generate(pages.length, (i) {
                 final active = i == _current;
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width:  active ? 22 : 7,
+                  width: active ? 22 : 7,
                   height: 7,
                   decoration: BoxDecoration(
                     color: active
@@ -156,7 +161,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
-                      isLast ? 'Start Training' : 'Next',
+                      isLast ? l10n.onboardingStartTraining : l10n.btnNext,
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w700),
                     ),

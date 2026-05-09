@@ -1694,6 +1694,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scenarioSafeResult => 'SEPARATION MAINTAINED';
 
   @override
+  String get scenarioNoCommandIssued => 'No command issued';
+
+  @override
+  String get scenarioCommandTurnLeft => 'Turn left';
+
+  @override
+  String get scenarioCommandTurnRight => 'Turn right';
+
+  @override
+  String get scenarioCommandClimb => 'Climb';
+
+  @override
+  String get scenarioCommandDescend => 'Descend';
+
+  @override
+  String get scenarioCommandSlow => 'Slow';
+
+  @override
+  String get scenarioCommandFast => 'Fast';
+
+  @override
+  String scenarioCommandOn(String command, String callsign) {
+    return '$command on $callsign';
+  }
+
+  @override
+  String get radioSettingsTitle => 'Pilot Radio Playback';
+
+  @override
+  String get radioSettingsTooltip => 'Radio audio settings';
+
+  @override
+  String radioSettingsVoiceVolume(int percent) {
+    return 'Voice volume $percent%';
+  }
+
+  @override
+  String get radioSettingsWarningAudio => 'Warning audio';
+
+  @override
+  String get radioSettingsSubtitles => 'Radio subtitles';
+
+  @override
+  String get radioSettingsReplayAudio => 'Replay radio audio';
+
+  @override
+  String get replayComplete => 'REPLAY COMPLETE';
+
+  @override
+  String get replayToggleReplayRadio => 'Replay radio';
+
+  @override
+  String get replayToggleSubtitles => 'Subtitles';
+
+  @override
+  String get replayLegendClosestApproach => 'Closest approach';
+
+  @override
+  String get replayLegendYourAction => 'Your action';
+
+  @override
+  String get replayActionLabel => 'Action';
+
+  @override
+  String pilotAckTurningHeading(String callsign, String heading) {
+    return '$callsign turning heading $heading';
+  }
+
+  @override
+  String pilotAckClimbing(String callsign, int altitude) {
+    return '$callsign climbing $altitude';
+  }
+
+  @override
+  String pilotAckDescending(String callsign, int altitude) {
+    return '$callsign descending $altitude';
+  }
+
+  @override
+  String pilotAckReducingSpeed(String callsign, int speed) {
+    return '$callsign reducing speed $speed';
+  }
+
+  @override
+  String pilotAckIncreasingSpeed(String callsign, int speed) {
+    return '$callsign increasing speed $speed';
+  }
+
+  @override
+  String pilotAckRoger(String callsign) {
+    return '$callsign roger';
+  }
+
+  @override
   String get radarTrainingBetaTitle => 'Radar Training Beta';
 
   @override
@@ -2283,4 +2377,115 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radarTrainingCascadeFactorWeakTiming => 'weak timing signal';
+
+  @override
+  String get onboardingTitle1 => 'Your job is simple.';
+
+  @override
+  String get onboardingBody1 => 'Keep aircraft safely separated.';
+
+  @override
+  String get onboardingTitle2 => 'Control aircraft.';
+
+  @override
+  String get onboardingBody2 =>
+      'Tap an aircraft on the radar,\nthen give a heading or altitude command.';
+
+  @override
+  String get onboardingTitle3 => 'Avoid conflicts.';
+
+  @override
+  String get onboardingBody3 =>
+      'If aircraft get too close, separation is lost\nand you lose points.';
+
+  @override
+  String get onboardingTitle4 => 'Think ahead.';
+
+  @override
+  String get onboardingBody4 =>
+      'Earlier decisions = safer skies.\nAct before the warning triggers.';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingStartTraining => 'Start Training';
+
+  @override
+  String get scenarioResultRestartReplay => 'Restart replay';
+
+  @override
+  String get scenarioResultViewLabel => 'View:';
+
+  @override
+  String get scenarioResultViewActual => 'Actual';
+
+  @override
+  String get scenarioResultViewIdeal => 'Ideal';
+
+  @override
+  String get scenarioResultEarlierActionHint => '(earlier action)';
+
+  @override
+  String get scenarioViewFullDebrief => 'View Full Debrief';
+
+  @override
+  String get homeCardRadarTrainingBetaSub => 'Internal tester flow';
+
+  @override
+  String get scenarioHowToImprove => 'How to Improve';
+
+  @override
+  String get scenarioPointsAbbrev => 'pts';
+
+  @override
+  String get scenarioBetterAlternative => 'BETTER ALTERNATIVE';
+
+  @override
+  String get scenarioProjectedLabel => 'Projected';
+
+  @override
+  String get scenarioSafeShort => 'Safe';
+
+  @override
+  String get scenarioStillTight => 'Still tight';
+
+  @override
+  String scenarioThresholdPx(int value) {
+    return 'threshold $value px';
+  }
+
+  @override
+  String scenarioThresholdFt(int value) {
+    return 'threshold $value ft';
+  }
+
+  @override
+  String scenarioImprovedVsLastAttempt(int delta) {
+    return '↑ Improved vs last attempt  (+$delta pts)';
+  }
+
+  @override
+  String get scenarioSameScoreAsLastAttempt => 'Same score as last attempt';
+
+  @override
+  String scenarioLowerThanLastAttempt(int delta) {
+    return '↓ $delta pts lower than last attempt  - keep practising';
+  }
+
+  @override
+  String get radarTrainingPilotDelayFollowThrough =>
+      'Delayed acknowledgement increased follow-through time.';
+
+  @override
+  String get radarTrainingRunwayRecoveryWindowExtended =>
+      'Runway occupancy extended the recovery window.';
+
+  @override
+  String get radarTrainingWeatherMergeCompression =>
+      'Weather compressed spacing near the merge.';
+
+  @override
+  String get radarTrainingLateSpeedControlClosureRate =>
+      'Late speed control allowed closure rate to build.';
 }

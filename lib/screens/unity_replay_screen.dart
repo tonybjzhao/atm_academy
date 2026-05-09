@@ -274,9 +274,9 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: AppTheme.borderColor),
                           ),
-                          child: const Text(
-                            'REPLAY COMPLETE',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.replayComplete,
+                            style: const TextStyle(
                               color: AppTheme.textSecondary,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -393,8 +393,8 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                         child: SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           dense: true,
-                          title: const Text('Replay radio',
-                              style: TextStyle(fontSize: 11)),
+                          title: Text(l10n.replayToggleReplayRadio,
+                              style: const TextStyle(fontSize: 11)),
                           value: settings.replayAudioEnabled,
                           onChanged: (v) =>
                               _audioSettings.setReplayAudioEnabled(v),
@@ -405,8 +405,8 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                         child: SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           dense: true,
-                          title: const Text('Subtitles',
-                              style: TextStyle(fontSize: 11)),
+                          title: Text(l10n.replayToggleSubtitles,
+                              style: const TextStyle(fontSize: 11)),
                           value: settings.subtitlesEnabled,
                           onChanged: (v) =>
                               _audioSettings.setSubtitlesEnabled(v),
@@ -425,14 +425,14 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                 children: [
                   _Dot(color: data.hadLOS ? AppTheme.danger : AppTheme.warning),
                   const SizedBox(width: 4),
-                  const Text('Closest approach',
-                      style: TextStyle(
+                  Text(l10n.replayLegendClosestApproach,
+                      style: const TextStyle(
                           color: AppTheme.textSecondary, fontSize: 10)),
                   const SizedBox(width: 16),
                   _Dot(color: Colors.yellowAccent),
                   const SizedBox(width: 4),
-                  const Text('Your action',
-                      style: TextStyle(
+                  Text(l10n.replayLegendYourAction,
+                      style: const TextStyle(
                           color: AppTheme.textSecondary, fontSize: 10)),
                 ],
               ),
@@ -530,10 +530,10 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                         '${data.thresholdVerticalFt} ft threshold',
                         AppTheme.textSecondary),
                     _MetricRow(
-                        'Action',
+                        l10n.replayActionLabel,
                         data.actionTimeSec > 0
                             ? '${data.userCommandSummary}  (${data.actionTimeSec.toStringAsFixed(1)} s)'
-                            : 'No command issued',
+                            : l10n.scenarioNoCommandIssued,
                         data.actionTimeSec > 0
                             ? Colors.yellowAccent
                             : AppTheme.danger),

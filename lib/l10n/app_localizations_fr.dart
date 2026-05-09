@@ -1724,6 +1724,100 @@ class AppLocalizationsFr extends AppLocalizations {
   String get scenarioSafeResult => 'SÉPARATION MAINTENUE';
 
   @override
+  String get scenarioNoCommandIssued => 'Aucune commande émise';
+
+  @override
+  String get scenarioCommandTurnLeft => 'Tourner à gauche';
+
+  @override
+  String get scenarioCommandTurnRight => 'Tourner à droite';
+
+  @override
+  String get scenarioCommandClimb => 'Monter';
+
+  @override
+  String get scenarioCommandDescend => 'Descendre';
+
+  @override
+  String get scenarioCommandSlow => 'Ralentir';
+
+  @override
+  String get scenarioCommandFast => 'Accélérer';
+
+  @override
+  String scenarioCommandOn(String command, String callsign) {
+    return '$command sur $callsign';
+  }
+
+  @override
+  String get radioSettingsTitle => 'Lecture radio pilote';
+
+  @override
+  String get radioSettingsTooltip => 'Paramètres audio radio';
+
+  @override
+  String radioSettingsVoiceVolume(int percent) {
+    return 'Volume voix $percent%';
+  }
+
+  @override
+  String get radioSettingsWarningAudio => 'Audio d\'alerte';
+
+  @override
+  String get radioSettingsSubtitles => 'Sous-titres radio';
+
+  @override
+  String get radioSettingsReplayAudio => 'Audio radio en replay';
+
+  @override
+  String get replayComplete => 'REPLAY TERMINÉ';
+
+  @override
+  String get replayToggleReplayRadio => 'Radio replay';
+
+  @override
+  String get replayToggleSubtitles => 'Sous-titres';
+
+  @override
+  String get replayLegendClosestApproach => 'Approche la plus proche';
+
+  @override
+  String get replayLegendYourAction => 'Votre action';
+
+  @override
+  String get replayActionLabel => 'Action';
+
+  @override
+  String pilotAckTurningHeading(String callsign, String heading) {
+    return '$callsign vire cap $heading';
+  }
+
+  @override
+  String pilotAckClimbing(String callsign, int altitude) {
+    return '$callsign monte $altitude';
+  }
+
+  @override
+  String pilotAckDescending(String callsign, int altitude) {
+    return '$callsign descend $altitude';
+  }
+
+  @override
+  String pilotAckReducingSpeed(String callsign, int speed) {
+    return '$callsign réduit vitesse $speed';
+  }
+
+  @override
+  String pilotAckIncreasingSpeed(String callsign, int speed) {
+    return '$callsign augmente vitesse $speed';
+  }
+
+  @override
+  String pilotAckRoger(String callsign) {
+    return '$callsign bien reçu';
+  }
+
+  @override
   String get radarTrainingBetaTitle => 'Entraînement Radar Bêta';
 
   @override
@@ -2319,4 +2413,117 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radarTrainingCascadeFactorWeakTiming => 'signal de timing faible';
+
+  @override
+  String get onboardingTitle1 => 'Votre mission est simple.';
+
+  @override
+  String get onboardingBody1 =>
+      'Maintenez une séparation sûre entre les avions.';
+
+  @override
+  String get onboardingTitle2 => 'Contrôlez les avions.';
+
+  @override
+  String get onboardingBody2 =>
+      'Touchez un avion sur le radar,\npuis donnez une consigne de cap ou d\'altitude.';
+
+  @override
+  String get onboardingTitle3 => 'Évitez les conflits.';
+
+  @override
+  String get onboardingBody3 =>
+      'Si les avions se rapprochent trop, la séparation est perdue\net vous perdez des points.';
+
+  @override
+  String get onboardingTitle4 => 'Anticipez.';
+
+  @override
+  String get onboardingBody4 =>
+      'Des décisions plus tôt = un ciel plus sûr.\nAgissez avant le déclenchement de l\'alerte.';
+
+  @override
+  String get onboardingSkip => 'Passer';
+
+  @override
+  String get onboardingStartTraining => 'Commencer l\'entraînement';
+
+  @override
+  String get scenarioResultRestartReplay => 'Redémarrer le replay';
+
+  @override
+  String get scenarioResultViewLabel => 'Vue :';
+
+  @override
+  String get scenarioResultViewActual => 'Réel';
+
+  @override
+  String get scenarioResultViewIdeal => 'Idéal';
+
+  @override
+  String get scenarioResultEarlierActionHint => '(action plus précoce)';
+
+  @override
+  String get scenarioViewFullDebrief => 'Voir le débriefing complet';
+
+  @override
+  String get homeCardRadarTrainingBetaSub => 'Parcours testeur interne';
+
+  @override
+  String get scenarioHowToImprove => 'Comment améliorer';
+
+  @override
+  String get scenarioPointsAbbrev => 'pts';
+
+  @override
+  String get scenarioBetterAlternative => 'MEILLEURE ALTERNATIVE';
+
+  @override
+  String get scenarioProjectedLabel => 'Projeté';
+
+  @override
+  String get scenarioSafeShort => 'Sûr';
+
+  @override
+  String get scenarioStillTight => 'Encore limite';
+
+  @override
+  String scenarioThresholdPx(int value) {
+    return 'seuil $value px';
+  }
+
+  @override
+  String scenarioThresholdFt(int value) {
+    return 'seuil $value ft';
+  }
+
+  @override
+  String scenarioImprovedVsLastAttempt(int delta) {
+    return '↑ Mieux que la tentative précédente  (+$delta pts)';
+  }
+
+  @override
+  String get scenarioSameScoreAsLastAttempt =>
+      'Même score que la tentative précédente';
+
+  @override
+  String scenarioLowerThanLastAttempt(int delta) {
+    return '↓ $delta pts de moins que la tentative précédente  - continuez à vous entraîner';
+  }
+
+  @override
+  String get radarTrainingPilotDelayFollowThrough =>
+      'L\'accusé de réception tardif a augmenté le temps de suivi.';
+
+  @override
+  String get radarTrainingRunwayRecoveryWindowExtended =>
+      'L\'occupation de piste a prolongé la fenêtre de récupération.';
+
+  @override
+  String get radarTrainingWeatherMergeCompression =>
+      'La météo a comprimé l\'espacement près du point de fusion.';
+
+  @override
+  String get radarTrainingLateSpeedControlClosureRate =>
+      'Un contrôle tardif de la vitesse a accru le taux de rapprochement.';
 }

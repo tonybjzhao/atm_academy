@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../models/scenario_result.dart';
 import '../services/scoring_engine.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/radar_replay_view.dart';
 import '../widgets/replay_timeline.dart';
 import '../widgets/score_explanation_panel.dart';
@@ -14,8 +15,8 @@ import '../widgets/score_explanation_panel.dart';
 /// use [ScenarioResultScreen.mock()] during development.
 class ScenarioResultScreen extends StatefulWidget {
   final DetailedScenarioResult result;
-  final VoidCallback?           onRetry;
-  final VoidCallback?           onNextScenario;
+  final VoidCallback? onRetry;
+  final VoidCallback? onNextScenario;
 
   const ScenarioResultScreen({
     super.key,
@@ -38,17 +39,16 @@ class ScenarioResultScreen extends StatefulWidget {
 
 class _ScenarioResultScreenState extends State<ScenarioResultScreen>
     with SingleTickerProviderStateMixin {
-
   // ── Replay state ───────────────────────────────────────────────────────────
   late final ValueNotifier<double> _progress; // 0→1
-  late final AnimationController   _replayCtr;
+  late final AnimationController _replayCtr;
 
-  bool _playing          = false;
-  int  _speedMultiplier  = 1;
+  bool _playing = false;
+  int _speedMultiplier = 1;
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  int  _selectedTab   = 0; // 0 = Replay, 1 = Debrief
-  bool _showIdeal     = false; // Actual vs Ideal replay toggle
+  int _selectedTab = 0; // 0 = Replay, 1 = Debrief
+  bool _showIdeal = false; // Actual vs Ideal replay toggle
 
   @override
   void initState() {
@@ -58,10 +58,12 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
       vsync: this,
       duration: Duration(
         milliseconds:
-            (widget.result.totalDurationSeconds * 1000 / _speedMultiplier).round(),
+            (widget.result.totalDurationSeconds * 1000 / _speedMultiplier)
+                .round(),
       ),
-    )..addListener(_onTick)
-     ..addStatusListener(_onStatus);
+    )
+      ..addListener(_onTick)
+      ..addStatusListener(_onStatus);
 
     // Auto-play after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -82,7 +84,8 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   void _play() {
     _replayCtr.duration = Duration(
       milliseconds:
-          (widget.result.totalDurationSeconds * 1000 / _speedMultiplier).round(),
+          (widget.result.totalDurationSeconds * 1000 / _speedMultiplier)
+              .round(),
     );
     _replayCtr.forward(from: _replayCtr.value);
     setState(() => _playing = true);
@@ -123,6 +126,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final result = widget.result;
 
     return Scaffold(
@@ -131,9 +135,9 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(result.scenarioTitle,
-                style: const TextStyle(fontSize: 14)),
-            Text('Score: ${result.finalScore} / ${result.maxScore}  ·  ${result.grade.label}',
+            Text(result.scenarioTitle, style: const TextStyle(fontSize: 14)),
+            Text(
+                '${l10n.radarV2FinalScore}: ${result.finalScore} / ${result.maxScore}  ·  ${result.grade.label}',
                 style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 10,
@@ -146,7 +150,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
           IconButton(
             icon: const Icon(Icons.replay, size: 20),
             onPressed: _restart,
-            tooltip: 'Restart replay',
+            tooltip: l10n.scenarioResultRestartReplay,
           ),
         ],
       ),
@@ -157,9 +161,15 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
             color: AppTheme.surface,
             child: Row(
               children: [
-                _Tab(label: 'Replay',  index: 0, selected: _selectedTab,
+                _Tab(
+                    label: l10n.radarTrainingReplayTimeline,
+                    index: 0,
+                    selected: _selectedTab,
                     onTap: (i) => setState(() => _selectedTab = i)),
-                _Tab(label: 'Debrief', index: 1, selected: _selectedTab,
+                _Tab(
+                    label: l10n.radarTrainingMainDebrief,
+                    index: 1,
+                    selected: _selectedTab,
                     onTap: (i) => setState(() => _selectedTab = i)),
               ],
             ),
@@ -172,24 +182,37 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
               color: AppTheme.surface,
               child: Row(
                 children: [
-                  const Text('View:',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                  Text(l10n.scenarioResultViewLabel,
+                      style: const TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 11)),
                   const SizedBox(width: 10),
                   _ModeChip(
-                    label: 'Actual',
+                    label: l10n.scenarioResultViewActual,
                     active: !_showIdeal,
-                    onTap: () { setState(() { _showIdeal = false; }); _restart(); },
+                    onTap: () {
+                      setState(() {
+                        _showIdeal = false;
+                      });
+                      _restart();
+                    },
                   ),
                   const SizedBox(width: 6),
                   _ModeChip(
-                    label: '💡 Ideal',
+                    label: l10n.scenarioResultViewIdeal,
                     active: _showIdeal,
                     color: AppTheme.primary,
-                    onTap: () { setState(() { _showIdeal = true; }); _restart(); },
+                    onTap: () {
+                      setState(() {
+                        _showIdeal = true;
+                      });
+                      _restart();
+                    },
                   ),
                   const SizedBox(width: 8),
-                  const Text('(earlier action)',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 9,
+                  Text(l10n.scenarioResultEarlierActionHint,
+                      style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 9,
                           fontStyle: FontStyle.italic)),
                 ],
               ),
@@ -199,13 +222,13 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
           Expanded(
             child: _selectedTab == 0
                 ? _ReplayTab(
-                    result:          result,
-                    progress:        _progress,
-                    playing:         _playing,
+                    result: result,
+                    progress: _progress,
+                    playing: _playing,
                     speedMultiplier: _speedMultiplier,
-                    showIdeal:       _showIdeal,
-                    onPlayPause:     _togglePlay,
-                    onCycleSpeed:    _cycleSpeed,
+                    showIdeal: _showIdeal,
+                    onPlayPause: _togglePlay,
+                    onCycleSpeed: _cycleSpeed,
                   )
                 : ScoreExplanationPanel(result: result),
           ),
@@ -224,7 +247,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.refresh, size: 15),
-                      label: const Text('Try Again'),
+                      label: Text(l10n.scenarioRetry),
                       onPressed: () {
                         Navigator.pop(context);
                         widget.onRetry?.call();
@@ -240,7 +263,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
                     Expanded(
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.arrow_forward, size: 15),
-                        label: const Text('Next'),
+                        label: Text(l10n.scenarioNext),
                         onPressed: () {
                           Navigator.pop(context);
                           widget.onNextScenario!();
@@ -262,10 +285,10 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
 
 class _ReplayTab extends StatelessWidget {
   final DetailedScenarioResult result;
-  final ValueNotifier<double>  progress;
-  final bool    playing;
-  final bool    showIdeal;
-  final int     speedMultiplier;
+  final ValueNotifier<double> progress;
+  final bool playing;
+  final bool showIdeal;
+  final int speedMultiplier;
   final VoidCallback onPlayPause;
   final VoidCallback onCycleSpeed;
 
@@ -291,7 +314,7 @@ class _ReplayTab extends StatelessWidget {
         // Radar display
         Expanded(
           child: RadarReplayView(
-            result:           displayResult,
+            result: displayResult,
             externalProgress: progress,
           ),
         ),
@@ -299,12 +322,12 @@ class _ReplayTab extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
           child: ReplayTimeline(
-            result:           result,
+            result: result,
             progressNotifier: progress,
-            isPlaying:        playing,
-            speedMultiplier:  speedMultiplier,
-            onPlayPause:      onPlayPause,
-            onCycleSpeed:     onCycleSpeed,
+            isPlaying: playing,
+            speedMultiplier: speedMultiplier,
+            onPlayPause: onPlayPause,
+            onCycleSpeed: onCycleSpeed,
           ),
         ),
       ],
@@ -316,32 +339,32 @@ class _ReplayTab extends StatelessWidget {
 
 DetailedScenarioResult _withIdealFrames(DetailedScenarioResult r) =>
     DetailedScenarioResult(
-      scenarioId:       r.scenarioId,
-      scenarioTitle:    r.scenarioTitle,
-      finalScore:       r.finalScore,
-      maxScore:         r.maxScore,
-      grade:            r.grade,
-      startedAt:        r.startedAt,
-      completedAt:      r.completedAt,
-      replayFrames:     r.idealFrames,  // ← swap frames
-      idealFrames:      r.idealFrames,
-      replayEvents:     r.replayEvents,
-      userActions:      r.userActions,
-      penalties:        r.penalties,
-      bonuses:          r.bonuses,
+      scenarioId: r.scenarioId,
+      scenarioTitle: r.scenarioTitle,
+      finalScore: r.finalScore,
+      maxScore: r.maxScore,
+      grade: r.grade,
+      startedAt: r.startedAt,
+      completedAt: r.completedAt,
+      replayFrames: r.idealFrames, // ← swap frames
+      idealFrames: r.idealFrames,
+      replayEvents: r.replayEvents,
+      userActions: r.userActions,
+      penalties: r.penalties,
+      bonuses: r.bonuses,
       projectedOutcomes: r.projectedOutcomes,
-      summaryText:      r.summaryText,
-      improvementTips:  r.improvementTips,
-      hadLOS:           false,          // ideal = no LOS
-      minHorizDistPx:   r.minHorizDistPx,
+      summaryText: r.summaryText,
+      improvementTips: r.improvementTips,
+      hadLOS: false, // ideal = no LOS
+      minHorizDistPx: r.minHorizDistPx,
     );
 
 // ── Mode chip (Actual / Ideal) ─────────────────────────────────────────────────
 
 class _ModeChip extends StatelessWidget {
-  final String   label;
-  final bool     active;
-  final Color    color;
+  final String label;
+  final bool active;
+  final Color color;
   final VoidCallback onTap;
 
   const _ModeChip({
@@ -357,9 +380,7 @@ class _ModeChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: active
-                ? color.withValues(alpha: 0.15)
-                : AppTheme.background,
+            color: active ? color.withValues(alpha: 0.15) : AppTheme.background,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: active ? color : AppTheme.borderColor,
@@ -381,9 +402,9 @@ class _ModeChip extends StatelessWidget {
 // ── Tab widget ─────────────────────────────────────────────────────────────────
 
 class _Tab extends StatelessWidget {
-  final String   label;
-  final int      index;
-  final int      selected;
+  final String label;
+  final int index;
+  final int selected;
   final void Function(int) onTap;
 
   const _Tab({
