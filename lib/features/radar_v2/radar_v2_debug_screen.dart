@@ -634,7 +634,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (!kDebugMode) {
+    if (!kDebugMode && !widget.betaMode) {
       return const SizedBox.shrink();
     }
 

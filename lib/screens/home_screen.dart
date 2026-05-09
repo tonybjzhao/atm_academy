@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../features/radar_v2/radar_v2_feature_flags.dart';
@@ -175,7 +174,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (kDebugMode && kRadarTrainingBetaEnabled)
+                if (kRadarTrainingBetaEnabled)
                   AtmCard(
                     icon: Icons.radar_outlined,
                     iconColor: AppTheme.primary,

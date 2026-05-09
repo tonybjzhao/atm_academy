@@ -17,6 +17,20 @@ import 'services/progression_service.dart';
 
 final _languageService = LanguageService();
 final _navigatorKey = GlobalKey<NavigatorState>();
+const kRadarTrainingRouteName = '/training/radar-beta';
+const kRadarDebugRouteName = '/debug/radar-v2';
+
+Map<String, WidgetBuilder> buildAppRoutes({
+  bool enableRadarTraining = kRadarTrainingBetaEnabled,
+  bool enableDebugTools = kDebugMode,
+}) {
+  return {
+    if (enableDebugTools)
+      kRadarDebugRouteName: (_) => const RadarV2DebugScreen(),
+    if (enableRadarTraining)
+      kRadarTrainingRouteName: (_) => const RadarTrainingBetaScreen(),
+  };
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,14 +95,7 @@ class AtmAcademyApp extends StatelessWidget {
                   ),
                 )
               : homeScreen,
-          routes: kDebugMode
-              ? {
-                  '/debug/radar-v2': (_) => const RadarV2DebugScreen(),
-                  if (kRadarTrainingBetaEnabled)
-                    '/debug/radar-training-beta': (_) =>
-                        const RadarTrainingBetaScreen(),
-                }
-              : const {},
+          routes: buildAppRoutes(),
           navigatorKey: _navigatorKey,
           debugShowCheckedModeBanner: false,
         );
