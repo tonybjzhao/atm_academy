@@ -378,6 +378,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
           onSpeedDelta: (delta) => _commandSpeed(selected, delta),
           onAltitudeDelta: (delta) => _commandAltitude(selected, delta),
           onDirect: (waypointId) => _commandDirect(selected, waypointId),
+          onHold: () => _commandHold(selected),
           onVectorAndAltitude: () {
             final commands = <ControllerCommand>[
               AssignHeading(
@@ -407,8 +408,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               AssignSpeed(
                 aircraftId: selected.id,
                 issuedAt: _snapshot?.elapsed ?? Duration.zero,
-                speedKt:
-                    (selected.groundSpeedKt - 20).clamp(120, 480).toDouble(),
+                speedKt: (selected.groundSpeedKt - 20).clamp(120, 480).toDouble(),
               ),
             ];
             _issueCommandChain(
@@ -3567,6 +3567,7 @@ class _QuickCommandRadialMenu extends StatefulWidget {
   final ValueChanged<int> onSpeedDelta;
   final ValueChanged<int> onAltitudeDelta;
   final ValueChanged<String> onDirect;
+  final VoidCallback onHold;
   final VoidCallback onHeadingAndSpeed;
   final ValueChanged<String> onDescendAndDirect;
   final VoidCallback onVectorAndAltitude;
@@ -3578,6 +3579,7 @@ class _QuickCommandRadialMenu extends StatefulWidget {
     required this.onSpeedDelta,
     required this.onAltitudeDelta,
     required this.onDirect,
+    required this.onHold,
     required this.onHeadingAndSpeed,
     required this.onDescendAndDirect,
     required this.onVectorAndAltitude,
@@ -3593,56 +3595,74 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
   bool _dragging = false;
 
   static const double _wheelSize = 284;
-  static const double _innerRadius = 46;
-  static const double _outerRadius = 126;
+  static const double _innerRadius = 44;
+  static const double _outerRadius = 132;
+  static const double _arcStart = -math.pi * 0.2;
+  static const double _arcSweep = math.pi * 1.4;
 
   List<_RadialCommandEntry> _entries() {
+    final phase = _phaseFor(widget.aircraft);
     final entries = <_RadialCommandEntry>[
       _RadialCommandEntry(
+        key: 'left20',
         icon: Icons.rotate_left,
         label: 'L20',
         onSelected: () => widget.onHeadingDelta(-20),
       ),
       _RadialCommandEntry(
+        key: 'right20',
         icon: Icons.rotate_right,
         label: 'R20',
         onSelected: () => widget.onHeadingDelta(20),
       ),
       _RadialCommandEntry(
+        key: 'desc10',
         icon: Icons.arrow_downward,
         label: 'DESC 10',
         onSelected: () => widget.onAltitudeDelta(-1000),
       ),
       _RadialCommandEntry(
+        key: 'clb10',
         icon: Icons.arrow_upward,
         label: 'CLB 10',
         onSelected: () => widget.onAltitudeDelta(1000),
       ),
       _RadialCommandEntry(
+        key: 'spdDown20',
         icon: Icons.remove,
         label: 'SPD -20',
         onSelected: () => widget.onSpeedDelta(-20),
       ),
       _RadialCommandEntry(
+        key: 'spdUp20',
         icon: Icons.add,
         label: 'SPD +20',
         onSelected: () => widget.onSpeedDelta(20),
       ),
       _RadialCommandEntry(
+        key: 'hdgSpd',
         icon: Icons.link,
         label: 'HDG+SPD',
         onSelected: widget.onHeadingAndSpeed,
       ),
       _RadialCommandEntry(
+        key: 'vectorAlt',
         icon: Icons.alt_route,
         label: 'VECTOR+ALT',
         onSelected: widget.onVectorAndAltitude,
+      ),
+      _RadialCommandEntry(
+        key: 'hold',
+        icon: widget.aircraft.intent.hold ? Icons.play_arrow : Icons.loop,
+        label: widget.aircraft.intent.hold ? 'EXIT HOLD' : 'HOLD',
+        onSelected: widget.onHold,
       ),
     ];
 
     if (widget.waypointIds.isNotEmpty) {
       entries.add(
         _RadialCommandEntry(
+          key: 'direct',
           icon: Icons.call_made,
           label: 'DIRECT ${widget.waypointIds.first}',
           onSelected: () => widget.onDirect(widget.waypointIds.first),
@@ -3650,6 +3670,7 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
       );
       entries.add(
         _RadialCommandEntry(
+          key: 'desDirect',
           icon: Icons.trending_down,
           label: 'DES+DIRECT',
           onSelected: () => widget.onDescendAndDirect(widget.waypointIds.first),
@@ -3657,24 +3678,122 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
       );
     }
 
+    entries.sort((a, b) {
+      final pa = _weightFor(a.key, phase);
+      final pb = _weightFor(b.key, phase);
+      final compare = pb.compareTo(pa);
+      if (compare != 0) return compare;
+      return a.label.compareTo(b.label);
+    });
+
     return entries;
   }
 
-  int? _indexFromLocal(Offset local, int count) {
+  _OperationalPhase _phaseFor(AircraftState aircraft) {
+    if (aircraft.intent.hold) return _OperationalPhase.hold;
+    if (aircraft.intent.isDeparture) return _OperationalPhase.departure;
+    if (aircraft.intent.assignedRunwayId != null || aircraft.altitudeFt < 14000) {
+      return _OperationalPhase.arrival;
+    }
+    return _OperationalPhase.enroute;
+  }
+
+  double _weightFor(String key, _OperationalPhase phase) {
+    switch (phase) {
+      case _OperationalPhase.arrival:
+        return switch (key) {
+          'desDirect' => 1.8,
+          'direct' => 1.6,
+          'desc10' => 1.6,
+          'spdDown20' => 1.45,
+          'vectorAlt' => 1.35,
+          'left20' || 'right20' => 1.1,
+          'hold' => 1.0,
+          'hdgSpd' => 0.95,
+          'clb10' => 0.75,
+          'spdUp20' => 0.8,
+          _ => 1.0,
+        };
+      case _OperationalPhase.departure:
+        return switch (key) {
+          'clb10' => 1.7,
+          'spdUp20' => 1.6,
+          'left20' || 'right20' => 1.45,
+          'hdgSpd' => 1.4,
+          'vectorAlt' => 1.2,
+          'hold' => 0.9,
+          'direct' => 0.85,
+          'desDirect' => 0.65,
+          'desc10' => 0.7,
+          'spdDown20' => 0.8,
+          _ => 1.0,
+        };
+      case _OperationalPhase.hold:
+        return switch (key) {
+          'hold' => 2.0,
+          'spdDown20' => 1.3,
+          'left20' || 'right20' => 1.2,
+          'desc10' => 1.15,
+          'vectorAlt' => 1.0,
+          'direct' || 'desDirect' => 0.7,
+          _ => 0.9,
+        };
+      case _OperationalPhase.enroute:
+        return switch (key) {
+          'hdgSpd' => 1.35,
+          'vectorAlt' => 1.3,
+          'left20' || 'right20' => 1.25,
+          'spdDown20' || 'spdUp20' => 1.1,
+          'direct' => 1.1,
+          'desc10' || 'clb10' => 0.95,
+          _ => 0.95,
+        };
+    }
+  }
+
+  List<_RadialSlice> _slicesFor(List<_RadialCommandEntry> entries) {
+    final phase = _phaseFor(widget.aircraft);
+    final weights = [
+      for (final entry in entries) _weightFor(entry.key, phase),
+    ];
+    final total = weights.fold<double>(0, (sum, weight) => sum + weight);
+    final slices = <_RadialSlice>[];
+    var cursor = _arcStart;
+    for (var i = 0; i < entries.length; i++) {
+      final sweep = _arcSweep * (weights[i] / total);
+      slices.add(_RadialSlice(index: i, start: cursor, sweep: sweep));
+      cursor += sweep;
+    }
+    return slices;
+  }
+
+  int? _indexFromLocal(Offset local, List<_RadialSlice> slices) {
     final center = const Offset(_wheelSize / 2, _wheelSize / 2);
     final delta = local - center;
     final distance = delta.distance;
     if (distance < _innerRadius || distance > _outerRadius) {
       return null;
     }
-    final sector = (math.pi * 2) / count;
-    final angle = (math.atan2(delta.dy, delta.dx) + (math.pi / 2) + math.pi * 2) %
-        (math.pi * 2);
-    return (angle / sector).floor().clamp(0, count - 1);
+    final angle = _normalizeAngle(math.atan2(delta.dy, delta.dx));
+    final relative = _normalizeAngle(angle - _arcStart);
+    if (relative > _arcSweep) return null;
+    for (final slice in slices) {
+      final start = _normalizeAngle(slice.start - _arcStart);
+      final end = start + slice.sweep;
+      if (relative >= start && relative <= end) {
+        return slice.index;
+      }
+    }
+    return null;
   }
 
-  void _applySelected() {
-    final entries = _entries();
+  double _normalizeAngle(double angle) {
+    final full = math.pi * 2;
+    final value = angle % full;
+    return value < 0 ? value + full : value;
+  }
+
+  void _applySelected(List<_RadialCommandEntry> entries) {
     final index = _hoveredIndex;
     if (index == null || index < 0 || index >= entries.length) {
       Navigator.of(context).pop();
@@ -3687,6 +3806,8 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
   @override
   Widget build(BuildContext context) {
     final entries = _entries();
+    final slices = _slicesFor(entries);
+    final phase = _phaseFor(widget.aircraft);
     final selectedLabel = _hoveredIndex == null
         ? 'Drag on wheel, release to issue command'
         : 'Selected: ${entries[_hoveredIndex!].label}';
@@ -3703,6 +3824,14 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
               style: const TextStyle(
                 color: AppTheme.primary,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Phase priority: ${phase.name.toUpperCase()}',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 10,
               ),
             ),
             const SizedBox(height: 6),
@@ -3723,16 +3852,16 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
                 onPanStart: (details) {
                   setState(() {
                     _dragging = true;
-                    _hoveredIndex = _indexFromLocal(details.localPosition, entries.length);
+                    _hoveredIndex = _indexFromLocal(details.localPosition, slices);
                   });
                 },
                 onPanUpdate: (details) {
                   setState(() {
-                    _hoveredIndex = _indexFromLocal(details.localPosition, entries.length);
+                    _hoveredIndex = _indexFromLocal(details.localPosition, slices);
                   });
                 },
                 onPanEnd: (_) {
-                  _applySelected();
+                  _applySelected(entries);
                 },
                 onPanCancel: () {
                   setState(() {
@@ -3749,15 +3878,16 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
                       CustomPaint(
                         size: const Size(_wheelSize, _wheelSize),
                         painter: _RadialCommandWheelPainter(
-                          itemCount: entries.length,
+                          slices: slices,
                           highlightedIndex: _hoveredIndex,
+                          arcStart: _arcStart,
+                          arcSweep: _arcSweep,
                         ),
                       ),
                       for (var i = 0; i < entries.length; i++)
                         _RadialActionBadge(
-                          index: i,
-                          total: entries.length,
-                          radius: 94,
+                          slice: slices[i],
+                          radius: 96,
                           icon: entries[i].icon,
                           label: entries[i].label,
                           highlighted: _hoveredIndex == i,
@@ -3800,11 +3930,13 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
 }
 
 class _RadialCommandEntry {
+  final String key;
   final IconData icon;
   final String label;
   final VoidCallback onSelected;
 
   const _RadialCommandEntry({
+    required this.key,
     required this.icon,
     required this.label,
     required this.onSelected,
@@ -3812,23 +3944,38 @@ class _RadialCommandEntry {
 }
 
 class _RadialCommandWheelPainter extends CustomPainter {
-  final int itemCount;
+  final List<_RadialSlice> slices;
   final int? highlightedIndex;
+  final double arcStart;
+  final double arcSweep;
 
   const _RadialCommandWheelPainter({
-    required this.itemCount,
+    required this.slices,
     required this.highlightedIndex,
+    required this.arcStart,
+    required this.arcSweep,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    const inner = 46.0;
-    const outer = 126.0;
-    final sector = (math.pi * 2) / itemCount;
+    const inner = 44.0;
+    const outer = 132.0;
 
-    for (var i = 0; i < itemCount; i++) {
-      final start = -math.pi / 2 + i * sector;
+    final guardPath = Path()
+      ..addArc(Rect.fromCircle(center: center, radius: outer + 1), arcStart, arcSweep);
+    canvas.drawPath(
+      guardPath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0x3362D2FF),
+    );
+
+    for (final slice in slices) {
+      final i = slice.index;
+      final start = slice.start;
+      final sweep = slice.sweep;
       final path = Path()
         ..moveTo(
           center.dx + inner * math.cos(start),
@@ -3837,17 +3984,17 @@ class _RadialCommandWheelPainter extends CustomPainter {
         ..arcTo(
           Rect.fromCircle(center: center, radius: outer),
           start,
-          sector,
+          sweep,
           false,
         )
         ..lineTo(
-          center.dx + inner * math.cos(start + sector),
-          center.dy + inner * math.sin(start + sector),
+          center.dx + inner * math.cos(start + sweep),
+          center.dy + inner * math.sin(start + sweep),
         )
         ..arcTo(
           Rect.fromCircle(center: center, radius: inner),
-          start + sector,
-          -sector,
+          start + sweep,
+          -sweep,
           false,
         )
         ..close();
@@ -3875,22 +4022,34 @@ class _RadialCommandWheelPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RadialCommandWheelPainter oldDelegate) {
-    return oldDelegate.itemCount != itemCount ||
-        oldDelegate.highlightedIndex != highlightedIndex;
+    if (oldDelegate.slices.length != slices.length ||
+        oldDelegate.highlightedIndex != highlightedIndex ||
+        oldDelegate.arcStart != arcStart ||
+        oldDelegate.arcSweep != arcSweep) {
+      return true;
+    }
+    for (var i = 0; i < slices.length; i++) {
+      final previous = oldDelegate.slices[i];
+      final current = slices[i];
+      if (previous.index != current.index ||
+          previous.start != current.start ||
+          previous.sweep != current.sweep) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
 class _RadialActionBadge extends StatelessWidget {
-  final int index;
-  final int total;
+  final _RadialSlice slice;
   final double radius;
   final IconData icon;
   final String label;
   final bool highlighted;
 
   const _RadialActionBadge({
-    required this.index,
-    required this.total,
+    required this.slice,
     required this.radius,
     required this.icon,
     required this.label,
@@ -3899,8 +4058,7 @@ class _RadialActionBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sector = (math.pi * 2) / total;
-    final angle = -math.pi / 2 + index * sector + sector / 2;
+    final angle = slice.start + (slice.sweep / 2);
     final dx = radius * math.cos(angle);
     final dy = radius * math.sin(angle);
 
@@ -3945,6 +4103,25 @@ class _RadialActionBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RadialSlice {
+  final int index;
+  final double start;
+  final double sweep;
+
+  const _RadialSlice({
+    required this.index,
+    required this.start,
+    required this.sweep,
+  });
+}
+
+enum _OperationalPhase {
+  arrival,
+  departure,
+  hold,
+  enroute,
 }
 
 class _CommandGroup extends StatelessWidget {
