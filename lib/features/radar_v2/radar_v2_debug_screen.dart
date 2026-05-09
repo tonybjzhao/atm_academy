@@ -18,9 +18,24 @@ import 'rendering/radar_v2_painter.dart';
 import 'scenario/scenario_asset_loader.dart';
 import 'scenario/scenario_runtime.dart';
 import 'scoring/radar_v2_score.dart';
+import 'training/radar_training_result.dart';
+import 'training/radar_training_result_screen.dart';
 
 class RadarV2DebugScreen extends StatefulWidget {
-  const RadarV2DebugScreen({super.key});
+  final bool betaMode;
+  final bool showDebugOverlays;
+  final String? initialScenarioName;
+  final Map<String, String>? scenarioAssets;
+  final String? trainingScenarioTitle;
+
+  const RadarV2DebugScreen({
+    super.key,
+    this.betaMode = false,
+    this.showDebugOverlays = false,
+    this.initialScenarioName,
+    this.scenarioAssets,
+    this.trainingScenarioTitle,
+  });
 
   @override
   State<RadarV2DebugScreen> createState() => _RadarV2DebugScreenState();
@@ -33,6 +48,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     'Overtaking Traffic':
         'assets/scenarios/v2/melbourne/overtaking_traffic.json',
   };
+
+  Map<String, String> get _availableScenarioAssets =>
+      widget.scenarioAssets ?? _scenarioAssets;
 
   ScenarioRuntime? _runtime;
   SimulationSnapshot? _previousSnapshot;
@@ -53,7 +71,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   bool _scenarioStarted = false;
   bool _resultShown = false;
   int _replayCursor = 0;
-  String _scenarioName = 'Crossing Arrivals';
+  late String _scenarioName =
+      widget.initialScenarioName ?? _availableScenarioAssets.keys.first;
   String? _selectedAircraftId;
   String? _commandFilterAircraftId;
   String _commandFilterType = 'all';
@@ -75,7 +94,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
 
   Future<void> _loadScenario(String scenarioName) async {
     try {
-      final assetPath = _scenarioAssets[scenarioName]!;
+      final assetPath = _availableScenarioAssets[scenarioName]!;
       final definition = await const ScenarioAssetLoader().load(assetPath);
       if (!mounted) return;
       _runtime = ScenarioRuntime(definition: definition);
@@ -140,6 +159,27 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
 
   void _restartScenario() {
     _loadScenario(_scenarioName);
+  }
+
+  void _openTrainingResult() {
+    final snapshot = _snapshot;
+    if (snapshot == null) return;
+    final result = RadarTrainingResultBuilder.build(
+      scenarioTitle: widget.trainingScenarioTitle ?? _scenarioName,
+      score: _scoreTracker.snapshot,
+      snapshot: snapshot,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RadarTrainingResultScreen(
+          result: result,
+          onRestart: () {
+            Navigator.of(context).pop();
+            _restartScenario();
+          },
+        ),
+      ),
+    );
   }
 
   void _startScenario() {
@@ -492,7 +532,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Radar V2 Debug'),
+        title: Text(widget.betaMode ? 'Radar Training' : 'Radar V2 Debug'),
         backgroundColor: AppTheme.surface,
         actions: [
           IconButton(
@@ -522,8 +562,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                           ? _BriefingView(
                               scenarioName: _scenarioName,
                               runtime: runtime,
-                              scenarioNames:
-                                  _scenarioAssets.keys.toList(growable: false),
+                              scenarioNames: _availableScenarioAssets.keys
+                                  .toList(growable: false),
                               onScenarioChanged: (value) {
                                 if (value != null) _loadScenario(value);
                               },
@@ -556,11 +596,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                         child: const SizedBox.expand(),
                                       ),
                                     ),
-                                    // Overload pulse border effect
-                                    _OverloadPulseEffect(
-                                      snapshot: snapshot,
-                                      alertPulse: _alertPulse,
-                                    ),
+                                    if (!widget.betaMode ||
+                                        widget.showDebugOverlays)
+                                      _OverloadPulseEffect(
+                                        snapshot: snapshot,
+                                        alertPulse: _alertPulse,
+                                      ),
                                     // Alert stack panel (left side)
                                     Positioned(
                                       top: 8,
@@ -581,25 +622,27 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                         },
                                       ),
                                     ),
-                                    // Workload overlay (top right)
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child:
-                                          _WorkloadOverlay(snapshot: snapshot),
-                                    ),
-                                    Positioned(
-                                      top: 112,
-                                      right: 8,
-                                      child:
-                                          _AttentionOverlay(snapshot: snapshot),
-                                    ),
-                                    Positioned(
-                                      top: 218,
-                                      right: 8,
-                                      child: _PsychologyOverlay(
-                                          snapshot: snapshot),
-                                    ),
+                                    if (!widget.betaMode ||
+                                        widget.showDebugOverlays) ...[
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: _WorkloadOverlay(
+                                            snapshot: snapshot),
+                                      ),
+                                      Positioned(
+                                        top: 112,
+                                        right: 8,
+                                        child: _AttentionOverlay(
+                                            snapshot: snapshot),
+                                      ),
+                                      Positioned(
+                                        top: 218,
+                                        right: 8,
+                                        child: _PsychologyOverlay(
+                                            snapshot: snapshot),
+                                      ),
+                                    ],
                                   ],
                                 );
                               },
@@ -623,7 +666,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                   ? null
                   : snapshot.aircraftById(_selectedAircraftId!),
               scenarioName: _scenarioName,
-              scenarioNames: _scenarioAssets.keys.toList(growable: false),
+              scenarioNames:
+                  _availableScenarioAssets.keys.toList(growable: false),
+              betaMode: widget.betaMode,
               onPauseChanged: (value) => setState(() => _paused = value),
               onSpeedChanged: (value) => setState(() => _speed = value),
               onSweepChanged: (value) => setState(() => _sweepEnabled = value),
@@ -632,6 +677,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                 if (value != null) _loadScenario(value);
               },
               onRestart: _restartScenario,
+              onViewResult: widget.betaMode ? _openTrainingResult : null,
               onReturnToLive: _returnToLive,
               onEventSelected: _jumpToEvent,
               commandFilterAircraftId: _commandFilterAircraftId,
@@ -676,6 +722,7 @@ class _DebugControls extends StatelessWidget {
   final AircraftState? selectedAircraft;
   final String scenarioName;
   final List<String> scenarioNames;
+  final bool betaMode;
   final ValueChanged<bool> onPauseChanged;
   final ValueChanged<int> onSpeedChanged;
   final ValueChanged<bool> onSweepChanged;
@@ -684,6 +731,7 @@ class _DebugControls extends StatelessWidget {
   final VoidCallback onRestart;
   final VoidCallback onReturnToLive;
   final ValueChanged<SimulationEvent> onEventSelected;
+  final VoidCallback? onViewResult;
   final String? commandFilterAircraftId;
   final String commandFilterType;
   final ValueChanged<String?> onCommandFilterAircraftChanged;
@@ -712,6 +760,7 @@ class _DebugControls extends StatelessWidget {
     required this.selectedAircraft,
     required this.scenarioName,
     required this.scenarioNames,
+    required this.betaMode,
     required this.onPauseChanged,
     required this.onSpeedChanged,
     required this.onSweepChanged,
@@ -720,6 +769,7 @@ class _DebugControls extends StatelessWidget {
     required this.onRestart,
     required this.onReturnToLive,
     required this.onEventSelected,
+    required this.onViewResult,
     required this.commandFilterAircraftId,
     required this.commandFilterType,
     required this.onCommandFilterAircraftChanged,
@@ -754,19 +804,28 @@ class _DebugControls extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButton<String>(
-                    value: scenarioName,
-                    isExpanded: true,
-                    dropdownColor: AppTheme.surface,
-                    style: const TextStyle(
-                        color: AppTheme.textPrimary, fontSize: 12),
-                    underline: const SizedBox.shrink(),
-                    items: [
-                      for (final name in scenarioNames)
-                        DropdownMenuItem(value: name, child: Text(name)),
-                    ],
-                    onChanged: onScenarioChanged,
-                  ),
+                  child: betaMode
+                      ? Text(
+                          scenarioName,
+                          style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        )
+                      : DropdownButton<String>(
+                          value: scenarioName,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surface,
+                          style: const TextStyle(
+                              color: AppTheme.textPrimary, fontSize: 12),
+                          underline: const SizedBox.shrink(),
+                          items: [
+                            for (final name in scenarioNames)
+                              DropdownMenuItem(value: name, child: Text(name)),
+                          ],
+                          onChanged: onScenarioChanged,
+                        ),
                 ),
                 IconButton(
                   tooltip: 'Restart',
@@ -785,11 +844,12 @@ class _DebugControls extends StatelessWidget {
                       scenarioStarted ? () => onPauseChanged(!paused) : null,
                   icon: Icon(paused ? Icons.play_arrow : Icons.pause),
                 ),
-                IconButton(
-                  tooltip: 'Step one tick',
-                  onPressed: onStep,
-                  icon: const Icon(Icons.skip_next),
-                ),
+                if (!betaMode)
+                  IconButton(
+                    tooltip: 'Step one tick',
+                    onPressed: onStep,
+                    icon: const Icon(Icons.skip_next),
+                  ),
               ],
             ),
             const SizedBox(height: 4),
@@ -823,21 +883,22 @@ class _DebugControls extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Sweep',
-                      style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 11),
-                    ),
-                    Switch(
-                      value: sweepEnabled,
-                      onChanged: onSweepChanged,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ],
-                ),
+                if (!betaMode)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Sweep',
+                        style: TextStyle(
+                            color: AppTheme.textSecondary, fontSize: 11),
+                      ),
+                      Switch(
+                        value: sweepEnabled,
+                        onChanged: onSweepChanged,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ],
+                  ),
                 Text(
                   scenarioState.complete
                       ? (scenarioState.failed ? 'Failed' : 'Complete')
@@ -858,8 +919,19 @@ class _DebugControls extends StatelessWidget {
                 failed: scenarioState.failed,
                 reasons: scenarioState.reasons,
               ),
+              if (onViewResult != null) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: onViewResult,
+                    icon: const Icon(Icons.assessment),
+                    label: const Text('View Results'),
+                  ),
+                ),
+              ],
             ],
-            if (snapshot.events.isNotEmpty) ...[
+            if (!betaMode && snapshot.events.isNotEmpty) ...[
               const SizedBox(height: 10),
               _TimelineStrip(
                 snapshot: snapshot,
@@ -871,9 +943,10 @@ class _DebugControls extends StatelessWidget {
                 reviewEventLabel: reviewEventLabel,
               ),
             ],
-            if (snapshot.events.any((event) =>
-                event.type == 'commandIssued' ||
-                event.type == 'commandAcknowledged')) ...[
+            if (!betaMode &&
+                snapshot.events.any((event) =>
+                    event.type == 'commandIssued' ||
+                    event.type == 'commandAcknowledged')) ...[
               const SizedBox(height: 10),
               _CommandReviewPanel(
                 snapshot: snapshot,
@@ -885,11 +958,11 @@ class _DebugControls extends StatelessWidget {
                 onJumpToPair: onJumpToCommandPair,
               ),
             ],
-            if (snapshot.arrivalFlows.isNotEmpty) ...[
+            if (!betaMode && snapshot.arrivalFlows.isNotEmpty) ...[
               const SizedBox(height: 10),
               _OperationalTrendPanel(snapshot: snapshot),
             ],
-            if (snapshot.arrivalFlows.isNotEmpty) ...[
+            if (!betaMode && snapshot.arrivalFlows.isNotEmpty) ...[
               const SizedBox(height: 10),
               _ArrivalFlowPanel(snapshot: snapshot),
             ],

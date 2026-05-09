@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'features/radar_v2/radar_v2_debug_screen.dart';
+import 'features/radar_v2/radar_v2_feature_flags.dart';
+import 'features/radar_v2/training/radar_training_beta_screen.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'services/daily_challenge_service.dart';
@@ -13,8 +15,8 @@ import 'models/radar_level_config.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/progression_service.dart';
 
-final _languageService  = LanguageService();
-final _navigatorKey     = GlobalKey<NavigatorState>();
+final _languageService = LanguageService();
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,13 +30,14 @@ Future<void> main() async {
     overlays: SystemUiOverlay.values,
   );
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor:                    Colors.transparent,
-    statusBarIconBrightness:           Brightness.light,
-    systemNavigationBarColor:          Color(0xFF07111E), // == AppTheme.background
-    systemNavigationBarDividerColor:   Colors.transparent,
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Color(0xFF07111E), // == AppTheme.background
+    systemNavigationBarDividerColor: Colors.transparent,
     systemNavigationBarIconBrightness: Brightness.light,
   ));
-  RadarLevelConfig.setResolver((n) => allLevels[(n - 1).clamp(0, allLevels.length - 1)]);
+  RadarLevelConfig.setResolver(
+      (n) => allLevels[(n - 1).clamp(0, allLevels.length - 1)]);
   await _languageService.load();
   await DailyChallengeService.instance.load();
   await ProgressionService.instance.load();
@@ -81,6 +84,9 @@ class AtmAcademyApp extends StatelessWidget {
           routes: kDebugMode
               ? {
                   '/debug/radar-v2': (_) => const RadarV2DebugScreen(),
+                  if (kRadarTrainingBetaEnabled)
+                    '/debug/radar-training-beta': (_) =>
+                        const RadarTrainingBetaScreen(),
                 }
               : const {},
           navigatorKey: _navigatorKey,
