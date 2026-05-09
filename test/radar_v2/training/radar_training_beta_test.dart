@@ -7,6 +7,7 @@ import 'package:atm_flutter/features/radar_v2/radar_v2_debug_screen.dart';
 import 'package:atm_flutter/features/radar_v2/scenario/scenario_loader.dart';
 import 'package:atm_flutter/features/radar_v2/scoring/radar_v2_score.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_catalog.dart';
+import 'package:atm_flutter/features/radar_v2/training/cognitive_timeline.dart';
 import 'package:atm_flutter/features/radar_v2/training/debrief_insight.dart';
 import 'package:atm_flutter/features/radar_v2/training/debrief_salience_engine.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_beta_screen.dart';
@@ -475,6 +476,56 @@ void main() {
       );
     });
   });
+
+  group('Cognitive timeline visualizer data', () {
+    test('builds operational layers for cognitive replay', () {
+      final result = _timelineResult();
+      final timeline = const CognitiveTimelineBuilder().build(result);
+
+      expect(timeline.layers, hasLength(9));
+      expect(
+        timeline.layers.map((layer) => layer.type),
+        containsAll([
+          CognitiveTimelineLayerType.workload,
+          CognitiveTimelineLayerType.attentionQuality,
+          CognitiveTimelineLayerType.workingMemory,
+          CognitiveTimelineLayerType.surpriseLoad,
+          CognitiveTimelineLayerType.fixation,
+          CognitiveTimelineLayerType.scanBlind,
+          CognitiveTimelineLayerType.recovery,
+          CognitiveTimelineLayerType.expectationConfidence,
+          CognitiveTimelineLayerType.selfAssessment,
+        ]),
+      );
+    });
+
+    test('extracts replay event markers for warnings and cascade onset', () {
+      final result = _timelineResult();
+      final timeline = const CognitiveTimelineBuilder().build(result);
+
+      expect(
+        timeline.markers.map((marker) => marker.type),
+        containsAll([
+          CognitiveTimelineEventType.separationWarning,
+          CognitiveTimelineEventType.cascadeOnset,
+        ]),
+      );
+    });
+
+    test('primary debrief insights highlight timeline regions', () {
+      final result = _timelineResult();
+      final timeline = const CognitiveTimelineBuilder().build(result);
+
+      expect(result.debriefSalience.primaryInsights, isNotEmpty);
+      expect(timeline.salienceRegions, isNotEmpty);
+      expect(
+        timeline.markers.where(
+          (marker) => marker.type == CognitiveTimelineEventType.salience,
+        ),
+        isNotEmpty,
+      );
+    });
+  });
 }
 
 DebriefInsight _insight({
@@ -494,5 +545,52 @@ DebriefInsight _insight({
     timestamp: null,
     confidence: confidence,
     sourceSystem: category.name,
+  );
+}
+
+RadarTrainingResult _timelineResult() {
+  return RadarTrainingResultBuilder.build(
+    scenarioTitle: 'Timeline Scenario',
+    scenarioId: 'timeline_scenario',
+    score: const RadarV2ScoreSnapshot(
+      score: 58,
+      commandCount: 9,
+      separationLossCount: 1,
+      lateResolutionCount: 1,
+      spacingStability: 48,
+      throughputEfficiency: 62,
+      weatherManagement: 70,
+      commandEfficiency: 65,
+      anticipationScore: 42,
+      lastDelta: -25,
+      lastReason: 'Separation loss',
+      penalties: ['Separation loss', 'Late resolution'],
+      totalOverloadDuration: Duration(seconds: 38),
+      ignoredCriticalAlertCount: 1,
+    ),
+    snapshot: const SimulationSnapshot(
+      tick: 1,
+      elapsed: Duration(seconds: 180),
+      aircraft: [],
+      separation: [],
+      events: [
+        SimulationEvent(
+          elapsed: Duration(seconds: 72),
+          type: 'separationWarning',
+          label: 'Separation warning developed.',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 96),
+          type: 'cognitiveCascadeChain',
+          label: 'Cascade onset after spacing compression.',
+        ),
+      ],
+      attentionFocus: AttentionFocusState(
+        scanCoverageQuality: 0.42,
+        fixationWindowCount: 1,
+        reportLines: ['Critical alert ignored for 21s.'],
+      ),
+      attentionReportLines: ['Critical alert ignored for 21s.'],
+    ),
   );
 }

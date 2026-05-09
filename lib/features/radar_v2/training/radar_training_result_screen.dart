@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import 'cognitive_timeline.dart';
+import 'cognitive_timeline_visualizer.dart';
 import 'debrief_insight.dart';
 import 'radar_training_result.dart';
 
@@ -21,8 +23,19 @@ class RadarTrainingResultScreen extends StatefulWidget {
 
 class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   int _momentIndex = 0;
+  late Duration _selectedElapsed;
+  late final CognitiveTimelineData _timelineData;
 
   RadarTrainingResult get result => widget.result;
+
+  @override
+  void initState() {
+    super.initState();
+    _timelineData = const CognitiveTimelineBuilder().build(result);
+    _selectedElapsed = result.replayMoments.isEmpty
+        ? Duration.zero
+        : result.replayMoments.first.elapsed;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,14 +62,28 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             const _SectionTitle('Main Debrief'),
             const SizedBox(height: 8),
             for (final insight in result.debriefSalience.primaryInsights)
-              _DebriefInsightCard(insight: insight),
+              _DebriefInsightCard(
+                insight: insight,
+                onTap: () => _jumpToInsight(insight),
+              ),
             if (result.debriefSalience.primaryInsights.isEmpty)
               const _ExplanationCard(
                 text:
                     'Traffic flow remained stable with no major debrief item.',
               ),
             const SizedBox(height: 12),
-            _MoreDetails(result: result),
+            _MoreDetails(
+              result: result,
+              onInsightTap: _jumpToInsight,
+            ),
+            const SizedBox(height: 18),
+            _Panel(
+              child: CognitiveTimelineVisualizer(
+                data: _timelineData,
+                selectedElapsed: _selectedElapsed,
+                onJump: _jumpToElapsed,
+              ),
+            ),
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),
@@ -65,7 +92,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
                 children: [
                   OutlinedButton.icon(
                     onPressed: _momentIndex > 0
-                        ? () => setState(() => _momentIndex--)
+                        ? () => _jumpToMoment(_momentIndex - 1)
                         : null,
                     icon: const Icon(Icons.chevron_left),
                     label: const Text('Prev'),
@@ -85,7 +112,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: _momentIndex < moments.length - 1
-                        ? () => setState(() => _momentIndex++)
+                        ? () => _jumpToMoment(_momentIndex + 1)
                         : null,
                     icon: const Icon(Icons.chevron_right),
                     label: const Text('Next'),
@@ -99,7 +126,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
                 max: (moments.length - 1).toDouble(),
                 divisions: moments.length > 1 ? moments.length - 1 : null,
                 onChanged: (value) {
-                  setState(() => _momentIndex = value.round());
+                  _jumpToMoment(value.round());
                 },
               ),
               if (selectedMoment != null)
@@ -131,6 +158,60 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
         ),
       ),
     );
+  }
+
+  void _jumpToInsight(DebriefInsight insight) {
+    final elapsed = insight.timestamp ?? _nearestInsightMoment(insight);
+    _jumpToElapsed(elapsed ?? _selectedElapsed);
+  }
+
+  void _jumpToMoment(int index) {
+    final moments = result.replayMoments;
+    if (moments.isEmpty) return;
+    final clamped = index.clamp(0, moments.length - 1);
+    setState(() {
+      _momentIndex = clamped;
+      _selectedElapsed = moments[clamped].elapsed;
+    });
+  }
+
+  void _jumpToElapsed(Duration elapsed) {
+    final max = _timelineData.duration;
+    final clamped = elapsed < Duration.zero
+        ? Duration.zero
+        : elapsed > max
+            ? max
+            : elapsed;
+    final moments = result.replayMoments;
+    var nearestIndex = _momentIndex;
+    if (moments.isNotEmpty) {
+      var bestDelta = (moments.first.elapsed - clamped).abs();
+      nearestIndex = 0;
+      for (var i = 1; i < moments.length; i++) {
+        final delta = (moments[i].elapsed - clamped).abs();
+        if (delta < bestDelta) {
+          bestDelta = delta;
+          nearestIndex = i;
+        }
+      }
+    }
+    setState(() {
+      _selectedElapsed = clamped;
+      _momentIndex = nearestIndex;
+    });
+  }
+
+  Duration? _nearestInsightMoment(DebriefInsight insight) {
+    final moments = result.replayMoments.where((moment) {
+      final text = '${moment.label} ${moment.type}'.toLowerCase();
+      return insight.title
+              .toLowerCase()
+              .split(RegExp(r'\s+'))
+              .where((word) => word.length > 3)
+              .any(text.contains) ||
+          insight.body.toLowerCase().contains(moment.type.toLowerCase());
+    });
+    return moments.isEmpty ? null : moments.first.elapsed;
   }
 }
 
@@ -294,8 +375,9 @@ class _InsightCard extends StatelessWidget {
 
 class _DebriefInsightCard extends StatelessWidget {
   final DebriefInsight insight;
+  final VoidCallback? onTap;
 
-  const _DebriefInsightCard({required this.insight});
+  const _DebriefInsightCard({required this.insight, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -304,53 +386,57 @@ class _DebriefInsightCard extends StatelessWidget {
         insight.timestamp == null ? null : 'T+${insight.timestamp!.inSeconds}s';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: _Panel(
-        accent: accent,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(_categoryIcon(insight.category), color: accent, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          insight.title,
-                          style: const TextStyle(
-                            color: AppTheme.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: _Panel(
+          accent: accent,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(_categoryIcon(insight.category), color: accent, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            insight.title,
+                            style: const TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
-                      ),
-                      if (timestamp != null)
-                        Text(
-                          timestamp,
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                        if (timestamp != null)
+                          Text(
+                            timestamp,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    insight.body,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
-                      height: 1.35,
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 5),
+                    Text(
+                      insight.body,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -384,8 +470,12 @@ class _DebriefInsightCard extends StatelessWidget {
 
 class _MoreDetails extends StatelessWidget {
   final RadarTrainingResult result;
+  final ValueChanged<DebriefInsight> onInsightTap;
 
-  const _MoreDetails({required this.result});
+  const _MoreDetails({
+    required this.result,
+    required this.onInsightTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -432,7 +522,10 @@ class _MoreDetails extends StatelessWidget {
               const _SectionTitle('Additional Debrief'),
               const SizedBox(height: 8),
               for (final insight in extraInsights.take(6))
-                _DebriefInsightCard(insight: insight),
+                _DebriefInsightCard(
+                  insight: insight,
+                  onTap: () => onInsightTap(insight),
+                ),
             ],
             const SizedBox(height: 12),
             const _SectionTitle('Timeline Summary'),
