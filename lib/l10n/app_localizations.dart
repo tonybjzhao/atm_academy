@@ -3802,6 +3802,60 @@ abstract class AppLocalizations {
   /// **'Best recovery'**
   String get radarTrainingBestRecovery;
 
+  /// No description provided for @radarTrainingMistakeSeparationLost.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation was lost. Intervene earlier or use a stronger vector.'**
+  String get radarTrainingMistakeSeparationLost;
+
+  /// No description provided for @radarTrainingMistakeCriticalAlertUnattended.
+  ///
+  /// In en, this message translates to:
+  /// **'A critical alert stayed unattended. Keep scanning outside the selected aircraft.'**
+  String get radarTrainingMistakeCriticalAlertUnattended;
+
+  /// No description provided for @radarTrainingMistakeFalseRecoverySensitivity.
+  ///
+  /// In en, this message translates to:
+  /// **'False recovery lowered threat sensitivity. Keep checking the merge even after pressure drops.'**
+  String get radarTrainingMistakeFalseRecoverySensitivity;
+
+  /// No description provided for @radarTrainingMistakeHighCommandLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Command load was high. Fewer, earlier instructions would stabilize the flow.'**
+  String get radarTrainingMistakeHighCommandLoad;
+
+  /// No description provided for @radarTrainingMistakeNoneDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No major mistake detected. Focus on smoother, earlier control.'**
+  String get radarTrainingMistakeNoneDetected;
+
+  /// No description provided for @radarTrainingRecoveryWorkloadStabilized.
+  ///
+  /// In en, this message translates to:
+  /// **'You stabilized workload after a busy phase and regained spare attention.'**
+  String get radarTrainingRecoveryWorkloadStabilized;
+
+  /// No description provided for @radarTrainingRecoveryLateConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'You recovered a late conflict without losing separation.'**
+  String get radarTrainingRecoveryLateConflict;
+
+  /// No description provided for @radarTrainingRecoveryDespiteDrift.
+  ///
+  /// In en, this message translates to:
+  /// **'You kept the scenario recoverable despite expectation drift.'**
+  String get radarTrainingRecoveryDespiteDrift;
+
+  /// No description provided for @radarTrainingRecoveryPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Best recovery will appear after a pressured event is resolved.'**
+  String get radarTrainingRecoveryPending;
+
   /// No description provided for @radarTrainingAdditionalDebrief.
   ///
   /// In en, this message translates to:

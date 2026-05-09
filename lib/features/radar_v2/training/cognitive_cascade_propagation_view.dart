@@ -210,7 +210,8 @@ class _PropagationNodeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              RadarTrainingTextLocalizer.cascadeNodeLabel(localizations, node.label),
+              RadarTrainingTextLocalizer.cascadeNodeLabel(
+                  localizations, node.label),
               style: const TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 13,
@@ -271,7 +272,10 @@ class _PropagationEdgeColumn extends StatelessWidget {
             const SizedBox(height: 8),
             if (expanded && edge != null)
               Text(
-                edge!.explanation,
+                RadarTrainingTextLocalizer.line(
+                  AppLocalizations.of(context)!,
+                  edge!.explanation,
+                ),
                 maxLines: 5,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,

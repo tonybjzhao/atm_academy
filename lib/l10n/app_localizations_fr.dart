@@ -2149,6 +2149,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radarTrainingBestRecovery => 'Meilleure récupération';
 
   @override
+  String get radarTrainingMistakeSeparationLost =>
+      'La séparation a été perdue. Intervenez plus tôt ou utilisez un vecteur plus marqué.';
+
+  @override
+  String get radarTrainingMistakeCriticalAlertUnattended =>
+      'Une alerte critique est restée sans attention. Continuez à balayer au-delà de l\'aéronef sélectionné.';
+
+  @override
+  String get radarTrainingMistakeFalseRecoverySensitivity =>
+      'La fausse récupération a réduit la sensibilité à la menace. Continuez à vérifier le point de convergence après la baisse de pression.';
+
+  @override
+  String get radarTrainingMistakeHighCommandLoad =>
+      'La charge de commandes était élevée. Des instructions plus précoces et moins nombreuses stabiliseraient le flux.';
+
+  @override
+  String get radarTrainingMistakeNoneDetected =>
+      'Aucune erreur majeure détectée. Travaillez des actions de contrôle plus fluides et plus précoces.';
+
+  @override
+  String get radarTrainingRecoveryWorkloadStabilized =>
+      'Vous avez stabilisé la charge après une phase chargée et récupéré de la marge d\'attention.';
+
+  @override
+  String get radarTrainingRecoveryLateConflict =>
+      'Vous avez récupéré un conflit tardif sans perte de séparation.';
+
+  @override
+  String get radarTrainingRecoveryDespiteDrift =>
+      'Vous avez gardé le scénario récupérable malgré une dérive d\'anticipation.';
+
+  @override
+  String get radarTrainingRecoveryPending =>
+      'La meilleure récupération apparaîtra après la résolution d\'un événement sous pression.';
+
+  @override
   String get radarTrainingAdditionalDebrief => 'Débrief additionnel';
 
   @override

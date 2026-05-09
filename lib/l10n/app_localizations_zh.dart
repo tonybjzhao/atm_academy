@@ -1940,6 +1940,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get radarTrainingBestRecovery => '最佳恢复';
 
   @override
+  String get radarTrainingMistakeSeparationLost => '发生了失隔。请更早介入，或使用更明确的航向引导。';
+
+  @override
+  String get radarTrainingMistakeCriticalAlertUnattended =>
+      '有关键告警未被及时处理。即使选中了某架飞机，也要保持外围扫描。';
+
+  @override
+  String get radarTrainingMistakeFalseRecoverySensitivity =>
+      '虚假恢复降低了威胁敏感度。压力下降后仍需持续检查汇聚点。';
+
+  @override
+  String get radarTrainingMistakeHighCommandLoad => '指令负荷偏高。更早、更少的指令会让交通流更稳定。';
+
+  @override
+  String get radarTrainingMistakeNoneDetected => '未检测到主要失误。下一步可练习更平滑、更早的管制动作。';
+
+  @override
+  String get radarTrainingRecoveryWorkloadStabilized =>
+      '你在繁忙阶段后稳定了工作负荷，并重新获得了注意力余量。';
+
+  @override
+  String get radarTrainingRecoveryLateConflict => '你在未失隔的情况下恢复了一个较晚处理的冲突。';
+
+  @override
+  String get radarTrainingRecoveryDespiteDrift => '即使出现预期漂移，你仍保持了场景的可恢复性。';
+
+  @override
+  String get radarTrainingRecoveryPending => '在解决一次受压事件后，将显示最佳恢复表现。';
+
+  @override
   String get radarTrainingAdditionalDebrief => '补充复盘';
 
   @override

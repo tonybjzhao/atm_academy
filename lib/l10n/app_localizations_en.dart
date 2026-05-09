@@ -2116,6 +2116,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radarTrainingBestRecovery => 'Best recovery';
 
   @override
+  String get radarTrainingMistakeSeparationLost =>
+      'Separation was lost. Intervene earlier or use a stronger vector.';
+
+  @override
+  String get radarTrainingMistakeCriticalAlertUnattended =>
+      'A critical alert stayed unattended. Keep scanning outside the selected aircraft.';
+
+  @override
+  String get radarTrainingMistakeFalseRecoverySensitivity =>
+      'False recovery lowered threat sensitivity. Keep checking the merge even after pressure drops.';
+
+  @override
+  String get radarTrainingMistakeHighCommandLoad =>
+      'Command load was high. Fewer, earlier instructions would stabilize the flow.';
+
+  @override
+  String get radarTrainingMistakeNoneDetected =>
+      'No major mistake detected. Focus on smoother, earlier control.';
+
+  @override
+  String get radarTrainingRecoveryWorkloadStabilized =>
+      'You stabilized workload after a busy phase and regained spare attention.';
+
+  @override
+  String get radarTrainingRecoveryLateConflict =>
+      'You recovered a late conflict without losing separation.';
+
+  @override
+  String get radarTrainingRecoveryDespiteDrift =>
+      'You kept the scenario recoverable despite expectation drift.';
+
+  @override
+  String get radarTrainingRecoveryPending =>
+      'Best recovery will appear after a pressured event is resolved.';
+
+  @override
   String get radarTrainingAdditionalDebrief => 'Additional Debrief';
 
   @override

@@ -132,6 +132,24 @@ class RadarTrainingTextLocalizer {
           'radarTrainingWeatherMergeCompression',
       'Late speed control allowed closure rate to build.':
           'radarTrainingLateSpeedControlClosureRate',
+      'Separation was lost. Intervene earlier or use a stronger vector.':
+          'radarTrainingMistakeSeparationLost',
+      'A critical alert stayed unattended. Keep scanning outside the selected aircraft.':
+          'radarTrainingMistakeCriticalAlertUnattended',
+      'False recovery lowered threat sensitivity. Keep checking the merge even after pressure drops.':
+          'radarTrainingMistakeFalseRecoverySensitivity',
+      'Command load was high. Fewer, earlier instructions would stabilize the flow.':
+          'radarTrainingMistakeHighCommandLoad',
+      'No major mistake detected. Focus on smoother, earlier control.':
+          'radarTrainingMistakeNoneDetected',
+      'You stabilized workload after a busy phase and regained spare attention.':
+          'radarTrainingRecoveryWorkloadStabilized',
+      'You recovered a late conflict without losing separation.':
+          'radarTrainingRecoveryLateConflict',
+      'You kept the scenario recoverable despite expectation drift.':
+          'radarTrainingRecoveryDespiteDrift',
+      'Best recovery will appear after a pressured event is resolved.':
+          'radarTrainingRecoveryPending',
       'Primary propagation chain': 'radarTrainingPrimaryPropagationChain',
       'Top mistake': 'radarTrainingTopMistake',
       'Best recovery': 'radarTrainingBestRecovery',
@@ -324,6 +342,24 @@ class RadarTrainingTextLocalizer {
         return l10n.radarTrainingWeatherMergeCompression;
       case 'radarTrainingLateSpeedControlClosureRate':
         return l10n.radarTrainingLateSpeedControlClosureRate;
+      case 'radarTrainingMistakeSeparationLost':
+        return l10n.radarTrainingMistakeSeparationLost;
+      case 'radarTrainingMistakeCriticalAlertUnattended':
+        return l10n.radarTrainingMistakeCriticalAlertUnattended;
+      case 'radarTrainingMistakeFalseRecoverySensitivity':
+        return l10n.radarTrainingMistakeFalseRecoverySensitivity;
+      case 'radarTrainingMistakeHighCommandLoad':
+        return l10n.radarTrainingMistakeHighCommandLoad;
+      case 'radarTrainingMistakeNoneDetected':
+        return l10n.radarTrainingMistakeNoneDetected;
+      case 'radarTrainingRecoveryWorkloadStabilized':
+        return l10n.radarTrainingRecoveryWorkloadStabilized;
+      case 'radarTrainingRecoveryLateConflict':
+        return l10n.radarTrainingRecoveryLateConflict;
+      case 'radarTrainingRecoveryDespiteDrift':
+        return l10n.radarTrainingRecoveryDespiteDrift;
+      case 'radarTrainingRecoveryPending':
+        return l10n.radarTrainingRecoveryPending;
       case 'radarTrainingPrimaryPropagationChain':
         return l10n.radarTrainingPrimaryPropagationChain;
       case 'radarTrainingTopMistake':
