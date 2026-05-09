@@ -206,6 +206,34 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               for (final line in result.recoveryQuality)
                 _EvaluationChip(text: line),
             ],
+            if (result.inaccurateSelfAssessmentMoments.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Inaccurate Self-Assessment'),
+              const SizedBox(height: 8),
+              for (final line in result.inaccurateSelfAssessmentMoments)
+                _EvaluationChip(text: line),
+            ],
+            if (result.unnoticedOverload.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Unnoticed Overload'),
+              const SizedBox(height: 8),
+              for (final line in result.unnoticedOverload)
+                _EvaluationChip(text: line),
+            ],
+            if (result.successfulSelfRecovery.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Successful Self-Recovery'),
+              const SizedBox(height: 8),
+              for (final line in result.successfulSelfRecovery)
+                _EvaluationChip(text: line),
+            ],
+            if (result.confidenceCalibrationQuality.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Confidence Calibration Quality'),
+              const SizedBox(height: 8),
+              for (final line in result.confidenceCalibrationQuality)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),

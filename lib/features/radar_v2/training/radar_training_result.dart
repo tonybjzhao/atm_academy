@@ -29,6 +29,10 @@ class RadarTrainingResult {
   final List<String> rootSurpriseEvent;
   final List<String> secondaryFailuresCaused;
   final List<String> recoveryQuality;
+  final List<String> inaccurateSelfAssessmentMoments;
+  final List<String> unnoticedOverload;
+  final List<String> successfulSelfRecovery;
+  final List<String> confidenceCalibrationQuality;
   final String topMistake;
   final String bestRecovery;
 
@@ -60,6 +64,10 @@ class RadarTrainingResult {
     required this.rootSurpriseEvent,
     required this.secondaryFailuresCaused,
     required this.recoveryQuality,
+    required this.inaccurateSelfAssessmentMoments,
+    required this.unnoticedOverload,
+    required this.successfulSelfRecovery,
+    required this.confidenceCalibrationQuality,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -126,9 +134,84 @@ class RadarTrainingResultBuilder {
       rootSurpriseEvent: buildRootSurpriseEvent(snapshot),
       secondaryFailuresCaused: buildSecondaryFailuresCaused(snapshot),
       recoveryQuality: buildCascadeRecoveryQuality(snapshot),
+      inaccurateSelfAssessmentMoments:
+          buildInaccurateSelfAssessmentMoments(snapshot),
+      unnoticedOverload: buildUnnoticedOverload(snapshot),
+      successfulSelfRecovery: buildSuccessfulSelfRecovery(snapshot),
+      confidenceCalibrationQuality: buildConfidenceCalibrationQuality(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
+  }
+
+  static List<String> buildInaccurateSelfAssessmentMoments(
+    SimulationSnapshot snapshot,
+  ) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'metaInaccurateAssessment') continue;
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 3) break;
+    }
+    if (lines.isEmpty && snapshot.metaCognitionState.inaccurateSelfAssessmentMoments > 0) {
+      lines.add(
+        'Inaccurate self-assessment moments: '
+        '${snapshot.metaCognitionState.inaccurateSelfAssessmentMoments}.',
+      );
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildUnnoticedOverload(SimulationSnapshot snapshot) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'metaUnnoticedOverload') continue;
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 3) break;
+    }
+    if (lines.isEmpty && snapshot.metaCognitionState.unnoticedOverloadMoments > 0) {
+      lines.add(
+        'Unnoticed overload moments: '
+        '${snapshot.metaCognitionState.unnoticedOverloadMoments}.',
+      );
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildSuccessfulSelfRecovery(SimulationSnapshot snapshot) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'metaSuccessfulRecovery' &&
+          event.type != 'metaRecoveryAction') {
+        continue;
+      }
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 3) break;
+    }
+    if (snapshot.metaCognitionState.successfulSelfRecoveryCount > 0) {
+      lines.add(
+        'Successful self-recovery behaviors: '
+        '${snapshot.metaCognitionState.successfulSelfRecoveryCount}.',
+      );
+    }
+    return List.unmodifiable(lines.take(4));
+  }
+
+  static List<String> buildConfidenceCalibrationQuality(
+    SimulationSnapshot snapshot,
+  ) {
+    final quality = snapshot.metaCognitionState.confidenceCalibrationQuality;
+    final label = quality >= 0.72
+        ? 'well-calibrated'
+        : quality >= 0.52
+            ? 'partially calibrated'
+            : 'poorly calibrated';
+    return [
+      'Confidence calibration quality: $label '
+          '(${quality.toStringAsFixed(2)}).',
+      'Latest self-estimated scan quality: '
+          '${snapshot.metaCognitionState.latestAssessment.estimatedScanQuality.toStringAsFixed(2)}.',
+    ];
   }
 
   static List<String> buildCognitiveCascadeChains(SimulationSnapshot snapshot) {
@@ -500,6 +583,7 @@ class RadarTrainingResultBuilder {
       ...snapshot.attentionReportLines,
       ...snapshot.predictiveMentalModelReportLines,
       ...snapshot.cognitiveCascadeReportLines,
+      ...snapshot.metaCognitionReportLines,
       ...snapshot.workingMemoryReportLines,
       ...snapshot.psychologyState.reportLines,
       ...snapshot.expectationState.reportLines,
@@ -559,6 +643,7 @@ class RadarTrainingResultBuilder {
       ...snapshot.expectationState.reportLines,
       ...snapshot.predictiveMentalModelReportLines,
       ...snapshot.cognitiveCascadeReportLines,
+      ...snapshot.metaCognitionReportLines,
       ...snapshot.attentionReportLines,
       ...snapshot.workingMemoryReportLines,
     ]) {

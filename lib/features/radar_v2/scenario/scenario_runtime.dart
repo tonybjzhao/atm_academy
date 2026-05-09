@@ -11,6 +11,8 @@ import '../core/mental_model/cognitive_cascade_engine.dart';
 import '../core/mental_model/cognitive_cascade_state.dart';
 import '../core/mental_model/controller_expectation_state.dart';
 import '../core/mental_model/expectation_tracker.dart';
+import '../core/mental_model/meta_cognition_engine.dart';
+import '../core/mental_model/meta_cognition_state.dart';
 import '../core/mental_model/predictive_mental_model_engine.dart';
 import '../core/mental_model/predictive_mental_model_state.dart';
 import '../core/mental_model/working_memory_engine.dart';
@@ -71,6 +73,7 @@ class ScenarioRuntime {
       PredictiveMentalModelEngine();
     final CognitiveCascadeEngine _cognitiveCascadeEngine =
       CognitiveCascadeEngine();
+    late final MetaCognitionEngine _metaCognitionEngine;
   final WorkingMemoryEngine _workingMemoryEngine = WorkingMemoryEngine();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
@@ -90,6 +93,7 @@ class ScenarioRuntime {
       PredictiveMentalModelState.idle;
     CognitiveCascadeState _lastCognitiveCascadeState =
       CognitiveCascadeState.idle;
+    MetaCognitionState _lastMetaCognitionState = MetaCognitionState.idle;
   WorkingMemoryState _lastWorkingMemoryState = WorkingMemoryState.idle;
   WorkingMemoryState _previousWorkingMemoryState = WorkingMemoryState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
@@ -112,7 +116,11 @@ class ScenarioRuntime {
               holdPatterns: definition.holdPatterns,
               altitudeRestrictions: definition.altitudeRestrictions,
               maxControllerLoad: definition.maxControllerLoad,
-            );
+            ) {
+    final normalizedDifficulty = ((definition.difficulty - 1) / 4).clamp(0.0, 1.0);
+    final experienceLevel = (1.0 - normalizedDifficulty).clamp(0.1, 0.95);
+    _metaCognitionEngine = MetaCognitionEngine(experienceLevel: experienceLevel);
+  }
 
   static List<ArrivalFlow> _effectiveArrivalFlows(ScenarioDefinition def) {
     if (def.weatherMode != 'low_visibility' ||
@@ -230,6 +238,17 @@ class ScenarioRuntime {
       elapsed: baseSnapshot.elapsed,
       state: _lastCognitiveCascadeState,
     );
+    _lastMetaCognitionState = _metaCognitionEngine.evaluate(
+      snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
+      attention: _lastAttentionFocusState,
+      workingMemory: _lastWorkingMemoryState,
+      predictive: _lastPredictiveMentalModelState,
+      cascade: _lastCognitiveCascadeState,
+    );
+    _applyMetaCognitionEffects(
+      elapsed: baseSnapshot.elapsed,
+      state: _lastMetaCognitionState,
+    );
     _lastWorkingMemoryState = _workingMemoryEngine.evaluate(
       snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
       attentionFocus: _lastAttentionFocusState,
@@ -287,6 +306,7 @@ class ScenarioRuntime {
         ..._lastExpectationState.reportLines,
         ..._lastPredictiveMentalModelState.reportLines,
         ..._lastCognitiveCascadeState.reportLines,
+        ..._lastMetaCognitionState.reportLines,
       ].take(5).toList(growable: false),
       psychologyState: _lastPsychologyState,
       expectationState: _lastExpectationState,
@@ -296,6 +316,9 @@ class ScenarioRuntime {
       cognitiveCascadeState: _lastCognitiveCascadeState,
       cognitiveCascadeReportLines:
           List<String>.from(_lastCognitiveCascadeState.reportLines),
+      metaCognitionState: _lastMetaCognitionState,
+      metaCognitionReportLines:
+          List<String>.from(_lastMetaCognitionState.reportLines),
       workingMemoryState: _lastWorkingMemoryState,
       workingMemoryReportLines:
           List<String>.from(_lastWorkingMemoryState.reportLines),
@@ -537,6 +560,7 @@ class ScenarioRuntime {
       _lastPredictiveMentalModelState;
     CognitiveCascadeState get lastCognitiveCascadeState =>
       _lastCognitiveCascadeState;
+    MetaCognitionState get lastMetaCognitionState => _lastMetaCognitionState;
   WorkingMemoryState get lastWorkingMemoryState => _lastWorkingMemoryState;
 
   void _applyPredictiveMentalModelEffects({
@@ -661,6 +685,84 @@ class ScenarioRuntime {
         elapsed: elapsed,
         type: 'cognitiveRecoveryInstability',
         label: 'Recovery instability: over-correction risk elevated',
+      ));
+    }
+  }
+
+  void _applyMetaCognitionEffects({
+    required Duration elapsed,
+    required MetaCognitionState state,
+  }) {
+    final assessment = state.latestAssessment;
+    final actualWorkload = (engine.snapshot.sectorPressureIndex / 4).clamp(0.0, 1.0);
+
+    final workloadError =
+        (assessment.estimatedWorkload - actualWorkload).abs();
+    final scanError = (assessment.estimatedScanQuality -
+            _lastAttentionFocusState.scanCoverageQuality)
+        .abs();
+    if (workloadError > 0.24 || scanError > 0.24) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'metaInaccurateAssessment',
+        label: 'Inaccurate self-assessment detected',
+      ));
+    }
+
+    if (assessment.degradationBlindness) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'metaUnnoticedOverload',
+        label: 'Overload or degradation was not fully recognized',
+      ));
+    }
+
+    for (final action in state.recentRecoveryActions.take(2)) {
+      if (elapsed - action.triggeredAt > const Duration(seconds: 1)) {
+        continue;
+      }
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'metaRecoveryAction',
+        label: '${action.action} (eff ${action.effectiveness.toStringAsFixed(2)})',
+      ));
+
+      if (action.action == 'widen scan deliberately' &&
+          action.effectiveness > 0.55) {
+        _stickyFocusUntil = null;
+        _stickyFocusTarget = null;
+      }
+      if (action.action == 'slow command tempo' &&
+          action.effectiveness > 0.5 &&
+          _recentCommandTimestamps.length >= 2) {
+        _recentCommandTimestamps.removeAt(_recentCommandTimestamps.length - 1);
+      }
+      if (action.action == 're-anchor priorities' &&
+          action.effectiveness > 0.52) {
+        final top = _alertManager.topAlerts(1);
+        if (top.isNotEmpty && top.first.relatedAircraftIds.isNotEmpty) {
+          _selectedAircraftIdForAttention = top.first.relatedAircraftIds.first;
+        }
+      }
+      if (action.action == 'reset mental model assumptions' &&
+          action.effectiveness > 0.5) {
+        _pressureCarryOver *= 0.9;
+      }
+      if (action.action == 'clear working-memory backlog' &&
+          action.effectiveness > 0.55) {
+        _activeDistractionUntil.removeWhere(
+          (key, expiry) =>
+              key.startsWith('cascade:') && expiry - elapsed < const Duration(seconds: 10),
+        );
+      }
+    }
+
+    if (state.confidenceCalibrationQuality >= 0.68 &&
+        state.recentRecoveryActions.isNotEmpty) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'metaSuccessfulRecovery',
+        label: 'Self-recovery behavior stabilized workload perception',
       ));
     }
   }

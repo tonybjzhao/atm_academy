@@ -14,6 +14,7 @@ import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/alerts/operational_alert.dart';
 import '../core/mental_model/cognitive_cascade_state.dart';
 import '../core/mental_model/controller_expectation_state.dart';
+import '../core/mental_model/meta_cognition_state.dart';
 import '../core/mental_model/predictive_mental_model_state.dart';
 import '../core/mental_model/working_memory_state.dart';
 import '../core/psychology/scenario_pressure_phase.dart';
@@ -47,6 +48,8 @@ class SimulationSnapshot {
   final List<String> predictiveMentalModelReportLines;
   final CognitiveCascadeState cognitiveCascadeState;
   final List<String> cognitiveCascadeReportLines;
+  final MetaCognitionState metaCognitionState;
+  final List<String> metaCognitionReportLines;
   final WorkingMemoryState workingMemoryState;
   final List<String> workingMemoryReportLines;
 
@@ -78,6 +81,8 @@ class SimulationSnapshot {
     this.predictiveMentalModelReportLines = const [],
     this.cognitiveCascadeState = CognitiveCascadeState.idle,
     this.cognitiveCascadeReportLines = const [],
+    this.metaCognitionState = MetaCognitionState.idle,
+    this.metaCognitionReportLines = const [],
     this.workingMemoryState = WorkingMemoryState.idle,
     this.workingMemoryReportLines = const [],
   });
