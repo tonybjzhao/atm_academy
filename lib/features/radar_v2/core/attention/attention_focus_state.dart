@@ -36,6 +36,16 @@ class AttentionFocusState {
   final int competingHighPriorityAlertCount;
   final int recentFocusedCommandCount;
   final Duration overloadDuration;
+  final double attentionBudget;
+  final double scanCoverageQuality;
+  final List<String> neglectedAircraftIds;
+  final Duration averageNeglect;
+  final Duration longestNeglect;
+  final Duration scanBlindDuration;
+  final int fixationWindowCount;
+  final int delayedAwarenessMoments;
+  final int missedSecondaryProblems;
+  final List<String> activeInterrupts;
   final AttentionRiskLevel riskLevel;
   final List<String> reportLines;
 
@@ -46,6 +56,16 @@ class AttentionFocusState {
     this.competingHighPriorityAlertCount = 0,
     this.recentFocusedCommandCount = 0,
     this.overloadDuration = Duration.zero,
+    this.attentionBudget = 1,
+    this.scanCoverageQuality = 1,
+    this.neglectedAircraftIds = const [],
+    this.averageNeglect = Duration.zero,
+    this.longestNeglect = Duration.zero,
+    this.scanBlindDuration = Duration.zero,
+    this.fixationWindowCount = 0,
+    this.delayedAwarenessMoments = 0,
+    this.missedSecondaryProblems = 0,
+    this.activeInterrupts = const [],
     this.riskLevel = AttentionRiskLevel.normal,
     this.reportLines = const [],
   });

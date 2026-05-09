@@ -94,6 +94,34 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               for (final line in result.lateVectorRecognition)
                 _EvaluationChip(text: line),
             ],
+            if (result.neglectedAircraft.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Neglected Tracks'),
+              const SizedBox(height: 8),
+              for (final line in result.neglectedAircraft)
+                _EvaluationChip(text: line),
+            ],
+            if (result.scanBlindPeriods.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Scan Blind Periods'),
+              const SizedBox(height: 8),
+              for (final line in result.scanBlindPeriods)
+                _EvaluationChip(text: line),
+            ],
+            if (result.fixationWindows.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Fixation Windows'),
+              const SizedBox(height: 8),
+              for (final line in result.fixationWindows)
+                _EvaluationChip(text: line),
+            ],
+            if (result.delayedAwarenessMoments.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Delayed Awareness'),
+              const SizedBox(height: 8),
+              for (final line in result.delayedAwarenessMoments)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),

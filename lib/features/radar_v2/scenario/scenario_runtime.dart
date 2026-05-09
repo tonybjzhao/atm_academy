@@ -22,6 +22,7 @@ import '../models/arrival_flow.dart';
 import '../models/controller_alert.dart';
 import '../models/departure_flow.dart';
 import '../models/simulation_event.dart';
+import '../models/separation_result.dart';
 import '../models/simulation_snapshot.dart';
 import 'scenario_definition.dart';
 
@@ -40,6 +41,8 @@ class ScenarioRuntime {
   final Set<String> _alertsEscalatedThisTick = <String>{};
   final Map<String, Duration> _activeDistractionUntil = <String, Duration>{};
   final Set<String> _distractionsProcessedThisTick = <String>{};
+  final Map<String, Duration> _subtleConflictFirstSeenAt = <String, Duration>{};
+  final Set<String> _subtleConflictDeferred = <String>{};
   // Dynamic pacing: tracks spawn holds and their deadlines
   final Map<String, Duration> _spawnHeldUntil = <String, Duration>{};
   double _currentSectorPressure = 0;
@@ -68,6 +71,7 @@ class ScenarioRuntime {
   pressure.AttentionCompetitionResult _lastAttentionResult =
       pressure.AttentionCompetitionResult.idle;
   AttentionFocusState _lastAttentionFocusState = AttentionFocusState.idle;
+  AttentionFocusState _previousAttentionFocusState = AttentionFocusState.idle;
   ScenarioPsychologyState _lastPsychologyState = ScenarioPsychologyState.idle;
   ControllerExpectationState _lastExpectationState =
       ControllerExpectationState.idle;
@@ -162,6 +166,12 @@ class ScenarioRuntime {
       cognitiveLoad: cognitiveLoad,
       operationalAlerts: _alertManager.activeAlerts,
     );
+    _recordAttentionDisciplineEvents(
+      elapsed: baseSnapshot.elapsed,
+      previous: _previousAttentionFocusState,
+      current: _lastAttentionFocusState,
+    );
+    _previousAttentionFocusState = _lastAttentionFocusState;
     _attentionHistory.add(_lastAttentionFocusState);
     if (_attentionHistory.length > 240) {
       _attentionHistory.removeAt(0);
@@ -1000,6 +1010,63 @@ class ScenarioRuntime {
           final durationSecs = (event.duration?.inSeconds ?? 30);
           _activeDistractionUntil[event.id] =
               elapsed + Duration(seconds: durationSecs);
+          engine.recordEvent(SimulationEvent(
+            elapsed: elapsed,
+            type: 'attentionInterrupt',
+            label: 'radio_chatter:${event.id}',
+          ));
+          _distractionsProcessedThisTick.add(event.id);
+
+        case 'runway_change':
+          final durationSecs = (event.duration?.inSeconds ?? 22);
+          _activeDistractionUntil[event.id] =
+              elapsed + Duration(seconds: durationSecs);
+          _activeAlerts[event.id] = ControllerAlert(
+            id: event.id,
+            type: AlertType.distractionEvent,
+            severity: 5,
+            createdAt: elapsed,
+            runwayId: event.targetRunwayId,
+          );
+          engine.recordEvent(SimulationEvent(
+            elapsed: elapsed,
+            type: 'attentionInterrupt',
+            label: 'runway_change:${event.id}',
+          ));
+          _distractionsProcessedThisTick.add(event.id);
+
+        case 'weather_escalation':
+          final durationSecs = (event.duration?.inSeconds ?? 18);
+          _activeDistractionUntil[event.id] =
+              elapsed + Duration(seconds: durationSecs);
+          _activeAlerts[event.id] = ControllerAlert(
+            id: event.id,
+            type: AlertType.weatherEscalation,
+            severity: (4 + (event.severityIncrease ?? 1)).clamp(1, 10),
+            createdAt: elapsed,
+          );
+          engine.recordEvent(SimulationEvent(
+            elapsed: elapsed,
+            type: 'attentionInterrupt',
+            label: 'weather_update:${event.id}',
+          ));
+          _distractionsProcessedThisTick.add(event.id);
+
+        case 'simultaneous_alerts':
+          final durationSecs = (event.duration?.inSeconds ?? 20);
+          _activeDistractionUntil[event.id] =
+              elapsed + Duration(seconds: durationSecs);
+          _activeAlerts[event.id] = ControllerAlert(
+            id: event.id,
+            type: AlertType.distractionEvent,
+            severity: 6,
+            createdAt: elapsed,
+          );
+          engine.recordEvent(SimulationEvent(
+            elapsed: elapsed,
+            type: 'attentionInterrupt',
+            label: 'simultaneous_alerts:${event.id}',
+          ));
           _distractionsProcessedThisTick.add(event.id);
 
         case 'medical_emergency':
@@ -1013,6 +1080,13 @@ class ScenarioRuntime {
               runwayId: event.targetRunwayId,
             );
           }
+          _activeDistractionUntil[event.id] =
+              elapsed + Duration(seconds: event.duration?.inSeconds ?? 30);
+          engine.recordEvent(SimulationEvent(
+            elapsed: elapsed,
+            type: 'attentionInterrupt',
+            label: 'emergency_distraction:${event.id}',
+          ));
           _distractionsProcessedThisTick.add(event.id);
 
         case 'low_fuel':
@@ -1025,6 +1099,13 @@ class ScenarioRuntime {
               runwayId: event.targetRunwayId,
             );
           }
+          _activeDistractionUntil[event.id] =
+              elapsed + Duration(seconds: event.duration?.inSeconds ?? 28);
+          engine.recordEvent(SimulationEvent(
+            elapsed: elapsed,
+            type: 'attentionInterrupt',
+            label: 'emergency_distraction:${event.id}',
+          ));
           _distractionsProcessedThisTick.add(event.id);
 
         case 'engine_failure':
@@ -1037,6 +1118,13 @@ class ScenarioRuntime {
               runwayId: event.targetRunwayId,
             );
           }
+          _activeDistractionUntil[event.id] =
+              elapsed + Duration(seconds: event.duration?.inSeconds ?? 35);
+          engine.recordEvent(SimulationEvent(
+            elapsed: elapsed,
+            type: 'attentionInterrupt',
+            label: 'emergency_distraction:${event.id}',
+          ));
           _distractionsProcessedThisTick.add(event.id);
 
         default:
@@ -1073,11 +1161,15 @@ class ScenarioRuntime {
   /// Alerts compete for controller attention based on urgency hierarchy.
   void _generateAndEscalateAlerts(SimulationSnapshot snapshot) {
     _alertsEscalatedThisTick.clear();
+    final predictedConflictKeys = <String>{};
 
     // Generate separation loss alerts
     for (final result in snapshot.separation) {
       if (!result.isLossOfSeparation && !result.isPredictedConflict) continue;
       final key = _alertKeyForPair(result.aircraftAId, result.aircraftBId);
+      if (result.isPredictedConflict && !result.isLossOfSeparation) {
+        predictedConflictKeys.add(key);
+      }
       if (_activeAlerts.containsKey(key)) {
         // Update existing alert with escalation
         final existing = _activeAlerts[key]!;
@@ -1095,6 +1187,12 @@ class ScenarioRuntime {
           _alertsEscalatedThisTick.add(key);
         }
       } else {
+        if (result.isPredictedConflict &&
+            !result.isLossOfSeparation &&
+            _shouldDelaySubtleConflict(result, snapshot)) {
+          continue;
+        }
+
         // Create new alert
         final alertType = result.isLossOfSeparation
             ? AlertType.separationLoss
@@ -1109,6 +1207,11 @@ class ScenarioRuntime {
         );
       }
     }
+
+    _subtleConflictFirstSeenAt
+        .removeWhere((key, _) => !predictedConflictKeys.contains(key));
+    _subtleConflictDeferred
+        .removeWhere((key) => !predictedConflictKeys.contains(key));
 
     // Generate runway occupancy alerts
     for (final runway in snapshot.runwayStates) {
@@ -1190,6 +1293,67 @@ class ScenarioRuntime {
       // Keep other alerts for now
       return false;
     });
+  }
+
+  bool _shouldDelaySubtleConflict(
+    SeparationResult result,
+    SimulationSnapshot snapshot,
+  ) {
+    final ttc = result.timeToConflict?.inSeconds;
+    if (ttc == null || ttc <= 0) return false;
+    if (ttc <= 35) return false;
+
+    final key = _alertKeyForPair(result.aircraftAId, result.aircraftBId);
+    final firstSeen = _subtleConflictFirstSeenAt.putIfAbsent(
+      key,
+      () => snapshot.elapsed,
+    );
+    final attentionPoor = _lastAttentionFocusState.scanCoverageQuality < 0.58 ||
+        _lastAttentionFocusState.riskLevel.index >=
+            AttentionRiskLevel.tunnelVision.index ||
+        _lastAttentionResult.remainingAttentionBudget < 0.42;
+    if (!attentionPoor) {
+      return false;
+    }
+
+    if (_subtleConflictDeferred.add(key)) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: snapshot.elapsed,
+        type: 'attentionDelayedRecognition',
+        label: 'Subtle conflict cue not recognized for $key',
+        aircraftId: result.aircraftAId,
+      ));
+    }
+
+    final delay = snapshot.elapsed - firstSeen;
+    if (delay >= const Duration(seconds: 18)) {
+      return false;
+    }
+    return true;
+  }
+
+  void _recordAttentionDisciplineEvents({
+    required Duration elapsed,
+    required AttentionFocusState previous,
+    required AttentionFocusState current,
+  }) {
+    if (current.scanBlindDuration >= const Duration(seconds: 12) &&
+        previous.scanBlindDuration < const Duration(seconds: 12)) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'attentionScanBlind',
+        label: 'Scan blind period reached ${current.scanBlindDuration.inSeconds}s',
+      ));
+    }
+    if (current.focusDuration >= const Duration(seconds: 20) &&
+        current.competingHighPriorityAlertCount > 0 &&
+        previous.focusDuration < const Duration(seconds: 20)) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'attentionFixationWindow',
+        label: 'Fixation window opened on ${current.currentFocusTarget ?? 'unknown'}',
+      ));
+    }
   }
 
   String _alertKeyForPair(String a, String b) {

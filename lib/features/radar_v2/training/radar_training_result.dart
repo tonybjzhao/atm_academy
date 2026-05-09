@@ -13,6 +13,10 @@ class RadarTrainingResult {
   final List<String> commandTimingQuality;
   final List<String> hesitationWindows;
   final List<String> lateVectorRecognition;
+  final List<String> neglectedAircraft;
+  final List<String> scanBlindPeriods;
+  final List<String> fixationWindows;
+  final List<String> delayedAwarenessMoments;
   final String topMistake;
   final String bestRecovery;
 
@@ -28,6 +32,10 @@ class RadarTrainingResult {
     required this.commandTimingQuality,
     required this.hesitationWindows,
     required this.lateVectorRecognition,
+    required this.neglectedAircraft,
+    required this.scanBlindPeriods,
+    required this.fixationWindows,
+    required this.delayedAwarenessMoments,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -78,9 +86,79 @@ class RadarTrainingResultBuilder {
       commandTimingQuality: buildCommandTimingQuality(snapshot),
       hesitationWindows: buildHesitationWindows(snapshot),
       lateVectorRecognition: buildLateVectorRecognition(snapshot),
+      neglectedAircraft: buildNeglectedAircraft(snapshot),
+      scanBlindPeriods: buildScanBlindPeriods(snapshot),
+      fixationWindows: buildFixationWindows(snapshot),
+      delayedAwarenessMoments: buildDelayedAwarenessMoments(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
+  }
+
+  static List<String> buildNeglectedAircraft(SimulationSnapshot snapshot) {
+    final neglected = snapshot.attentionFocus.neglectedAircraftIds;
+    if (neglected.isEmpty) {
+      if (snapshot.attentionFocus.longestNeglect >= const Duration(seconds: 18)) {
+        return [
+          'No specific neglected track IDs captured, but max unseen interval '
+              'reached ${snapshot.attentionFocus.longestNeglect.inSeconds}s.',
+        ];
+      }
+      return const [];
+    }
+    return [
+      'Neglected tracks: ${neglected.join(', ')}.',
+      'Longest unseen interval: '
+          '${snapshot.attentionFocus.longestNeglect.inSeconds}s.',
+    ];
+  }
+
+  static List<String> buildScanBlindPeriods(SimulationSnapshot snapshot) {
+    final periods = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'attentionScanBlind') continue;
+      periods.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (periods.length == 3) break;
+    }
+    if (periods.isEmpty &&
+        snapshot.attentionFocus.scanBlindDuration >= const Duration(seconds: 12)) {
+      periods.add(
+        'Late-session scan blind period reached '
+        '${snapshot.attentionFocus.scanBlindDuration.inSeconds}s.',
+      );
+    }
+    return List.unmodifiable(periods);
+  }
+
+  static List<String> buildFixationWindows(SimulationSnapshot snapshot) {
+    final windows = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'attentionFixationWindow') continue;
+      windows.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (windows.length == 3) break;
+    }
+    if (windows.isEmpty && snapshot.attentionFocus.fixationWindowCount > 0) {
+      windows.add(
+        'Fixation windows detected: ${snapshot.attentionFocus.fixationWindowCount}.',
+      );
+    }
+    return List.unmodifiable(windows);
+  }
+
+  static List<String> buildDelayedAwarenessMoments(SimulationSnapshot snapshot) {
+    final moments = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'attentionDelayedRecognition') continue;
+      moments.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (moments.length == 3) break;
+    }
+    if (moments.isEmpty && snapshot.attentionFocus.delayedAwarenessMoments > 0) {
+      moments.add(
+        'Delayed awareness moments observed: '
+        '${snapshot.attentionFocus.delayedAwarenessMoments}.',
+      );
+    }
+    return List.unmodifiable(moments);
   }
 
   static List<String> buildCommandTimingQuality(SimulationSnapshot snapshot) {
