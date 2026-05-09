@@ -136,8 +136,23 @@ class SimulationEngine {
   }
 
   void applyCommand(ControllerCommand command) {
-    _aircraftById(command.aircraftId);
-    final effectiveDelay = _getEffectiveAckDelay();
+    final aircraft = _aircraftById(command.aircraftId);
+    var effectiveDelay = _getEffectiveAckDelay();
+    if (_sectorPressureIndex >= 0.8) {
+      effectiveDelay += _pilotResponseJitter(aircraft, command);
+    }
+
+    // Under higher pressure, occasional delayed acknowledgements add
+    // operational imperfection without introducing a new gameplay system.
+    final delayedAckChance = (_sectorPressureIndex * 0.08).clamp(0.0, 0.24);
+    if (_sectorPressureIndex >= 1.0 &&
+        _noise01('${aircraft.id}:${command.runtimeType}:delay:${_tick}') <
+            delayedAckChance) {
+      effectiveDelay += const Duration(milliseconds: 900);
+    }
+    if (effectiveDelay < const Duration(milliseconds: 700)) {
+      effectiveDelay = const Duration(milliseconds: 700);
+    }
     _pendingCommands.add(
       _PendingCommand(
         command: command,
@@ -190,10 +205,14 @@ class SimulationEngine {
   void _applyAcknowledgedCommand(ControllerCommand command) {
     final aircraft = _aircraftById(command.aircraftId);
     if (command is AssignHeading) {
+      final commandedHeading = _normalizeHeading(command.headingDeg);
+      final headingOffset =
+          _sectorPressureIndex >= 0.9 ? _headingComplianceOffsetDeg(aircraft, command) : 0.0;
       updateAircraft(
         aircraft.copyWith(
           intent: aircraft.intent.copyWith(
-            assignedHeadingDeg: _normalizeHeading(command.headingDeg),
+            assignedHeadingDeg:
+                _normalizeHeading(commandedHeading + headingOffset),
             clearDirectTo: true,
           ),
         ),
@@ -203,10 +222,14 @@ class SimulationEngine {
       return;
     }
     if (command is AssignAltitude) {
+      final altitudeOffset = _sectorPressureIndex >= 0.9
+          ? _altitudeComplianceOffsetFt(aircraft, command)
+          : 0;
       updateAircraft(
         aircraft.copyWith(
           intent: aircraft.intent.copyWith(
-            assignedAltitudeFt: command.altitudeFt,
+            assignedAltitudeFt:
+                (command.altitudeFt + altitudeOffset).clamp(2000, 45000),
           ),
         ),
       );
@@ -215,10 +238,13 @@ class SimulationEngine {
       return;
     }
     if (command is AssignSpeed) {
+      final speedOffset =
+          _sectorPressureIndex >= 0.9 ? _speedComplianceOffsetKt(aircraft, command) : 0.0;
       updateAircraft(
         aircraft.copyWith(
           intent: aircraft.intent.copyWith(
-            assignedSpeedKt: command.speedKt,
+            assignedSpeedKt:
+                (command.speedKt + speedOffset).clamp(120, 480).toDouble(),
           ),
         ),
       );
@@ -384,10 +410,57 @@ class SimulationEngine {
         _distance(aircraft.xNm, aircraft.yNm, finalFix.xNm, finalFix.yNm);
     if (distanceToThreshold > 18 && distanceToFinal > 8) return null;
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
-    final speedTarget = distanceToThreshold < 8
+    var speedTarget = distanceToThreshold < 8
         ? profile.approachSpeedKt
         : math.max(profile.approachSpeedKt + 35, 180).toDouble();
+
+    if (_sectorPressureIndex >= 0.8) {
+      speedTarget += _mergeSpacingAdjustmentKt(aircraft, flow, threshold);
+
+      // Small deterministic variation avoids mathematically perfect spacing.
+      speedTarget +=
+        (_noise01('${aircraft.id}:approach:${_elapsed.inSeconds}') - 0.5) *
+          2.8;
+    }
+    speedTarget = speedTarget.clamp(profile.approachSpeedKt - 5, 330);
     return (speedTarget, flow.stabilizedAltitudeFt);
+  }
+
+  double _mergeSpacingAdjustmentKt(
+    AircraftState aircraft,
+    ArrivalFlow flow,
+    Waypoint threshold,
+  ) {
+    final sameFlow = _aircraft.where((candidate) {
+      return candidate.active &&
+          !candidate.intent.isDeparture &&
+          candidate.id != aircraft.id &&
+          candidate.intent.assignedRunwayId == flow.runwayId;
+    }).toList(growable: false);
+    if (sameFlow.isEmpty) return 0;
+
+    final ownDistance =
+        _distance(aircraft.xNm, aircraft.yNm, threshold.xNm, threshold.yNm);
+    double? nearestAhead;
+    for (final candidate in sameFlow) {
+      final candidateDistance =
+          _distance(candidate.xNm, candidate.yNm, threshold.xNm, threshold.yNm);
+      if (candidateDistance >= ownDistance) continue;
+      final gap = ownDistance - candidateDistance;
+      if (nearestAhead == null || gap < nearestAhead) {
+        nearestAhead = gap;
+      }
+    }
+
+    if (nearestAhead == null) return 0;
+
+    if (nearestAhead < flow.spacingTargetNm * 0.95) {
+      return -10;
+    }
+    if (nearestAhead > flow.spacingTargetNm * 1.9) {
+      return 6;
+    }
+    return 0;
   }
 
   ArrivalFlow? _arrivalFlowForRunway(String runwayId) {
@@ -548,6 +621,71 @@ class SimulationEngine {
     return aircraft.intent.assignedHeadingDeg != null &&
         (aircraft.intent.route.isNotEmpty ||
             aircraft.intent.assignedProcedureId != null);
+  }
+
+  Duration _pilotResponseJitter(
+    AircraftState aircraft,
+    ControllerCommand command,
+  ) {
+    final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
+    final baseSeconds = switch (profile.type) {
+      AircraftPerformanceType.jet => 0.45,
+      AircraftPerformanceType.regional => 0.35,
+      AircraftPerformanceType.turboprop => 0.30,
+    };
+    final noise = _noise01(
+      '${aircraft.id}:${command.runtimeType}:${_elapsed.inSeconds}:${_tick}',
+    );
+    final jitterSeconds = (noise - 0.5) * 2 * baseSeconds;
+    return Duration(milliseconds: (jitterSeconds * 1000).round());
+  }
+
+  double _headingComplianceOffsetDeg(
+    AircraftState aircraft,
+    ControllerCommand command,
+  ) {
+    final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
+    final maxOffset = switch (profile.type) {
+      AircraftPerformanceType.jet => 2.2,
+      AircraftPerformanceType.regional => 1.8,
+      AircraftPerformanceType.turboprop => 1.4,
+    };
+    final noise = _noise01(
+      '${aircraft.id}:hdg:${command.runtimeType}:${_elapsed.inSeconds}',
+    );
+    return (noise - 0.5) * 2 * maxOffset;
+  }
+
+  int _altitudeComplianceOffsetFt(
+    AircraftState aircraft,
+    ControllerCommand command,
+  ) {
+    final noise = _noise01(
+      '${aircraft.id}:alt:${command.runtimeType}:${_elapsed.inSeconds}',
+    );
+    // Keep deviation small enough to remain operationally plausible.
+    return ((noise - 0.5) * 2 * 120).round();
+  }
+
+  double _speedComplianceOffsetKt(
+    AircraftState aircraft,
+    ControllerCommand command,
+  ) {
+    final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
+    final maxOffset = switch (profile.type) {
+      AircraftPerformanceType.jet => 6.0,
+      AircraftPerformanceType.regional => 4.5,
+      AircraftPerformanceType.turboprop => 3.5,
+    };
+    final noise = _noise01(
+      '${aircraft.id}:spd:${command.runtimeType}:${_elapsed.inSeconds}',
+    );
+    return (noise - 0.5) * 2 * maxOffset;
+  }
+
+  double _noise01(String seed) {
+    final hash = seed.hashCode & 0x7fffffff;
+    return (hash % 10000) / 10000.0;
   }
 }
 

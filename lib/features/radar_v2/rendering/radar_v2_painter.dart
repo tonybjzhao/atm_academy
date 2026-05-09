@@ -117,7 +117,8 @@ class RadarV2Painter extends CustomPainter {
       required bool recentlyAcknowledged,
       required Offset labelOffset,
       required double sweepPulse}) {
-    final position = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
+    final basePosition = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
+    final position = basePosition + _weatherWobbleOffset(aircraft, scale);
     final headingRad = aircraft.headingDeg * math.pi / 180;
     final vectorLength =
         (aircraft.groundSpeedKt * 60 / 3600 * scale).clamp(12.0, 70.0);
@@ -196,7 +197,7 @@ class RadarV2Painter extends CustomPainter {
         11 + 8 * sweepPulse,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
+          ..strokeWidth = 1.2
           ..color = aircraftColor.withValues(alpha: 0.18 + 0.35 * sweepPulse),
       );
     }
@@ -228,7 +229,10 @@ class RadarV2Painter extends CustomPainter {
           ..color = const Color(0xFF46F5A7),
       );
     }
-    labelPainter.paint(canvas, position.translate(labelOffset.dx, labelOffset.dy));
+    labelPainter.paint(
+      canvas,
+      position.translate(labelOffset.dx, labelOffset.dy),
+    );
   }
 
   void _drawTrail(
@@ -770,23 +774,37 @@ class RadarV2Painter extends CustomPainter {
       ..color = _isUrgent(conflict) && alertPulse
           ? const Color(0xFFFF4D4D)
           : const Color(0xFFFFD166);
+    final seconds = conflict.timeToConflict?.inSeconds;
+    final anticipatory = seconds != null && seconds > 60 && seconds <= 150;
     canvas.drawCircle(position, 10, paint);
     canvas.drawCircle(
       position,
-      alertPulse ? 18 : 14,
+      alertPulse ? 18 : (anticipatory ? 17 : 14),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.1
-        ..color = paint.color.withValues(alpha: alertPulse ? 0.55 : 0.24),
+        ..color = paint.color.withValues(
+          alpha: alertPulse ? 0.55 : (anticipatory ? 0.34 : 0.24),
+        ),
     );
+    if (anticipatory) {
+      canvas.drawCircle(
+        position,
+        24,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = const Color(0xFFFFD166).withValues(alpha: 0.22),
+      );
+    }
     canvas.drawLine(
         position.translate(-8, -8), position.translate(8, 8), paint);
     canvas.drawLine(
         position.translate(-8, 8), position.translate(8, -8), paint);
-    final seconds = conflict.timeToConflict?.inSeconds;
     final label = seconds == null
         ? 'CONFLICT'
-        : 'CONFLICT T-${seconds}s ${conflict.lateralNm.toStringAsFixed(1)}NM';
+      : '${anticipatory ? 'CLOSING' : 'CONFLICT'} T-${seconds}s '
+        '${conflict.lateralNm.toStringAsFixed(1)}NM';
     _drawAlertLabel(
         canvas, position.translate(12, -22), label, const Color(0xFFFFD166));
     _drawClosureArrow(canvas, center, scale, conflict, paint);
@@ -883,11 +901,29 @@ class RadarV2Painter extends CustomPainter {
     return center.translate(xNm * scale, -yNm * scale);
   }
 
+  Offset _weatherWobbleOffset(AircraftState aircraft, double scale) {
+    var severity = 0;
+    for (final zone in snapshot.weatherZones) {
+      final dx = aircraft.xNm - zone.xNm;
+      final dy = aircraft.yNm - zone.yNm;
+      if (dx * dx + dy * dy <= zone.radiusNm * zone.radiusNm) {
+        severity = math.max(severity, zone.severity);
+      }
+    }
+    if (severity == 0) return Offset.zero;
+
+    final t = snapshot.elapsed.inMilliseconds / 1000.0;
+    final idPhase = ((aircraft.id.hashCode & 0x7fffffff) % 1000) / 1000.0;
+    final phase = (t * 3.1) + idPhase * math.pi * 2;
+    final ampPx = (0.5 + severity * 0.35) * (scale / 20).clamp(0.7, 2.0);
+    return Offset(math.sin(phase) * ampPx, math.cos(phase * 0.85) * ampPx);
+  }
+
   AircraftState _interpolatedAircraft(AircraftState current) {
     final previous = previousSnapshot?.aircraftById(current.id);
     if (previous == null || !previous.active) return current;
     final rawT = interpolation.clamp(0, 1).toDouble();
-    final t = rawT * rawT * (3 - 2 * rawT);
+    final t = rawT * rawT * rawT * (rawT * (rawT * 6 - 15) + 10);
     return current.copyWith(
       xNm: _lerp(previous.xNm, current.xNm, t),
       yNm: _lerp(previous.yNm, current.yNm, t),

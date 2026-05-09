@@ -38,11 +38,14 @@ class TrajectoryIntegrator {
       aircraft.headingDeg,
       aircraft.intent.assignedHeadingDeg ?? aircraft.headingDeg,
       degradedTurnRate * seconds,
+      pressureIndex: pressureIndex,
     );
-    final nextSpeed = _approachDouble(
+    final nextSpeed = _approachSpeed(
       aircraft.groundSpeedKt,
       aircraft.intent.assignedSpeedKt ?? aircraft.groundSpeedKt,
-      degradedAcceleration * seconds,
+      accelerationKtPerSecond: degradedAcceleration,
+      stepSeconds: seconds,
+      pressureIndex: pressureIndex,
     );
     final nextAltitude = _advanceAltitude(
       aircraft,
@@ -97,16 +100,67 @@ class TrajectoryIntegrator {
     return ((aircraft.altitudeFt + stepFeet).round(), rate);
   }
 
-  double _approachDouble(double current, double target, double maxStep) {
+  double _approachSpeed(
+    double current,
+    double target, {
+    required double accelerationKtPerSecond,
+    required double stepSeconds,
+    required double pressureIndex,
+  }) {
     final delta = target - current;
-    if (delta.abs() <= maxStep) return target;
-    return current + maxStep * delta.sign;
+    if (delta.abs() < 0.05) return target;
+
+    // Preserve baseline deterministic speed response at low pressure.
+    if (pressureIndex < 0.8) {
+      final maxStep = accelerationKtPerSecond * stepSeconds;
+      if (delta.abs() <= maxStep) return target;
+      return current + maxStep * delta.sign;
+    }
+
+    // Deceleration is intentionally a bit slower than acceleration to avoid
+    // robotic speed snaps and create inertia for heavier aircraft behavior.
+    final accelRate = accelerationKtPerSecond;
+    final decelRate = accelerationKtPerSecond * 0.72;
+    final rate = delta > 0 ? accelRate : decelRate;
+    final maxStep = rate * stepSeconds;
+
+    // Near target, ease in to avoid abrupt final locking.
+    final damping = delta.abs() < 10 ? (0.45 + delta.abs() / 20) : 1.0;
+    final easedStep = maxStep * damping;
+
+    if (delta.abs() <= easedStep) return target;
+    return current + easedStep * delta.sign;
   }
 
-  double _approachAngle(double current, double target, double maxStep) {
+  double _approachAngle(
+    double current,
+    double target,
+    double maxStep, {
+    required double pressureIndex,
+  }) {
     final delta = _shortestAngleDelta(current, target);
-    if (delta.abs() <= maxStep) return target;
-    return current + maxStep * delta.sign;
+    final absDelta = delta.abs();
+
+    // Preserve baseline deterministic turn response at low pressure.
+    if (pressureIndex < 0.8) {
+      if (absDelta <= maxStep) return target;
+      return current + maxStep * delta.sign;
+    }
+
+    // Large heading changes begin assertively (anticipation), then taper near
+    // capture (rollout smoothing) to reduce robotic heading snaps.
+    final anticipationFactor = absDelta > 40
+        ? 1.12
+        : absDelta > 20
+            ? 1.0
+            : 0.72;
+    final rolloutFactor = absDelta < 8
+        ? (0.35 + (absDelta / 8) * 0.65)
+        : 1.0;
+    final dynamicStep = maxStep * anticipationFactor * rolloutFactor;
+
+    if (absDelta <= dynamicStep) return target;
+    return current + dynamicStep * delta.sign;
   }
 
   double _shortestAngleDelta(double fromDeg, double toDeg) {

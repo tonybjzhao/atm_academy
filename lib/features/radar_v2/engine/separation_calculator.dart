@@ -35,12 +35,14 @@ class SeparationCalculator {
     AircraftState b, {
     double pressureIndex = 0,
   }) {
-    final lateral = lateralDistanceNm(a, b);
+    final baseLateral = lateralDistanceNm(a, b);
+    final lateral = (baseLateral + _pairLateralBiasNm(a.id, b.id)).clamp(0.0, 999.0);
     final vertical = (a.altitudeFt - b.altitudeFt).abs();
 
     // Under high pressure, effective minimums are reduced (spacing degrades)
     final pressureFactor = _getPressureFactor(pressureIndex);
-    final effectiveMinLateral = minimumLateralNm / pressureFactor;
+    final pairScale = _pairSpacingScale(a.id, b.id);
+    final effectiveMinLateral = (minimumLateralNm / pressureFactor) * pairScale;
     final effectiveMinVertical = (minimumVerticalFt / pressureFactor).round();
 
     return SeparationResult(
@@ -69,5 +71,24 @@ class SeparationCalculator {
     final dx = a.xNm - b.xNm;
     final dy = a.yNm - b.yNm;
     return math.sqrt(dx * dx + dy * dy);
+  }
+
+  // Small deterministic pair bias creates realistic spacing compression/
+  // stretch variation while remaining stable and replayable.
+  double _pairLateralBiasNm(String aId, String bId) {
+    final hash = _pairHash(aId, bId);
+    final normalized = (hash % 1000) / 1000.0;
+    return (normalized - 0.5) * 0.36; // approx -0.18..+0.18 NM
+  }
+
+  double _pairSpacingScale(String aId, String bId) {
+    final hash = _pairHash(aId, bId);
+    final normalized = (hash % 1000) / 1000.0;
+    return 0.96 + normalized * 0.08; // 0.96..1.04
+  }
+
+  int _pairHash(String aId, String bId) {
+    final ids = [aId, bId]..sort();
+    return ('${ids[0]}:${ids[1]}').hashCode & 0x7fffffff;
   }
 }

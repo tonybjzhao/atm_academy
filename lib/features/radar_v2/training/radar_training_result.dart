@@ -10,6 +10,9 @@ class RadarTrainingResult {
   final List<String> timelineSummary;
   final List<ReplayMoment> replayMoments;
   final List<String> controllerEvaluation;
+  final List<String> commandTimingQuality;
+  final List<String> hesitationWindows;
+  final List<String> lateVectorRecognition;
   final String topMistake;
   final String bestRecovery;
 
@@ -22,6 +25,9 @@ class RadarTrainingResult {
     required this.timelineSummary,
     required this.replayMoments,
     required this.controllerEvaluation,
+    required this.commandTimingQuality,
+    required this.hesitationWindows,
+    required this.lateVectorRecognition,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -69,9 +75,99 @@ class RadarTrainingResultBuilder {
       timelineSummary: buildTimelineSummary(snapshot, score),
       replayMoments: buildReplayMoments(snapshot),
       controllerEvaluation: buildControllerEvaluation(score, snapshot),
+      commandTimingQuality: buildCommandTimingQuality(snapshot),
+      hesitationWindows: buildHesitationWindows(snapshot),
+      lateVectorRecognition: buildLateVectorRecognition(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
+  }
+
+  static List<String> buildCommandTimingQuality(SimulationSnapshot snapshot) {
+    final issued = snapshot.events.where((e) => e.type == 'commandIssued').toList();
+    final acked = snapshot.events.where((e) => e.type == 'commandAcknowledged').toList();
+    if (issued.isEmpty) {
+      return const ['No command timing sample available.'];
+    }
+
+    final latencies = <int>[];
+    for (final issue in issued) {
+      final match = acked.where((ack) {
+        if (ack.aircraftId != issue.aircraftId) return false;
+        if (ack.elapsed < issue.elapsed) return false;
+        return ack.elapsed - issue.elapsed <= const Duration(seconds: 12);
+      });
+      if (match.isNotEmpty) {
+        latencies.add((match.first.elapsed - issue.elapsed).inSeconds);
+      }
+    }
+
+    if (latencies.isEmpty) {
+      return const ['Command acknowledgements were delayed beyond 12s.'];
+    }
+
+    final avg = latencies.reduce((a, b) => a + b) / latencies.length;
+    final insights = <String>[];
+    if (avg <= 3) {
+      insights.add('Command timing quality: crisp (${avg.toStringAsFixed(1)}s avg acknowledgement).');
+    } else if (avg <= 5) {
+      insights.add('Command timing quality: acceptable (${avg.toStringAsFixed(1)}s avg acknowledgement).');
+    } else {
+      insights.add('Command timing quality: slow (${avg.toStringAsFixed(1)}s avg acknowledgement).');
+    }
+
+    final delayedCount = latencies.where((s) => s >= 6).length;
+    if (delayedCount > 0) {
+      insights.add('$delayedCount command(s) acknowledged late (>=6s).');
+    }
+    return List.unmodifiable(insights);
+  }
+
+  static List<String> buildHesitationWindows(SimulationSnapshot snapshot) {
+    final issued = snapshot.events.where((e) => e.type == 'commandIssued').toList()
+      ..sort((a, b) => a.elapsed.compareTo(b.elapsed));
+    if (issued.length < 2) return const [];
+
+    final windows = <String>[];
+    for (var i = 1; i < issued.length; i++) {
+      final gap = issued[i].elapsed - issued[i - 1].elapsed;
+      if (gap < const Duration(seconds: 12)) continue;
+      windows.add(
+        'Hesitation window at T+${issued[i - 1].elapsed.inSeconds}s '
+        'to T+${issued[i].elapsed.inSeconds}s (${gap.inSeconds}s).',
+      );
+      if (windows.length == 3) break;
+    }
+    return List.unmodifiable(windows);
+  }
+
+  static List<String> buildLateVectorRecognition(SimulationSnapshot snapshot) {
+    final vectors = snapshot.events.where((e) {
+      return e.type == 'commandIssued' && e.label.toLowerCase().contains('heading');
+    }).toList();
+    final conflicts = snapshot.events.where((e) {
+      final l = e.label.toLowerCase();
+      return e.type == 'separationLoss' || l.contains('conflict');
+    }).toList();
+    if (vectors.isEmpty || conflicts.isEmpty) return const [];
+
+    final lines = <String>[];
+    for (final vector in vectors) {
+      final recentConflict = conflicts.where((conflict) {
+        if (conflict.aircraftId != null && vector.aircraftId != conflict.aircraftId) {
+          return false;
+        }
+        final delta = vector.elapsed - conflict.elapsed;
+        return delta >= const Duration(seconds: 0) &&
+            delta <= const Duration(seconds: 22);
+      });
+      if (recentConflict.isEmpty) continue;
+      lines.add(
+        'Late vector recognition near T+${vector.elapsed.inSeconds}s (${vector.label}).',
+      );
+      if (lines.length == 2) break;
+    }
+    return List.unmodifiable(lines);
   }
 
   static List<String> buildControllerEvaluation(

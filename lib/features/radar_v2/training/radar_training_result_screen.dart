@@ -73,6 +73,27 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             const SizedBox(height: 8),
             for (final line in result.replayExplanation)
               _ExplanationCard(text: line),
+            if (result.commandTimingQuality.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Command Timing Quality'),
+              const SizedBox(height: 8),
+              for (final line in result.commandTimingQuality)
+                _EvaluationChip(text: line),
+            ],
+            if (result.hesitationWindows.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Hesitation Windows'),
+              const SizedBox(height: 8),
+              for (final line in result.hesitationWindows)
+                _EvaluationChip(text: line),
+            ],
+            if (result.lateVectorRecognition.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Late Vector Recognition'),
+              const SizedBox(height: 8),
+              for (final line in result.lateVectorRecognition)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),
