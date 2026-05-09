@@ -1673,6 +1673,12 @@ class _DebugControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final activeHeavy = snapshot.aircraft.where((item) {
+      return item.active && item.performanceType.name == 'heavy';
+    }).length;
+    final scenarioHeavy = runtime.definition.aircraft.where((spawn) {
+      return spawn.initialState.performanceType.name == 'heavy';
+    }).length;
     final conflicts = snapshot.separation
         .where((item) => item.isPredictedConflict || item.isLossOfSeparation)
         .length;
@@ -1753,7 +1759,8 @@ class _DebugControls extends StatelessWidget {
                 Text(
                   '${snapshot.aircraft.where((item) => item.active).length} aircraft  '
                   '$conflicts alerts  Score ${score.score}  '
-                  'Pressure ${snapshot.sectorPressureIndex.toStringAsFixed(1)}',
+                  'Pressure ${snapshot.sectorPressureIndex.toStringAsFixed(1)}  '
+                  'Heavy $activeHeavy/$scenarioHeavy',
                   style: const TextStyle(
                       color: AppTheme.textSecondary, fontSize: 12),
                 ),
