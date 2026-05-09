@@ -26,6 +26,7 @@ import 'scoring/radar_v2_score.dart';
 import 'training/radar_training_result.dart';
 import 'training/radar_training_result_screen.dart';
 import 'training/radar_training_progress_store.dart';
+import 'training/radar_training_text_localizer.dart';
 import 'workflow/command_workflow_tracker.dart';
 
 class RadarV2DebugScreen extends StatefulWidget {
@@ -2997,6 +2998,7 @@ class _ScenarioResultPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
@@ -3011,7 +3013,9 @@ class _ScenarioResultPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            failed ? 'Scenario Failed' : 'Scenario Complete',
+            failed
+                ? l10n.radarTrainingCompletionScenarioFailed
+                : l10n.radarTrainingCompletionScenarioComplete,
             style: TextStyle(
               color: failed ? AppTheme.danger : AppTheme.primary,
               fontWeight: FontWeight.w700,
@@ -3019,28 +3023,36 @@ class _ScenarioResultPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Grade ${score.grade}  Score ${score.score}  '
-            'Losses ${score.separationLossCount}  Commands ${score.commandCount}',
+            l10n.radarTrainingCompletionGrade(
+              score.grade,
+              score.score,
+              score.separationLossCount,
+              score.commandCount,
+            ),
             style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
-            'Efficiency ${_efficiencyLabel(score.commandCount)}',
+            l10n.radarTrainingCompletionEfficiency(
+              _efficiencyLabel(l10n, score.commandCount),
+            ),
             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
-            'Spacing ${score.spacingStability.toStringAsFixed(0)}%  '
-            'Throughput ${score.throughputEfficiency.toStringAsFixed(0)}%  '
-            'Weather ${score.weatherManagement.toStringAsFixed(0)}%  '
-            'Commands ${score.commandEfficiency.toStringAsFixed(0)}%',
+            l10n.radarTrainingCompletionSubscores(
+              score.spacingStability.toStringAsFixed(0),
+              score.throughputEfficiency.toStringAsFixed(0),
+              score.weatherManagement.toStringAsFixed(0),
+              score.commandEfficiency.toStringAsFixed(0),
+            ),
             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
           if (score.penalties.isNotEmpty) ...[
             const SizedBox(height: 6),
-            const Text(
-              'Timeline Summary',
-              style: TextStyle(
+            Text(
+              l10n.radarTrainingTimelineSummary,
+              style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -3049,14 +3061,14 @@ class _ScenarioResultPanel extends StatelessWidget {
             const SizedBox(height: 3),
             for (final penalty in score.penalties.take(4))
               Text(
-                penalty,
+                _localizePenalty(l10n, penalty),
                 style: const TextStyle(color: AppTheme.warning, fontSize: 11),
               ),
           ],
           if (reasons.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              reasons.join(' / '),
+              reasons.map((r) => _localizeReason(l10n, r)).join(' / '),
               style:
                   const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
             ),
@@ -3066,11 +3078,33 @@ class _ScenarioResultPanel extends StatelessWidget {
     );
   }
 
-  String _efficiencyLabel(int commands) {
-    if (commands <= 4) return 'Excellent';
-    if (commands <= 8) return 'Good';
-    if (commands <= 12) return 'Busy';
-    return 'Over-controlled';
+  String _efficiencyLabel(AppLocalizations l10n, int commands) {
+    if (commands <= 4) return l10n.radarTrainingEfficiencyExcellent;
+    if (commands <= 8) return l10n.radarTrainingEfficiencyGood;
+    if (commands <= 12) return l10n.radarTrainingEfficiencyBusy;
+    return l10n.radarTrainingEfficiencyOverControlled;
+  }
+
+  String _localizePenalty(AppLocalizations l10n, String penalty) {
+    final match = RegExp(r'^([+-]\d+)\s+(.+)$').firstMatch(penalty.trim());
+    if (match == null) return penalty;
+    final prefix = match.group(1)!;
+    final reason = match.group(2)!;
+    return '$prefix ${RadarTrainingTextLocalizer.line(l10n, reason)}';
+  }
+
+  String _localizeReason(AppLocalizations l10n, String reason) {
+    return switch (reason) {
+      'All aircraft spawned' => l10n.radarTrainingWinReasonAllSpawned,
+      'Scenario duration reached' => l10n.radarTrainingWinReasonDurationReached,
+      'No excessive separation losses' =>
+        l10n.radarTrainingWinReasonNoExcessiveLosses,
+      'All aircraft exited safely' => l10n.radarTrainingWinReasonAllExitedSafely,
+      'Separation loss detected' => l10n.radarTrainingFailReasonSeparationLoss,
+      'Scenario timed out before all traffic spawned' =>
+        l10n.radarTrainingFailReasonTimeout,
+      _ => RadarTrainingTextLocalizer.line(l10n, reason),
+    };
   }
 }
 

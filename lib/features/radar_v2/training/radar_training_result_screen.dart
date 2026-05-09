@@ -27,25 +27,71 @@ class RadarTrainingResultScreen extends StatefulWidget {
 
 class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   int _momentIndex = 0;
-  late Duration _selectedElapsed;
-  late final CognitiveTimelineData _timelineData;
-  late final CognitiveCascadePropagationData _cascadeData;
+  Duration _selectedElapsed = Duration.zero;
+  CognitiveTimelineData? _timelineData;
+  CognitiveCascadePropagationData? _cascadeData;
+  Object? _initError;
 
   RadarTrainingResult get result => widget.result;
 
   @override
   void initState() {
     super.initState();
-    _timelineData = const CognitiveTimelineBuilder().build(result);
-    _cascadeData = const CognitiveCascadePropagationBuilder().build(result);
-    _selectedElapsed = result.replayMoments.isEmpty
-        ? Duration.zero
-        : result.replayMoments.first.elapsed;
+    try {
+      _timelineData = const CognitiveTimelineBuilder().build(result);
+      _cascadeData = const CognitiveCascadePropagationBuilder().build(result);
+      _selectedElapsed = result.replayMoments.isEmpty
+          ? Duration.zero
+          : result.replayMoments.first.elapsed;
+    } catch (e) {
+      _initError = e;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    if (_initError != null) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        appBar: AppBar(
+          title: Text(l10n.scenarioResult),
+          backgroundColor: AppTheme.surface,
+        ),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: AppTheme.danger, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.radarTrainingResultLoadFailed,
+                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.radarTrainingResultLoadFailedHelp,
+                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(l10n.radarTrainingDismiss),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    final timelineData = _timelineData!;
+    final cascadeData = _cascadeData!;
     final moments = result.replayMoments;
     final selectedMoment = moments.isEmpty
         ? null
@@ -87,7 +133,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             const SizedBox(height: 18),
             _Panel(
               child: CognitiveCascadePropagationView(
-                data: _cascadeData,
+                data: cascadeData,
                 selectedElapsed: _selectedElapsed,
                 localizations: l10n,
                 onJump: _jumpToElapsed,
@@ -96,7 +142,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             const SizedBox(height: 18),
             _Panel(
               child: CognitiveTimelineVisualizer(
-                data: _timelineData,
+                data: timelineData,
                 selectedElapsed: _selectedElapsed,
                 localizations: l10n,
                 onJump: _jumpToElapsed,
@@ -194,7 +240,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   }
 
   void _jumpToElapsed(Duration elapsed) {
-    final max = _timelineData.duration;
+    final max = _timelineData?.duration ?? Duration.zero;
     final clamped = elapsed < Duration.zero
         ? Duration.zero
         : elapsed > max

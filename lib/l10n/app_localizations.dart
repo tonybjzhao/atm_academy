@@ -4834,6 +4834,212 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ack'**
   String get radarTrainingAckShort;
+
+  /// No description provided for @radarTrainingCompletionScenarioComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario Complete'**
+  String get radarTrainingCompletionScenarioComplete;
+
+  /// No description provided for @radarTrainingCompletionScenarioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario Failed'**
+  String get radarTrainingCompletionScenarioFailed;
+
+  /// No description provided for @radarTrainingCompletionGrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Grade {grade}  Score {score}  Losses {losses}  Commands {commands}'**
+  String radarTrainingCompletionGrade(
+      String grade, int score, int losses, int commands);
+
+  /// No description provided for @radarTrainingCompletionEfficiency.
+  ///
+  /// In en, this message translates to:
+  /// **'Efficiency {label}'**
+  String radarTrainingCompletionEfficiency(String label);
+
+  /// No description provided for @radarTrainingEfficiencyExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get radarTrainingEfficiencyExcellent;
+
+  /// No description provided for @radarTrainingEfficiencyGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get radarTrainingEfficiencyGood;
+
+  /// No description provided for @radarTrainingEfficiencyBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get radarTrainingEfficiencyBusy;
+
+  /// No description provided for @radarTrainingEfficiencyOverControlled.
+  ///
+  /// In en, this message translates to:
+  /// **'Over-controlled'**
+  String get radarTrainingEfficiencyOverControlled;
+
+  /// No description provided for @radarTrainingCompletionSubscores.
+  ///
+  /// In en, this message translates to:
+  /// **'Spacing {spacing}%  Throughput {throughput}%  Weather {weather}%  Commands {commands}%'**
+  String radarTrainingCompletionSubscores(
+      String spacing, String throughput, String weather, String commands);
+
+  /// No description provided for @radarTrainingWinReasonAllSpawned.
+  ///
+  /// In en, this message translates to:
+  /// **'All aircraft spawned'**
+  String get radarTrainingWinReasonAllSpawned;
+
+  /// No description provided for @radarTrainingWinReasonDurationReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario duration reached'**
+  String get radarTrainingWinReasonDurationReached;
+
+  /// No description provided for @radarTrainingWinReasonNoExcessiveLosses.
+  ///
+  /// In en, this message translates to:
+  /// **'No excessive separation losses'**
+  String get radarTrainingWinReasonNoExcessiveLosses;
+
+  /// No description provided for @radarTrainingWinReasonAllExitedSafely.
+  ///
+  /// In en, this message translates to:
+  /// **'All aircraft exited safely'**
+  String get radarTrainingWinReasonAllExitedSafely;
+
+  /// No description provided for @radarTrainingFailReasonSeparationLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation loss detected'**
+  String get radarTrainingFailReasonSeparationLoss;
+
+  /// No description provided for @radarTrainingFailReasonTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario timed out before all traffic spawned'**
+  String get radarTrainingFailReasonTimeout;
+
+  /// No description provided for @radarTrainingPenaltySaturationCascading.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturation: cascading risk'**
+  String get radarTrainingPenaltySaturationCascading;
+
+  /// No description provided for @radarTrainingPenaltySeparationLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation loss'**
+  String get radarTrainingPenaltySeparationLoss;
+
+  /// No description provided for @radarTrainingPenaltyLateResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Late resolution'**
+  String get radarTrainingPenaltyLateResolution;
+
+  /// No description provided for @radarTrainingPenaltyWeatherPenetration.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather penetration'**
+  String get radarTrainingPenaltyWeatherPenetration;
+
+  /// No description provided for @radarTrainingPenaltyArrivalSpacingCompressed.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival spacing compressed'**
+  String get radarTrainingPenaltyArrivalSpacingCompressed;
+
+  /// No description provided for @radarTrainingPenaltyControllerWorkloadHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Controller workload high'**
+  String get radarTrainingPenaltyControllerWorkloadHigh;
+
+  /// No description provided for @radarTrainingPenaltyRunwayOccupancyPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway occupancy pressure'**
+  String get radarTrainingPenaltyRunwayOccupancyPressure;
+
+  /// No description provided for @radarTrainingPenaltyFuelPressureHold.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel pressure from prolonged hold'**
+  String get radarTrainingPenaltyFuelPressureHold;
+
+  /// No description provided for @radarTrainingPenaltyFuelPressureVectoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel pressure from excessive vectoring'**
+  String get radarTrainingPenaltyFuelPressureVectoring;
+
+  /// No description provided for @radarTrainingPenaltyArrivalDelayPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival delay pressure'**
+  String get radarTrainingPenaltyArrivalDelayPressure;
+
+  /// No description provided for @radarTrainingPenaltyCommandBurst.
+  ///
+  /// In en, this message translates to:
+  /// **'Command burst (reactive intervention)'**
+  String get radarTrainingPenaltyCommandBurst;
+
+  /// No description provided for @radarTrainingPenaltyCriticalAlertIgnored.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alert ignored >20s'**
+  String get radarTrainingPenaltyCriticalAlertIgnored;
+
+  /// No description provided for @radarTrainingPenaltyIgnoredAttentionCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored critical attention cue'**
+  String get radarTrainingPenaltyIgnoredAttentionCue;
+
+  /// No description provided for @radarTrainingPenaltyUnnecessaryAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnecessary altitude change'**
+  String get radarTrainingPenaltyUnnecessaryAltitude;
+
+  /// No description provided for @radarTrainingPenaltyDistraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Distraction reduces command efficiency'**
+  String get radarTrainingPenaltyDistraction;
+
+  /// No description provided for @radarTrainingPenaltyExcessiveCommandLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Excessive command load'**
+  String get radarTrainingPenaltyExcessiveCommandLoad;
+
+  /// No description provided for @radarTrainingPenaltyDistractionEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Distraction event'**
+  String get radarTrainingPenaltyDistractionEvent;
+
+  /// No description provided for @radarTrainingResultLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Result data could not be loaded.'**
+  String get radarTrainingResultLoadFailed;
+
+  /// No description provided for @radarTrainingResultLoadFailedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This can happen if the scenario ended unexpectedly. Please retry.'**
+  String get radarTrainingResultLoadFailedHelp;
 }
 
 class _AppLocalizationsDelegate

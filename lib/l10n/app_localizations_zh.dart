@@ -2491,4 +2491,114 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get radarTrainingAckShort => '确认';
+
+  @override
+  String get radarTrainingCompletionScenarioComplete => '场景完成';
+
+  @override
+  String get radarTrainingCompletionScenarioFailed => '场景失败';
+
+  @override
+  String radarTrainingCompletionGrade(
+      String grade, int score, int losses, int commands) {
+    return '等级 $grade  得分 $score  失隔 $losses  指令 $commands';
+  }
+
+  @override
+  String radarTrainingCompletionEfficiency(String label) {
+    return '效率 $label';
+  }
+
+  @override
+  String get radarTrainingEfficiencyExcellent => '优秀';
+
+  @override
+  String get radarTrainingEfficiencyGood => '良好';
+
+  @override
+  String get radarTrainingEfficiencyBusy => '繁忙';
+
+  @override
+  String get radarTrainingEfficiencyOverControlled => '过度控制';
+
+  @override
+  String radarTrainingCompletionSubscores(
+      String spacing, String throughput, String weather, String commands) {
+    return '间隔 $spacing%  吞吐量 $throughput%  天气 $weather%  指令 $commands%';
+  }
+
+  @override
+  String get radarTrainingWinReasonAllSpawned => '所有航空器已生成';
+
+  @override
+  String get radarTrainingWinReasonDurationReached => '场景时长已达到';
+
+  @override
+  String get radarTrainingWinReasonNoExcessiveLosses => '无过多失隔事件';
+
+  @override
+  String get radarTrainingWinReasonAllExitedSafely => '所有航空器安全离开';
+
+  @override
+  String get radarTrainingFailReasonSeparationLoss => '发生失隔';
+
+  @override
+  String get radarTrainingFailReasonTimeout => '所有流量生成前场景超时';
+
+  @override
+  String get radarTrainingPenaltySaturationCascading => '饱和：级联风险';
+
+  @override
+  String get radarTrainingPenaltySeparationLoss => '失隔';
+
+  @override
+  String get radarTrainingPenaltyLateResolution => '迟发处置';
+
+  @override
+  String get radarTrainingPenaltyWeatherPenetration => '穿越天气';
+
+  @override
+  String get radarTrainingPenaltyArrivalSpacingCompressed => '进港间隔压缩';
+
+  @override
+  String get radarTrainingPenaltyControllerWorkloadHigh => '管制员负荷高';
+
+  @override
+  String get radarTrainingPenaltyRunwayOccupancyPressure => '跑道占用压力';
+
+  @override
+  String get radarTrainingPenaltyFuelPressureHold => '长时等待导致燃油压力';
+
+  @override
+  String get radarTrainingPenaltyFuelPressureVectoring => '过度引导导致燃油压力';
+
+  @override
+  String get radarTrainingPenaltyArrivalDelayPressure => '进港延误压力';
+
+  @override
+  String get radarTrainingPenaltyCommandBurst => '指令爆发（被动干预）';
+
+  @override
+  String get radarTrainingPenaltyCriticalAlertIgnored => '关键告警被忽略超过20秒';
+
+  @override
+  String get radarTrainingPenaltyIgnoredAttentionCue => '忽略关键注意提示';
+
+  @override
+  String get radarTrainingPenaltyUnnecessaryAltitude => '不必要的高度变化';
+
+  @override
+  String get radarTrainingPenaltyDistraction => '干扰降低指令效率';
+
+  @override
+  String get radarTrainingPenaltyExcessiveCommandLoad => '指令量过多';
+
+  @override
+  String get radarTrainingPenaltyDistractionEvent => '干扰事件';
+
+  @override
+  String get radarTrainingResultLoadFailed => '结果数据加载失败。';
+
+  @override
+  String get radarTrainingResultLoadFailedHelp => '这可能是因为场景意外结束。请重试。';
 }

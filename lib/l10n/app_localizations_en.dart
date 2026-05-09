@@ -2702,4 +2702,134 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radarTrainingAckShort => 'Ack';
+
+  @override
+  String get radarTrainingCompletionScenarioComplete => 'Scenario Complete';
+
+  @override
+  String get radarTrainingCompletionScenarioFailed => 'Scenario Failed';
+
+  @override
+  String radarTrainingCompletionGrade(
+      String grade, int score, int losses, int commands) {
+    return 'Grade $grade  Score $score  Losses $losses  Commands $commands';
+  }
+
+  @override
+  String radarTrainingCompletionEfficiency(String label) {
+    return 'Efficiency $label';
+  }
+
+  @override
+  String get radarTrainingEfficiencyExcellent => 'Excellent';
+
+  @override
+  String get radarTrainingEfficiencyGood => 'Good';
+
+  @override
+  String get radarTrainingEfficiencyBusy => 'Busy';
+
+  @override
+  String get radarTrainingEfficiencyOverControlled => 'Over-controlled';
+
+  @override
+  String radarTrainingCompletionSubscores(
+      String spacing, String throughput, String weather, String commands) {
+    return 'Spacing $spacing%  Throughput $throughput%  Weather $weather%  Commands $commands%';
+  }
+
+  @override
+  String get radarTrainingWinReasonAllSpawned => 'All aircraft spawned';
+
+  @override
+  String get radarTrainingWinReasonDurationReached =>
+      'Scenario duration reached';
+
+  @override
+  String get radarTrainingWinReasonNoExcessiveLosses =>
+      'No excessive separation losses';
+
+  @override
+  String get radarTrainingWinReasonAllExitedSafely =>
+      'All aircraft exited safely';
+
+  @override
+  String get radarTrainingFailReasonSeparationLoss =>
+      'Separation loss detected';
+
+  @override
+  String get radarTrainingFailReasonTimeout =>
+      'Scenario timed out before all traffic spawned';
+
+  @override
+  String get radarTrainingPenaltySaturationCascading =>
+      'Saturation: cascading risk';
+
+  @override
+  String get radarTrainingPenaltySeparationLoss => 'Separation loss';
+
+  @override
+  String get radarTrainingPenaltyLateResolution => 'Late resolution';
+
+  @override
+  String get radarTrainingPenaltyWeatherPenetration => 'Weather penetration';
+
+  @override
+  String get radarTrainingPenaltyArrivalSpacingCompressed =>
+      'Arrival spacing compressed';
+
+  @override
+  String get radarTrainingPenaltyControllerWorkloadHigh =>
+      'Controller workload high';
+
+  @override
+  String get radarTrainingPenaltyRunwayOccupancyPressure =>
+      'Runway occupancy pressure';
+
+  @override
+  String get radarTrainingPenaltyFuelPressureHold =>
+      'Fuel pressure from prolonged hold';
+
+  @override
+  String get radarTrainingPenaltyFuelPressureVectoring =>
+      'Fuel pressure from excessive vectoring';
+
+  @override
+  String get radarTrainingPenaltyArrivalDelayPressure =>
+      'Arrival delay pressure';
+
+  @override
+  String get radarTrainingPenaltyCommandBurst =>
+      'Command burst (reactive intervention)';
+
+  @override
+  String get radarTrainingPenaltyCriticalAlertIgnored =>
+      'Critical alert ignored >20s';
+
+  @override
+  String get radarTrainingPenaltyIgnoredAttentionCue =>
+      'Ignored critical attention cue';
+
+  @override
+  String get radarTrainingPenaltyUnnecessaryAltitude =>
+      'Unnecessary altitude change';
+
+  @override
+  String get radarTrainingPenaltyDistraction =>
+      'Distraction reduces command efficiency';
+
+  @override
+  String get radarTrainingPenaltyExcessiveCommandLoad =>
+      'Excessive command load';
+
+  @override
+  String get radarTrainingPenaltyDistractionEvent => 'Distraction event';
+
+  @override
+  String get radarTrainingResultLoadFailed =>
+      'Result data could not be loaded.';
+
+  @override
+  String get radarTrainingResultLoadFailedHelp =>
+      'This can happen if the scenario ended unexpectedly. Please retry.';
 }

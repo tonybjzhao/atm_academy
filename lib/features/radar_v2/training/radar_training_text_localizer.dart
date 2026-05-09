@@ -194,6 +194,28 @@ class RadarTrainingTextLocalizer {
       'Confidence collapse': 'radarTrainingLabelConfidenceCollapse',
       'Self-assessment divergence':
           'radarTrainingLabelSelfAssessmentDivergence',
+      'Saturation: cascading risk': 'radarTrainingPenaltySaturationCascading',
+      'Separation loss': 'radarTrainingPenaltySeparationLoss',
+      'Late resolution': 'radarTrainingPenaltyLateResolution',
+      'Weather penetration': 'radarTrainingPenaltyWeatherPenetration',
+      'Arrival spacing compressed':
+          'radarTrainingPenaltyArrivalSpacingCompressed',
+      'Controller workload high': 'radarTrainingPenaltyControllerWorkloadHigh',
+      'Runway occupancy pressure': 'radarTrainingPenaltyRunwayOccupancyPressure',
+      'Fuel pressure from prolonged hold': 'radarTrainingPenaltyFuelPressureHold',
+      'Fuel pressure from excessive vectoring':
+          'radarTrainingPenaltyFuelPressureVectoring',
+      'Arrival delay pressure': 'radarTrainingPenaltyArrivalDelayPressure',
+      'Command burst (reactive intervention)':
+          'radarTrainingPenaltyCommandBurst',
+      'Critical alert ignored >20s': 'radarTrainingPenaltyCriticalAlertIgnored',
+      'Ignored critical attention cue':
+          'radarTrainingPenaltyIgnoredAttentionCue',
+      'Unnecessary altitude change': 'radarTrainingPenaltyUnnecessaryAltitude',
+      'Distraction reduces command efficiency':
+          'radarTrainingPenaltyDistraction',
+      'Excessive command load': 'radarTrainingPenaltyExcessiveCommandLoad',
+      'Distraction event': 'radarTrainingPenaltyDistractionEvent',
     };
 
     final method = directMap[text];
