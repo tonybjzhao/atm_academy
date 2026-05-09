@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'cognitive_timeline.dart';
 import 'cognitive_timeline_visualizer.dart';
+import 'cognitive_cascade_propagation.dart';
+import 'cognitive_cascade_propagation_view.dart';
 import 'debrief_insight.dart';
 import 'radar_training_result.dart';
 
@@ -25,6 +27,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   int _momentIndex = 0;
   late Duration _selectedElapsed;
   late final CognitiveTimelineData _timelineData;
+  late final CognitiveCascadePropagationData _cascadeData;
 
   RadarTrainingResult get result => widget.result;
 
@@ -32,6 +35,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   void initState() {
     super.initState();
     _timelineData = const CognitiveTimelineBuilder().build(result);
+    _cascadeData = const CognitiveCascadePropagationBuilder().build(result);
     _selectedElapsed = result.replayMoments.isEmpty
         ? Duration.zero
         : result.replayMoments.first.elapsed;
@@ -75,6 +79,14 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             _MoreDetails(
               result: result,
               onInsightTap: _jumpToInsight,
+            ),
+            const SizedBox(height: 18),
+            _Panel(
+              child: CognitiveCascadePropagationView(
+                data: _cascadeData,
+                selectedElapsed: _selectedElapsed,
+                onJump: _jumpToElapsed,
+              ),
             ),
             const SizedBox(height: 18),
             _Panel(

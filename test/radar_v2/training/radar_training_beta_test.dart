@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:atm_flutter/features/radar_v2/core/attention/attention_focus_state.dart';
+import 'package:atm_flutter/features/radar_v2/core/mental_model/cognitive_cascade_state.dart';
 import 'package:atm_flutter/features/radar_v2/core/mental_model/controller_expectation_state.dart';
 import 'package:atm_flutter/features/radar_v2/core/psychology/scenario_pressure_phase.dart';
 import 'package:atm_flutter/features/radar_v2/radar_v2_debug_screen.dart';
 import 'package:atm_flutter/features/radar_v2/scenario/scenario_loader.dart';
 import 'package:atm_flutter/features/radar_v2/scoring/radar_v2_score.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_catalog.dart';
+import 'package:atm_flutter/features/radar_v2/training/cognitive_cascade_propagation.dart';
 import 'package:atm_flutter/features/radar_v2/training/cognitive_timeline.dart';
 import 'package:atm_flutter/features/radar_v2/training/debrief_insight.dart';
 import 'package:atm_flutter/features/radar_v2/training/debrief_salience_engine.dart';
@@ -526,6 +528,55 @@ void main() {
       );
     });
   });
+
+  group('Cognitive cascade propagation view data', () {
+    test('builds a linked propagation graph from replay degradation cues', () {
+      final result = _timelineResult();
+      final data = const CognitiveCascadePropagationBuilder().build(result);
+
+      expect(data.chains, isNotEmpty);
+      expect(
+          data.chains.first.nodes.map((node) => node.type),
+          containsAll([
+            CascadePropagationNodeType.fixation,
+            CascadePropagationNodeType.scanNeglect,
+            CascadePropagationNodeType.missedConflict,
+            CascadePropagationNodeType.recoveryBreakdown,
+          ]));
+      expect(data.chains.first.edges, isNotEmpty);
+    });
+
+    test('cascade nodes are linked to replay timestamps', () {
+      final data = const CognitiveCascadePropagationBuilder().build(
+        _timelineResult(),
+      );
+
+      expect(
+        data.chains.first.nodes.every(
+          (node) => node.timestamp >= Duration.zero,
+        ),
+        isTrue,
+      );
+    });
+
+    test('parallel chain summaries produce additional chains', () {
+      final data = const CognitiveCascadePropagationBuilder().build(
+        _parallelCascadeResult(),
+      );
+
+      expect(data.chains.length, greaterThan(1));
+      expect(data.chains.last.title, contains('Parallel chain'));
+    });
+
+    test('edges include explainability text', () {
+      final data = const CognitiveCascadePropagationBuilder().build(
+        _timelineResult(),
+      );
+
+      expect(data.chains.first.edges.first.explanation, isNotEmpty);
+      expect(data.chains.first.edges.first.confidence, greaterThan(0));
+    });
+  });
 }
 
 DebriefInsight _insight({
@@ -575,6 +626,16 @@ RadarTrainingResult _timelineResult() {
       separation: [],
       events: [
         SimulationEvent(
+          elapsed: Duration(seconds: 42),
+          type: 'attentionFixationWindow',
+          label: 'Fixation window detected.',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 58),
+          type: 'attentionScanBlind',
+          label: 'Scan blind period opened.',
+        ),
+        SimulationEvent(
           elapsed: Duration(seconds: 72),
           type: 'separationWarning',
           label: 'Separation warning developed.',
@@ -588,9 +649,52 @@ RadarTrainingResult _timelineResult() {
       attentionFocus: AttentionFocusState(
         scanCoverageQuality: 0.42,
         fixationWindowCount: 1,
+        scanBlindDuration: Duration(seconds: 18),
         reportLines: ['Critical alert ignored for 21s.'],
       ),
       attentionReportLines: ['Critical alert ignored for 21s.'],
+    ),
+  );
+}
+
+RadarTrainingResult _parallelCascadeResult() {
+  return RadarTrainingResultBuilder.build(
+    scenarioTitle: 'Parallel Cascade Scenario',
+    scenarioId: 'parallel_cascade',
+    score: const RadarV2ScoreSnapshot(
+      score: 64,
+      commandCount: 7,
+      separationLossCount: 0,
+      lateResolutionCount: 1,
+      spacingStability: 62,
+      throughputEfficiency: 68,
+      weatherManagement: 72,
+      commandEfficiency: 78,
+      anticipationScore: 58,
+      lastDelta: -5,
+      lastReason: 'Late resolution',
+      penalties: ['Late resolution'],
+    ),
+    snapshot: const SimulationSnapshot(
+      tick: 1,
+      elapsed: Duration(seconds: 210),
+      aircraft: [],
+      separation: [],
+      cognitiveCascadeState: CognitiveCascadeState(
+        chainHistory: [
+          CascadeChainSummary(
+            chainId: 'chain-a',
+            rootMismatchId: 'm1',
+            rootLabel: 'Unexpected weather deviation',
+            startedAt: Duration(seconds: 80),
+            secondaryFailures: [
+              'scan neglect',
+              'working memory pressure',
+            ],
+            amplification: 0.72,
+          ),
+        ],
+      ),
     ),
   );
 }
