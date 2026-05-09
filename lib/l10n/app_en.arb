@@ -1051,6 +1051,59 @@
   "@scenarioSafeResult": {},
   "scenarioNoCommandIssued": "No command issued",
   "@scenarioNoCommandIssued": {},
+  "scenarioWhatHappenedLoss": "{pair} came within {sep} horizontal and {vert} vertical, below the loss-of-separation threshold.",
+  "@scenarioWhatHappenedLoss": {
+    "placeholders": {
+      "pair": {"type": "String"},
+      "sep": {"type": "String"},
+      "vert": {"type": "String"}
+    }
+  },
+  "scenarioWhatHappenedWarning": "{pair} entered the warning zone (closest: {sep} / {vert}). Separation was not lost, but risk reached a critical level.",
+  "@scenarioWhatHappenedWarning": {
+    "placeholders": {
+      "pair": {"type": "String"},
+      "sep": {"type": "String"},
+      "vert": {"type": "String"}
+    }
+  },
+  "scenarioWhatHappenedSafe": "Separation was maintained. Closest point: {sep} horizontal / {vert} vertical.",
+  "@scenarioWhatHappenedSafe": {
+    "placeholders": {
+      "sep": {"type": "String"},
+      "vert": {"type": "String"}
+    }
+  },
+  "scenarioWhatHappenedNoCommand": "No command was issued during the scenario.",
+  "@scenarioWhatHappenedNoCommand": {},
+  "scenarioWhatHappenedFirstCommand": "First command issued after {seconds} s.",
+  "@scenarioWhatHappenedFirstCommand": {
+    "placeholders": {
+      "seconds": {"type": "String"}
+    }
+  },
+  "scenarioWhatHappenedEffectiveCommands": "{count} effective command(s) improved projected separation.",
+  "@scenarioWhatHappenedEffectiveCommands": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "scenarioWhatHappenedIneffectiveCommands": "{count} command(s) worsened or did not improve projected separation.",
+  "@scenarioWhatHappenedIneffectiveCommands": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "scenarioPenaltyLateCommand": "Late command ({seconds} s)",
+  "@scenarioPenaltyLateCommand": {
+    "placeholders": {
+      "seconds": {"type": "String"}
+    }
+  },
+  "scenarioNoPenalties": "No penalties",
+  "@scenarioNoPenalties": {},
+  "scenarioNoBonuses": "No bonuses",
+  "@scenarioNoBonuses": {},
   "scenarioCommandTurnLeft": "Turn left",
   "@scenarioCommandTurnLeft": {},
   "scenarioCommandTurnRight": "Turn right",

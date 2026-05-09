@@ -71,10 +71,87 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     }
   }
 
+  String _localizedWhatHappened(AppLocalizations l10n) {
+    final pairStr = result.conflictPair.join(' & ');
+    final sepStr = '${result.minHorizontalDistancePx.toStringAsFixed(0)} px';
+    final vertStr = '${result.minVerticalDistanceFt} ft';
+
+    final parts = <String>[];
+    if (result.hadLOS) {
+      parts.add(l10n.scenarioWhatHappenedLoss(pairStr, sepStr, vertStr));
+    } else if (result.warningReached) {
+      parts.add(l10n.scenarioWhatHappenedWarning(pairStr, sepStr, vertStr));
+    } else {
+      parts.add(l10n.scenarioWhatHappenedSafe(sepStr, vertStr));
+    }
+
+    if (result.reactionTimeSec <= 0) {
+      parts.add(l10n.scenarioWhatHappenedNoCommand);
+    } else {
+      parts.add(
+          l10n.scenarioWhatHappenedFirstCommand(result.reactionTimeSec.toStringAsFixed(1)));
+      if (result.goodCommands > 0) {
+        parts.add(l10n.scenarioWhatHappenedEffectiveCommands(result.goodCommands));
+      }
+      if (result.badCommands > 0) {
+        parts.add(l10n.scenarioWhatHappenedIneffectiveCommands(result.badCommands));
+      }
+    }
+    return parts.join(' ');
+  }
+
+  List<String> _localizedPenalties(AppLocalizations l10n) {
+    final lines = <String>[];
+    if (result.hadLOS) {
+      lines.add('${l10n.scorePenaltyLossOfSeparation}: -60');
+    } else if (result.warningReached) {
+      lines.add('${l10n.scorePenaltyWarningZone}: -25');
+    }
+
+    if (result.reactionTimeSec <= 0) {
+      lines.add('${l10n.scorePenaltyNoCommand}: -30');
+    } else {
+      if (result.reactionTimeSec > 12) {
+        lines.add('${l10n.scenarioPenaltyLateCommand(result.reactionTimeSec.toStringAsFixed(0))}: -20');
+      } else if (result.reactionTimeSec > 8) {
+        lines.add('${l10n.scenarioPenaltyLateCommand(result.reactionTimeSec.toStringAsFixed(0))}: -10');
+      }
+      if (!result.selectedAircraftCorrect) {
+        lines.add('${l10n.scorePenaltyWrongAircraft}: -20');
+      }
+    }
+
+    if (result.badCommands > 0) {
+      lines.add('${l10n.scorePenaltyIneffective}: -${result.badCommands * 25}');
+    }
+    final overControl = result.neutralCommands > 1 ? result.neutralCommands - 1 : 0;
+    if (overControl > 0) {
+      lines.add('${l10n.scorePenaltyUnnecessary}: -${overControl * 10}');
+    }
+
+    return lines.isEmpty ? <String>[l10n.scenarioNoPenalties] : lines;
+  }
+
+  List<String> _localizedBonuses(AppLocalizations l10n) {
+    final lines = <String>[];
+    if (result.separationMaintained) {
+      lines.add('${l10n.scoreBonusSeparationMaintained}: +10');
+    }
+    if (result.reactionTimeSec > 0 && result.selectedAircraftCorrect) {
+      lines.add('${l10n.scoreBonusCorrectAircraft}: +10');
+    }
+    if (result.reactionTimeSec > 0 && result.goodCommands > 0 && result.reactionTimeSec < 5) {
+      lines.add('${l10n.scoreBonusEarlyAction}: +10');
+    }
+    return lines.isEmpty ? <String>[l10n.scenarioNoBonuses] : lines;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final color = _ratingColor();
+    final localizedPenalties = _localizedPenalties(l10n);
+    final localizedBonuses = _localizedBonuses(l10n);
 
     return Container(
       color: AppTheme.background.withValues(alpha: 0.94),
@@ -216,7 +293,7 @@ class ScenarioFeedbackPanel extends StatelessWidget {
                 color: AppTheme.secondary,
                 title: l10n.scenarioWhatHappened,
                 child: Text(
-                  result.replayExplanationLong,
+                  _localizedWhatHappened(l10n),
                   style: const TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 12,
@@ -233,7 +310,7 @@ class ScenarioFeedbackPanel extends StatelessWidget {
                 title: l10n.scenarioPenalties,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: result.penaltyBreakdown
+                  children: localizedPenalties
                       .map((s) => _breakdownLine(s, AppTheme.danger))
                       .toList(),
                 ),
@@ -248,7 +325,7 @@ class ScenarioFeedbackPanel extends StatelessWidget {
                 title: l10n.scenarioBonuses,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: result.bonusBreakdown
+                  children: localizedBonuses
                       .map((s) => _breakdownLine(s, AppTheme.primary))
                       .toList(),
                 ),

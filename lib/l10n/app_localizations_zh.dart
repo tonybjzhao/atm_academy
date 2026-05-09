@@ -1580,6 +1580,50 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scenarioNoCommandIssued => '未下达指令';
 
   @override
+  String scenarioWhatHappenedLoss(String pair, String sep, String vert) {
+    return '$pair 在水平 $sep、垂直 $vert 时已低于间隔丢失阈值。';
+  }
+
+  @override
+  String scenarioWhatHappenedWarning(String pair, String sep, String vert) {
+    return '$pair 进入警告区域（最近：$sep / $vert）。虽然未发生间隔丢失，但风险已达到临界水平。';
+  }
+
+  @override
+  String scenarioWhatHappenedSafe(String sep, String vert) {
+    return '间隔保持稳定。最近点：水平 $sep / 垂直 $vert。';
+  }
+
+  @override
+  String get scenarioWhatHappenedNoCommand => '本次场景中未发出任何指令。';
+
+  @override
+  String scenarioWhatHappenedFirstCommand(String seconds) {
+    return '首次指令在 $seconds 秒后发出。';
+  }
+
+  @override
+  String scenarioWhatHappenedEffectiveCommands(int count) {
+    return '有 $count 条有效指令提升了预计间隔。';
+  }
+
+  @override
+  String scenarioWhatHappenedIneffectiveCommands(int count) {
+    return '有 $count 条指令使预计间隔变差或未改善。';
+  }
+
+  @override
+  String scenarioPenaltyLateCommand(String seconds) {
+    return '指令延迟（$seconds 秒）';
+  }
+
+  @override
+  String get scenarioNoPenalties => '无扣分项';
+
+  @override
+  String get scenarioNoBonuses => '无加分项';
+
+  @override
   String get scenarioCommandTurnLeft => '左转';
 
   @override

@@ -1757,6 +1757,51 @@ class AppLocalizationsFr extends AppLocalizations {
   String get scenarioNoCommandIssued => 'Aucune commande émise';
 
   @override
+  String scenarioWhatHappenedLoss(String pair, String sep, String vert) {
+    return '$pair est descendu à $sep horizontal et $vert vertical, en dessous du seuil de perte de séparation.';
+  }
+
+  @override
+  String scenarioWhatHappenedWarning(String pair, String sep, String vert) {
+    return '$pair est entré dans la zone d\'avertissement (minimum : $sep / $vert). La séparation n\'a pas été perdue, mais le risque est devenu critique.';
+  }
+
+  @override
+  String scenarioWhatHappenedSafe(String sep, String vert) {
+    return 'La séparation a été maintenue. Point le plus proche : $sep horizontal / $vert vertical.';
+  }
+
+  @override
+  String get scenarioWhatHappenedNoCommand =>
+      'Aucune commande n\'a été émise pendant le scénario.';
+
+  @override
+  String scenarioWhatHappenedFirstCommand(String seconds) {
+    return 'Première commande émise après $seconds s.';
+  }
+
+  @override
+  String scenarioWhatHappenedEffectiveCommands(int count) {
+    return '$count commande(s) efficace(s) ont amélioré la séparation projetée.';
+  }
+
+  @override
+  String scenarioWhatHappenedIneffectiveCommands(int count) {
+    return '$count commande(s) ont dégradé ou n\'ont pas amélioré la séparation projetée.';
+  }
+
+  @override
+  String scenarioPenaltyLateCommand(String seconds) {
+    return 'Commande tardive ($seconds s)';
+  }
+
+  @override
+  String get scenarioNoPenalties => 'Aucune pénalité';
+
+  @override
+  String get scenarioNoBonuses => 'Aucun bonus';
+
+  @override
   String get scenarioCommandTurnLeft => 'Tourner à gauche';
 
   @override

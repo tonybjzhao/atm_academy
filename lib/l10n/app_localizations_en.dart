@@ -1727,6 +1727,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scenarioNoCommandIssued => 'No command issued';
 
   @override
+  String scenarioWhatHappenedLoss(String pair, String sep, String vert) {
+    return '$pair came within $sep horizontal and $vert vertical, below the loss-of-separation threshold.';
+  }
+
+  @override
+  String scenarioWhatHappenedWarning(String pair, String sep, String vert) {
+    return '$pair entered the warning zone (closest: $sep / $vert). Separation was not lost, but risk reached a critical level.';
+  }
+
+  @override
+  String scenarioWhatHappenedSafe(String sep, String vert) {
+    return 'Separation was maintained. Closest point: $sep horizontal / $vert vertical.';
+  }
+
+  @override
+  String get scenarioWhatHappenedNoCommand =>
+      'No command was issued during the scenario.';
+
+  @override
+  String scenarioWhatHappenedFirstCommand(String seconds) {
+    return 'First command issued after $seconds s.';
+  }
+
+  @override
+  String scenarioWhatHappenedEffectiveCommands(int count) {
+    return '$count effective command(s) improved projected separation.';
+  }
+
+  @override
+  String scenarioWhatHappenedIneffectiveCommands(int count) {
+    return '$count command(s) worsened or did not improve projected separation.';
+  }
+
+  @override
+  String scenarioPenaltyLateCommand(String seconds) {
+    return 'Late command ($seconds s)';
+  }
+
+  @override
+  String get scenarioNoPenalties => 'No penalties';
+
+  @override
+  String get scenarioNoBonuses => 'No bonuses';
+
+  @override
   String get scenarioCommandTurnLeft => 'Turn left';
 
   @override

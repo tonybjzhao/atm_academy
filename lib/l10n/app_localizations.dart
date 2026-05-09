@@ -3166,6 +3166,66 @@ abstract class AppLocalizations {
   /// **'No command issued'**
   String get scenarioNoCommandIssued;
 
+  /// No description provided for @scenarioWhatHappenedLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'{pair} came within {sep} horizontal and {vert} vertical, below the loss-of-separation threshold.'**
+  String scenarioWhatHappenedLoss(String pair, String sep, String vert);
+
+  /// No description provided for @scenarioWhatHappenedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{pair} entered the warning zone (closest: {sep} / {vert}). Separation was not lost, but risk reached a critical level.'**
+  String scenarioWhatHappenedWarning(String pair, String sep, String vert);
+
+  /// No description provided for @scenarioWhatHappenedSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation was maintained. Closest point: {sep} horizontal / {vert} vertical.'**
+  String scenarioWhatHappenedSafe(String sep, String vert);
+
+  /// No description provided for @scenarioWhatHappenedNoCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'No command was issued during the scenario.'**
+  String get scenarioWhatHappenedNoCommand;
+
+  /// No description provided for @scenarioWhatHappenedFirstCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'First command issued after {seconds} s.'**
+  String scenarioWhatHappenedFirstCommand(String seconds);
+
+  /// No description provided for @scenarioWhatHappenedEffectiveCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} effective command(s) improved projected separation.'**
+  String scenarioWhatHappenedEffectiveCommands(int count);
+
+  /// No description provided for @scenarioWhatHappenedIneffectiveCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} command(s) worsened or did not improve projected separation.'**
+  String scenarioWhatHappenedIneffectiveCommands(int count);
+
+  /// No description provided for @scenarioPenaltyLateCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Late command ({seconds} s)'**
+  String scenarioPenaltyLateCommand(String seconds);
+
+  /// No description provided for @scenarioNoPenalties.
+  ///
+  /// In en, this message translates to:
+  /// **'No penalties'**
+  String get scenarioNoPenalties;
+
+  /// No description provided for @scenarioNoBonuses.
+  ///
+  /// In en, this message translates to:
+  /// **'No bonuses'**
+  String get scenarioNoBonuses;
+
   /// No description provided for @scenarioCommandTurnLeft.
   ///
   /// In en, this message translates to:
