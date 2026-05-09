@@ -15,6 +15,7 @@ import '../models/trail_point.dart';
 import '../models/weather_zone.dart';
 import '../models/waypoint.dart';
 import 'conflict_predictor.dart';
+import 'pilot_behavior_realism_profile.dart';
 import 'separation_calculator.dart';
 import 'trajectory_integrator.dart';
 
@@ -25,6 +26,7 @@ class SimulationEngine {
   final ConflictPredictor conflictPredictor;
   final int maxTrailPoints;
   final Duration commandAcknowledgementDelay;
+  final PilotBehaviorRealismProfile pilotRealismProfile;
   final Map<String, Waypoint> waypoints;
   final List<WeatherZone> weatherZones;
   final List<ArrivalFlow> arrivalFlows;
@@ -55,6 +57,7 @@ class SimulationEngine {
     this.conflictPredictor = const ConflictPredictor(),
     this.maxTrailPoints = 28,
     this.commandAcknowledgementDelay = const Duration(milliseconds: 2600),
+    this.pilotRealismProfile = PilotBehaviorRealismProfile.balanced,
     this.waypoints = const {},
     this.weatherZones = const [],
     this.arrivalFlows = const [],
@@ -151,18 +154,29 @@ class SimulationEngine {
     var effectiveDelay = _getEffectiveAckDelay();
     effectiveDelay += _pilotResponseJitter(aircraft, command);
     effectiveDelay = Duration(
-      milliseconds:
-          (effectiveDelay.inMilliseconds * profileFactor).round().clamp(600, 11000),
+      milliseconds: (effectiveDelay.inMilliseconds *
+              profileFactor *
+              pilotRealismProfile.acknowledgementDelayScale)
+          .round()
+          .clamp(600, 12000),
     );
 
     if (_sectorPressureIndex >= 1.0) {
       effectiveDelay += Duration(
-        milliseconds: ((_sectorPressureIndex - 0.9) * 520).round().clamp(0, 2300),
+        milliseconds: ((_sectorPressureIndex - 0.9) *
+                520 *
+                pilotRealismProfile.workloadImpactScale)
+            .round()
+            .clamp(0, 2800),
       );
     }
     if (weatherInfluence > 0.22) {
       effectiveDelay += Duration(
-        milliseconds: (weatherInfluence * 950).round().clamp(0, 1300),
+        milliseconds: (weatherInfluence *
+                950 *
+                pilotRealismProfile.weatherImpactScale)
+            .round()
+            .clamp(0, 1800),
       );
     }
 
@@ -170,15 +184,17 @@ class SimulationEngine {
     // operational imperfection without introducing a new gameplay system.
     final delayedAckChance =
         (0.04 + _sectorPressureIndex * 0.09 + weatherInfluence * 0.16)
-            .clamp(0.0, 0.42);
+        .clamp(0.0, 0.42) *
+      pilotRealismProfile.variabilityChanceScale;
     if (_sectorPressureIndex >= 1.0 &&
         _noise01('${aircraft.id}:${command.runtimeType}:delay:${_tick}') <
             delayedAckChance) {
       effectiveDelay += Duration(
-        milliseconds: 900 +
+        milliseconds: (900 +
             (_noise01('${aircraft.id}:${command.runtimeType}:delay_mag:${_tick}') *
                     1300)
-                .round(),
+                .round())
+            .clamp(700, 2800),
       );
     }
     effectiveDelay = Duration(
@@ -887,30 +903,35 @@ class SimulationEngine {
     ControllerCommand command,
   ) {
     final weather = _weatherInfluenceFor(aircraft);
-    final workload = (_sectorPressureIndex - 0.7).clamp(0.0, 2.5);
+    final workload =
+        ((_sectorPressureIndex - 0.7) * pilotRealismProfile.workloadImpactScale)
+            .clamp(0.0, 2.7);
     var chance = 0.02 + workload * 0.06 + weather * 0.14;
-    var minMs = 700;
-    var maxMs = 2000;
+    var minMs = (700 * pilotRealismProfile.executionDelayScale).round();
+    var maxMs = (2000 * pilotRealismProfile.executionDelayScale).round();
 
     if (command is AssignAltitude && command.altitudeFt < aircraft.altitudeFt) {
       chance += 0.12;
-      minMs = 1300;
-      maxMs = 4200;
+      minMs = (1300 * pilotRealismProfile.executionDelayScale).round();
+      maxMs = (4200 * pilotRealismProfile.executionDelayScale).round();
       if (_sectorPressureIndex >= 1.8 && weather > 0.45) {
         final magNoise = _noise01(
           '${aircraft.id}:${command.runtimeType}:forced_descent_delay:${_tick}:${_elapsed.inSeconds}',
         );
-        final lagMs = 1800 + (magNoise * 2400).round();
-        return Duration(milliseconds: lagMs.clamp(1600, 4600));
+        final lagMs = (1800 + (magNoise * 2400).round()) *
+            pilotRealismProfile.executionDelayScale;
+        return Duration(
+          milliseconds: lagMs.round().clamp(1400, 5600),
+        );
       }
     } else if (command is AssignHeading || command is DirectToWaypoint) {
       chance += 0.08;
-      minMs = 900;
-      maxMs = 2800;
+      minMs = (900 * pilotRealismProfile.executionDelayScale).round();
+      maxMs = (2800 * pilotRealismProfile.executionDelayScale).round();
     } else if (command is AssignSpeed) {
       chance += 0.06;
-      minMs = 800;
-      maxMs = 2400;
+      minMs = (800 * pilotRealismProfile.executionDelayScale).round();
+      maxMs = (2400 * pilotRealismProfile.executionDelayScale).round();
     }
 
     if (weather > 0.48 && (command is AssignHeading || command is DirectToWaypoint)) {
@@ -925,7 +946,8 @@ class SimulationEngine {
       );
     }
 
-    chance = chance.clamp(0.0, 0.58);
+    chance = (chance * pilotRealismProfile.variabilityChanceScale)
+      .clamp(0.0, 0.62);
     final triggerNoise = _noise01(
       '${aircraft.id}:${command.runtimeType}:exec_trigger:${_tick}:${_elapsed.inSeconds}',
     );
@@ -942,10 +964,12 @@ class SimulationEngine {
     AircraftState aircraft,
   ) {
     final pressure = _sectorPressureIndex.clamp(0.0, 3.0);
-    final weather = _weatherInfluenceFor(aircraft);
+    final weather =
+      _weatherInfluenceFor(aircraft) * pilotRealismProfile.weatherImpactScale;
     final conciseChance = (0.18 + pressure * 0.05).clamp(0.12, 0.38);
     final partialChance = (0.06 + pressure * 0.06 + weather * 0.12)
-        .clamp(0.04, 0.32);
+      .clamp(0.04, 0.32) *
+      pilotRealismProfile.readbackVariabilityScale;
     final styleNoise = _noise01(
       '${aircraft.id}:${command.runtimeType}:readback_style:${_tick}:${_elapsed.inSeconds}',
     );
@@ -965,7 +989,8 @@ class SimulationEngine {
     };
 
     final confirmationChance =
-        (0.08 + pressure * 0.05 + weather * 0.1).clamp(0.04, 0.36);
+      (0.08 + pressure * 0.05 + weather * 0.1).clamp(0.04, 0.36) *
+        pilotRealismProfile.readbackVariabilityScale;
     final confirmationNoise = _noise01(
       '${aircraft.id}:${command.runtimeType}:readback_confirm:${_tick}:${_elapsed.inSeconds}',
     );
@@ -1033,10 +1058,15 @@ class SimulationEngine {
   }
 
   double _executionVariabilityScale(AircraftState aircraft) {
-    final weather = _weatherInfluenceFor(aircraft);
-    final workload = (_sectorPressureIndex / 3.0).clamp(0.0, 1.0);
+    final weather =
+      _weatherInfluenceFor(aircraft) * pilotRealismProfile.weatherImpactScale;
+    final workload = (_sectorPressureIndex / 3.0)
+      .clamp(0.0, 1.0) *
+      pilotRealismProfile.workloadImpactScale;
     final pilot = 0.92 + _noise01('${aircraft.id}:pilot_variability') * 0.26;
-    return (pilot + workload * 0.2 + weather * 0.24).clamp(0.85, 1.42);
+    return ((pilot + workload * 0.2 + weather * 0.24) *
+        pilotRealismProfile.complianceVariabilityScale)
+      .clamp(0.8, 1.48);
   }
 
   double _noise01(String seed) {
@@ -1059,7 +1089,9 @@ class SimulationEngine {
     final phase = _elapsed.inSeconds ~/ 2;
     final wobbleNoise = _noise01('${aircraft.id}:wx_track:$phase') - 0.5;
     final speedNoise = _noise01('${aircraft.id}:wx_speed:$phase') - 0.5;
-    final pressure = (0.65 + _sectorPressureIndex * 0.16).clamp(0.65, 1.35);
+    final pressure = ((0.65 + _sectorPressureIndex * 0.16) *
+        pilotRealismProfile.weatherImpactScale)
+      .clamp(0.55, 1.45);
     final wobble = wobbleNoise * 2 * influence * pressure * 1.2;
     final speed = speedNoise * 2 * influence * pressure * 4.5;
     if (influence > 0.28 && _weatherInfluenceTicks[aircraft.id]! >= 6) {

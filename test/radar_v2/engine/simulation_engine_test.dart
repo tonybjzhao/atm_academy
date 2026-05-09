@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:atm_flutter/features/radar_v2/commands/controller_command.dart';
+import 'package:atm_flutter/features/radar_v2/engine/pilot_behavior_realism_profile.dart';
 import 'package:atm_flutter/features/radar_v2/engine/simulation_engine.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_intent.dart';
 import 'package:atm_flutter/features/radar_v2/models/aircraft_performance_profile.dart';
@@ -566,6 +567,111 @@ void main() {
     expect(highWorkloadAck.elapsed, greaterThan(jetAck.elapsed));
   });
 
+  test('beginner realism profile is smoother than advanced profile', () {
+    final beginner = SimulationEngine(
+      pilotRealismProfile: PilotBehaviorRealismProfile.beginnerSafe,
+      aircraft: const [
+        AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 250,
+        ),
+      ],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 12, severity: 3),
+      ],
+    )..updateWorkloadState(dynamicControllerLoad: 9, sectorPressureIndex: 2.1);
+
+    final advanced = SimulationEngine(
+      pilotRealismProfile: PilotBehaviorRealismProfile.advanced,
+      aircraft: const [
+        AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 250,
+        ),
+      ],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 12, severity: 3),
+      ],
+    )..updateWorkloadState(dynamicControllerLoad: 9, sectorPressureIndex: 2.1);
+
+    beginner.applyCommand(
+      const AssignHeading(
+        aircraftId: 'a',
+        issuedAt: Duration.zero,
+        headingDeg: 90,
+      ),
+    );
+    advanced.applyCommand(
+      const AssignHeading(
+        aircraftId: 'a',
+        issuedAt: Duration.zero,
+        headingDeg: 90,
+      ),
+    );
+
+    Duration? beginnerAck;
+    Duration? advancedAck;
+    for (var i = 0; i < 24; i++) {
+      final b = beginner.tick();
+      final a = advanced.tick();
+      beginnerAck ??= b.events
+          .where((event) => event.type == 'commandAcknowledged')
+          .map((event) => event.elapsed)
+          .cast<Duration?>()
+          .firstWhere((value) => value != null, orElse: () => null);
+      advancedAck ??= a.events
+          .where((event) => event.type == 'commandAcknowledged')
+          .map((event) => event.elapsed)
+          .cast<Duration?>()
+          .firstWhere((value) => value != null, orElse: () => null);
+      if (beginnerAck != null && advancedAck != null) {
+        break;
+      }
+    }
+
+    expect(beginnerAck, isNotNull);
+    expect(advancedAck, isNotNull);
+    expect(advancedAck!, greaterThanOrEqualTo(beginnerAck!));
+
+    AircraftState? beginnerAssigned;
+    AircraftState? advancedAssigned;
+    for (var i = 0; i < 24; i++) {
+      final b = beginner.tick().aircraftById('a')!;
+      final a = advanced.tick().aircraftById('a')!;
+      if (beginnerAssigned == null && b.intent.assignedHeadingDeg != null) {
+        beginnerAssigned = b;
+      }
+      if (advancedAssigned == null && a.intent.assignedHeadingDeg != null) {
+        advancedAssigned = a;
+      }
+      if (beginnerAssigned != null && advancedAssigned != null) {
+        break;
+      }
+    }
+
+    expect(beginnerAssigned, isNotNull);
+    expect(advancedAssigned, isNotNull);
+    final beginnerOffset = _headingDelta(
+      beginnerAssigned!.intent.assignedHeadingDeg!,
+      90,
+    );
+    final advancedOffset = _headingDelta(
+      advancedAssigned!.intent.assignedHeadingDeg!,
+      90,
+    );
+    expect(advancedOffset, greaterThanOrEqualTo(beginnerOffset));
+  });
+
   test('descent command can acknowledge before delayed execution starts', () {
     final engine = SimulationEngine(
       aircraft: const [
@@ -693,4 +799,9 @@ void main() {
     expect(aircraft.intent.assignedSpeedKt, 145);
     expect(aircraft.intent.assignedAltitudeFt, 3000);
   });
+}
+
+double _headingDelta(double a, double b) {
+  final raw = (a - b).abs() % 360;
+  return raw > 180 ? 360 - raw : raw;
 }

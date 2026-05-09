@@ -30,6 +30,7 @@ import '../core/psychology/pressure_pacing_engine.dart';
 import '../core/psychology/scenario_pressure_phase.dart';
 import '../core/replay/cognition_analytics.dart';
 import '../core/replay/replay_workload_frame.dart';
+import '../engine/pilot_behavior_realism_profile.dart';
 import '../engine/simulation_engine.dart';
 import '../models/aircraft_state.dart';
 import '../models/arrival_flow.dart';
@@ -129,6 +130,10 @@ class ScenarioRuntime {
               maxControllerLoad: definition.maxControllerLoad,
               commandAcknowledgementDelay:
                   _commandAcknowledgementDelayFor(definition),
+              pilotRealismProfile:
+                  PilotBehaviorRealismProfile.fromDifficulty(
+                definition.difficulty,
+              ),
             ) {
     final normalizedDifficulty =
         ((definition.difficulty - 1) / 4).clamp(0.0, 1.0);
