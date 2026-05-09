@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/models/scenario.dart';
 import '../core/models/scenario_result.dart';
 import '../core/theme/app_theme.dart';
@@ -254,10 +256,53 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   void _issueCommand(String command) {
     final cs = _selectedCallsign;
     if (cs == null) return;
+    _playImmediateCommandCue();
     final feedback = _engine.issueCommand(cs, command);
     _enqueuePilotAck(cs, command);
     setState(() {});
     _showCommandFeedback(feedback);
+  }
+
+  void _playImmediateCommandCue() {
+    // Immediate fallback beep so command actions are always audible on Android.
+    SystemSound.play(SystemSoundType.alert);
+    // Also queue the regular warning cue path for consistent app audio behavior.
+    _radioAudio.enqueueWarning(
+      RadioWarningType.runwayPressure,
+      interrupt: false,
+      delay: Duration.zero,
+    );
+    developer.log('AUDIO_PROBE_SCENARIO command cue fired',
+        name: 'ScenarioTrainingScreen');
+  }
+
+  Future<void> _runAudioSelfTest() async {
+    final l10n = AppLocalizations.of(context)!;
+    var systemOk = true;
+    try {
+      SystemSound.play(SystemSoundType.alert);
+    } catch (_) {
+      systemOk = false;
+    }
+    await _radioAudio.enqueueWarning(
+      RadioWarningType.runwayPressure,
+      interrupt: true,
+      delay: Duration.zero,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(systemOk
+              ? l10n.radarTrainingAudioSelfTestStarted
+              : l10n.radarTrainingAudioSelfTestFailed),
+          duration: const Duration(milliseconds: 1200),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    developer.log('AUDIO_PROBE_SCENARIO self-test system=$systemOk',
+        name: 'ScenarioTrainingScreen');
   }
 
   void _enqueuePilotAck(String callsign, String command) {
@@ -510,6 +555,11 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
             tooltip: l10n.radioSettingsTooltip,
             onPressed: _openAudioSettings,
             icon: const Icon(Icons.tune),
+          ),
+          IconButton(
+            tooltip: l10n.radarTrainingAudioSelfTestTooltip,
+            onPressed: _runAudioSelfTest,
+            icon: const Icon(Icons.hearing),
           ),
         ],
       ),
