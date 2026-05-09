@@ -2488,4 +2488,95 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get radarTrainingLateSpeedControlClosureRate =>
       'Late speed control allowed closure rate to build.';
+
+  @override
+  String get radarTrainingCommandChannelBusy =>
+      'Command channel busy. Confirm previous instruction.';
+
+  @override
+  String radarTrainingCommandSent(String feedback) {
+    return 'Command sent: $feedback';
+  }
+
+  @override
+  String radarTrainingCommandAcknowledged(String label) {
+    return 'Acknowledged: $label';
+  }
+
+  @override
+  String get radarTrainingMuteAudioCues => 'Mute audio cues';
+
+  @override
+  String get radarTrainingUnmuteAudioCues => 'Unmute audio cues';
+
+  @override
+  String get radarTrainingRestartScenario => 'Restart scenario';
+
+  @override
+  String get radarTrainingScenarioLoadFailed => 'Scenario could not be loaded.';
+
+  @override
+  String get radarTrainingScenarioLoadFailedHelp =>
+      'Please retry. If it still fails, choose another training scenario.';
+
+  @override
+  String get radarTrainingCommandIssued => 'COMMAND ISSUED';
+
+  @override
+  String get radarTrainingAcknowledged => 'ACKNOWLEDGED';
+
+  @override
+  String get radarTrainingReturnToLive => 'Return to live';
+
+  @override
+  String get radarTrainingResume => 'Resume';
+
+  @override
+  String get radarTrainingPause => 'Pause';
+
+  @override
+  String get radarTrainingStatusFailed => 'Failed';
+
+  @override
+  String get radarTrainingStatusComplete => 'Complete';
+
+  @override
+  String get radarTrainingStatusRunning => 'Running';
+
+  @override
+  String get radarTrainingViewResults => 'View Results';
+
+  @override
+  String get radarTrainingReviewLabel => 'Review';
+
+  @override
+  String get radarTrainingCommandReview => 'Command Review';
+
+  @override
+  String get radarTrainingAllAircraft => 'All Aircraft';
+
+  @override
+  String get radarTrainingAllTypes => 'All Types';
+
+  @override
+  String get radarTrainingCommandTypeDirect => 'Direct';
+
+  @override
+  String get radarTrainingCommandTypeHold => 'Hold';
+
+  @override
+  String get radarTrainingCommandTypeOther => 'Other';
+
+  @override
+  String get radarTrainingNoCommandEventsForFilter =>
+      'No command events for current filter';
+
+  @override
+  String get radarTrainingJumpPairedCommand => 'Jump to paired command/ack';
+
+  @override
+  String get radarTrainingIssuedShort => 'Issued';
+
+  @override
+  String get radarTrainingAckShort => 'Ack';
 }

@@ -4468,6 +4468,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Late speed control allowed closure rate to build.'**
   String get radarTrainingLateSpeedControlClosureRate;
+
+  /// No description provided for @radarTrainingCommandChannelBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Command channel busy. Confirm previous instruction.'**
+  String get radarTrainingCommandChannelBusy;
+
+  /// No description provided for @radarTrainingCommandSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Command sent: {feedback}'**
+  String radarTrainingCommandSent(String feedback);
+
+  /// No description provided for @radarTrainingCommandAcknowledged.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledged: {label}'**
+  String radarTrainingCommandAcknowledged(String label);
+
+  /// No description provided for @radarTrainingMuteAudioCues.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute audio cues'**
+  String get radarTrainingMuteAudioCues;
+
+  /// No description provided for @radarTrainingUnmuteAudioCues.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute audio cues'**
+  String get radarTrainingUnmuteAudioCues;
+
+  /// No description provided for @radarTrainingRestartScenario.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart scenario'**
+  String get radarTrainingRestartScenario;
+
+  /// No description provided for @radarTrainingScenarioLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario could not be loaded.'**
+  String get radarTrainingScenarioLoadFailed;
+
+  /// No description provided for @radarTrainingScenarioLoadFailedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Please retry. If it still fails, choose another training scenario.'**
+  String get radarTrainingScenarioLoadFailedHelp;
+
+  /// No description provided for @radarTrainingCommandIssued.
+  ///
+  /// In en, this message translates to:
+  /// **'COMMAND ISSUED'**
+  String get radarTrainingCommandIssued;
+
+  /// No description provided for @radarTrainingAcknowledged.
+  ///
+  /// In en, this message translates to:
+  /// **'ACKNOWLEDGED'**
+  String get radarTrainingAcknowledged;
+
+  /// No description provided for @radarTrainingReturnToLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to live'**
+  String get radarTrainingReturnToLive;
+
+  /// No description provided for @radarTrainingResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get radarTrainingResume;
+
+  /// No description provided for @radarTrainingPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get radarTrainingPause;
+
+  /// No description provided for @radarTrainingStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get radarTrainingStatusFailed;
+
+  /// No description provided for @radarTrainingStatusComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get radarTrainingStatusComplete;
+
+  /// No description provided for @radarTrainingStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get radarTrainingStatusRunning;
+
+  /// No description provided for @radarTrainingViewResults.
+  ///
+  /// In en, this message translates to:
+  /// **'View Results'**
+  String get radarTrainingViewResults;
+
+  /// No description provided for @radarTrainingReviewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get radarTrainingReviewLabel;
+
+  /// No description provided for @radarTrainingCommandReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Command Review'**
+  String get radarTrainingCommandReview;
+
+  /// No description provided for @radarTrainingAllAircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'All Aircraft'**
+  String get radarTrainingAllAircraft;
+
+  /// No description provided for @radarTrainingAllTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'All Types'**
+  String get radarTrainingAllTypes;
+
+  /// No description provided for @radarTrainingCommandTypeDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get radarTrainingCommandTypeDirect;
+
+  /// No description provided for @radarTrainingCommandTypeHold.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold'**
+  String get radarTrainingCommandTypeHold;
+
+  /// No description provided for @radarTrainingCommandTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get radarTrainingCommandTypeOther;
+
+  /// No description provided for @radarTrainingNoCommandEventsForFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No command events for current filter'**
+  String get radarTrainingNoCommandEventsForFilter;
+
+  /// No description provided for @radarTrainingJumpPairedCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to paired command/ack'**
+  String get radarTrainingJumpPairedCommand;
+
+  /// No description provided for @radarTrainingIssuedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued'**
+  String get radarTrainingIssuedShort;
+
+  /// No description provided for @radarTrainingAckShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Ack'**
+  String get radarTrainingAckShort;
 }
 
 class _AppLocalizationsDelegate

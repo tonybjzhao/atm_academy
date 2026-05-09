@@ -2526,4 +2526,97 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get radarTrainingLateSpeedControlClosureRate =>
       'Un contrôle tardif de la vitesse a accru le taux de rapprochement.';
+
+  @override
+  String get radarTrainingCommandChannelBusy =>
+      'Canal de commande occupé. Confirmez l\'instruction précédente.';
+
+  @override
+  String radarTrainingCommandSent(String feedback) {
+    return 'Commande envoyée : $feedback';
+  }
+
+  @override
+  String radarTrainingCommandAcknowledged(String label) {
+    return 'Accusé de réception : $label';
+  }
+
+  @override
+  String get radarTrainingMuteAudioCues => 'Couper les signaux audio';
+
+  @override
+  String get radarTrainingUnmuteAudioCues => 'Réactiver les signaux audio';
+
+  @override
+  String get radarTrainingRestartScenario => 'Redémarrer le scénario';
+
+  @override
+  String get radarTrainingScenarioLoadFailed =>
+      'Le scénario n\'a pas pu être chargé.';
+
+  @override
+  String get radarTrainingScenarioLoadFailedHelp =>
+      'Veuillez réessayer. Si l\'échec persiste, choisissez un autre scénario d\'entraînement.';
+
+  @override
+  String get radarTrainingCommandIssued => 'COMMANDE ÉMISE';
+
+  @override
+  String get radarTrainingAcknowledged => 'ACCUSÉ DE RÉCEPTION';
+
+  @override
+  String get radarTrainingReturnToLive => 'Retour au direct';
+
+  @override
+  String get radarTrainingResume => 'Reprendre';
+
+  @override
+  String get radarTrainingPause => 'Pause';
+
+  @override
+  String get radarTrainingStatusFailed => 'Échec';
+
+  @override
+  String get radarTrainingStatusComplete => 'Terminé';
+
+  @override
+  String get radarTrainingStatusRunning => 'En cours';
+
+  @override
+  String get radarTrainingViewResults => 'Voir les résultats';
+
+  @override
+  String get radarTrainingReviewLabel => 'Revue';
+
+  @override
+  String get radarTrainingCommandReview => 'Revue des commandes';
+
+  @override
+  String get radarTrainingAllAircraft => 'Tous les avions';
+
+  @override
+  String get radarTrainingAllTypes => 'Tous les types';
+
+  @override
+  String get radarTrainingCommandTypeDirect => 'Direct';
+
+  @override
+  String get radarTrainingCommandTypeHold => 'Attente';
+
+  @override
+  String get radarTrainingCommandTypeOther => 'Autre';
+
+  @override
+  String get radarTrainingNoCommandEventsForFilter =>
+      'Aucun événement de commande pour ce filtre';
+
+  @override
+  String get radarTrainingJumpPairedCommand =>
+      'Aller à la paire commande/accusé';
+
+  @override
+  String get radarTrainingIssuedShort => 'Émise';
+
+  @override
+  String get radarTrainingAckShort => 'Accusé';
 }

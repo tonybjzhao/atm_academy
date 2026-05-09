@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/workload_audio_controller.dart';
 import 'commands/controller_command.dart';
 import 'core/alerts/operational_alert.dart';
@@ -125,8 +126,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _reviewingReplay = false;
       _simulationAccumulatorSeconds = 0;
       _renderInterpolation = 0;
-      _scenarioStarted = false;
-      _paused = true;
+      _scenarioStarted = widget.betaMode;
+      _paused = !widget.betaMode;
       _resultShown = false;
       setState(() => _loadError = null);
     } catch (error) {
@@ -302,6 +303,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   void _issueCommand(ControllerCommand command, String feedback) {
     final runtime = _runtime;
     final snapshot = _snapshot;
+    final l10n = AppLocalizations.of(context)!;
     if (runtime == null || snapshot == null) return;
     final cooldownKey = '${command.aircraftId}:${command.runtimeType}';
     final now = DateTime.now();
@@ -310,9 +312,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content:
-                Text('Command channel busy. Confirm previous instruction.'),
+          SnackBar(
+            content: Text(l10n.radarTrainingCommandChannelBusy),
             duration: Duration(milliseconds: 700),
             behavior: SnackBarBehavior.floating,
           ),
@@ -341,7 +342,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('Command sent: $feedback'),
+          content: Text(l10n.radarTrainingCommandSent(feedback)),
           duration: const Duration(milliseconds: 1300),
           behavior: SnackBarBehavior.floating,
         ),
@@ -511,11 +512,14 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       setState(() => _recentlyAcknowledgedAircraftId = null);
     });
     if (acknowledgementLabel != null) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('Acknowledged: $acknowledgementLabel'),
+            content: Text(
+              l10n.radarTrainingCommandAcknowledged(acknowledgementLabel),
+            ),
             duration: const Duration(milliseconds: 950),
             behavior: SnackBarBehavior.floating,
           ),
@@ -636,20 +640,24 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
 
     final runtime = _runtime;
     final snapshot = _snapshot;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text(widget.betaMode ? 'Radar Training' : 'Radar V2 Debug'),
+        title: Text(
+            widget.betaMode ? l10n.radarTrainingBetaTitle : 'Radar V2 Debug'),
         backgroundColor: AppTheme.surface,
         actions: [
           if (widget.betaMode)
             IconButton(
-              tooltip: _muted ? 'Unmute audio cues' : 'Mute audio cues',
+              tooltip: _muted
+                  ? l10n.radarTrainingUnmuteAudioCues
+                  : l10n.radarTrainingMuteAudioCues,
               icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
               onPressed: () => setState(() => _muted = !_muted),
             ),
           IconButton(
-            tooltip: 'Restart scenario',
+            tooltip: l10n.radarTrainingRestartScenario,
             icon: const Icon(Icons.restart_alt),
             onPressed: _restartScenario,
           ),
@@ -674,10 +682,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                               size: 34,
                             ),
                             const SizedBox(height: 12),
-                            const Text(
-                              'Scenario could not be loaded.',
+                            Text(
+                              l10n.radarTrainingScenarioLoadFailed,
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppTheme.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -685,7 +693,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Please retry. If it still fails, choose another training scenario.\n$_loadError',
+                              '${l10n.radarTrainingScenarioLoadFailedHelp}\n$_loadError',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: AppTheme.textSecondary,
@@ -697,7 +705,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                             FilledButton.icon(
                               onPressed: () => _loadScenario(_scenarioName),
                               icon: const Icon(Icons.refresh),
-                              label: const Text('Retry'),
+                              label: Text(l10n.scenarioRetry),
                             ),
                           ],
                         ),
@@ -761,13 +769,14 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                     if (_commandFlashUntil != null &&
                                         DateTime.now()
                                             .isBefore(_commandFlashUntil!))
-                                      const Positioned(
+                                      Positioned(
                                         top: 74,
                                         left: 0,
                                         right: 0,
                                         child: Center(
                                           child: _TransientStatusChip(
-                                            label: 'COMMAND ISSUED',
+                                            label:
+                                                l10n.radarTrainingCommandIssued,
                                             color: Color(0xFF62D2FF),
                                           ),
                                         ),
@@ -775,13 +784,14 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                     if (_ackFlashUntil != null &&
                                         DateTime.now()
                                             .isBefore(_ackFlashUntil!))
-                                      const Positioned(
+                                      Positioned(
                                         top: 104,
                                         left: 0,
                                         right: 0,
                                         child: Center(
                                           child: _TransientStatusChip(
-                                            label: 'ACKNOWLEDGED',
+                                            label:
+                                                l10n.radarTrainingAcknowledged,
                                             color: Color(0xFF46F5A7),
                                           ),
                                         ),
@@ -856,6 +866,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                   ? null
                   : snapshot.aircraftById(_selectedAircraftId!),
               scenarioName: _scenarioName,
+              scenarioDisplayTitle:
+                  widget.trainingScenarioTitle ?? _scenarioName,
               scenarioNames:
                   _availableScenarioAssets.keys.toList(growable: false),
               betaMode: widget.betaMode,
@@ -914,6 +926,7 @@ class _DebugControls extends StatelessWidget {
   final bool reviewingReplay;
   final AircraftState? selectedAircraft;
   final String scenarioName;
+  final String scenarioDisplayTitle;
   final List<String> scenarioNames;
   final bool betaMode;
   final ValueChanged<bool> onPauseChanged;
@@ -953,6 +966,7 @@ class _DebugControls extends StatelessWidget {
     required this.reviewingReplay,
     required this.selectedAircraft,
     required this.scenarioName,
+    required this.scenarioDisplayTitle,
     required this.scenarioNames,
     required this.betaMode,
     required this.onPauseChanged,
@@ -981,6 +995,7 @@ class _DebugControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final conflicts = snapshot.separation
         .where((item) => item.isPredictedConflict || item.isLossOfSeparation)
         .length;
@@ -1001,7 +1016,7 @@ class _DebugControls extends StatelessWidget {
                 Expanded(
                   child: betaMode
                       ? Text(
-                          scenarioName,
+                          scenarioDisplayTitle,
                           style: const TextStyle(
                             color: AppTheme.textPrimary,
                             fontSize: 13,
@@ -1023,18 +1038,20 @@ class _DebugControls extends StatelessWidget {
                         ),
                 ),
                 IconButton(
-                  tooltip: 'Restart',
+                  tooltip: l10n.radarTrainingRestartScenario,
                   onPressed: onRestart,
                   icon: const Icon(Icons.restart_alt),
                 ),
                 if (reviewingReplay)
                   IconButton(
-                    tooltip: 'Return to live',
+                    tooltip: l10n.radarTrainingReturnToLive,
                     onPressed: onReturnToLive,
                     icon: const Icon(Icons.sensors),
                   ),
                 IconButton(
-                  tooltip: paused ? 'Resume' : 'Pause',
+                  tooltip: paused
+                      ? l10n.radarTrainingResume
+                      : l10n.radarTrainingPause,
                   onPressed:
                       scenarioStarted ? () => onPauseChanged(!paused) : null,
                   icon: Icon(paused ? Icons.play_arrow : Icons.pause),
@@ -1096,8 +1113,10 @@ class _DebugControls extends StatelessWidget {
                   ),
                 Text(
                   scenarioState.complete
-                      ? (scenarioState.failed ? 'Failed' : 'Complete')
-                      : 'Running',
+                      ? (scenarioState.failed
+                          ? l10n.radarTrainingStatusFailed
+                          : l10n.radarTrainingStatusComplete)
+                      : l10n.radarTrainingStatusRunning,
                   style: TextStyle(
                     color: scenarioState.failed
                         ? AppTheme.danger
@@ -1121,7 +1140,7 @@ class _DebugControls extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onViewResult,
                     icon: const Icon(Icons.assessment),
-                    label: const Text('View Results'),
+                    label: Text(l10n.radarTrainingViewResults),
                   ),
                 ),
               ],
@@ -1307,7 +1326,7 @@ class _TimelineStrip extends StatelessWidget {
         if (reviewEventLabel != null) ...[
           const SizedBox(height: 5),
           Text(
-            'Review: $reviewEventLabel',
+            '${AppLocalizations.of(context)!.radarTrainingReviewLabel}: $reviewEventLabel',
             style: const TextStyle(color: AppTheme.primary, fontSize: 11),
           ),
         ],
@@ -1351,6 +1370,7 @@ class _CommandReviewPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final commandEvents = snapshot.events.where((event) {
       return event.type == 'commandIssued' ||
           event.type == 'commandAcknowledged';
@@ -1388,8 +1408,8 @@ class _CommandReviewPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Command Review',
+          Text(
+            l10n.radarTrainingCommandReview,
             style: TextStyle(
               color: AppTheme.primary,
               fontSize: 11,
@@ -1413,9 +1433,9 @@ class _CommandReviewPanel extends StatelessWidget {
                   ),
                   underline: const SizedBox.shrink(),
                   items: [
-                    const DropdownMenuItem<String?>(
+                    DropdownMenuItem<String?>(
                       value: null,
-                      child: Text('All Aircraft'),
+                      child: Text(l10n.radarTrainingAllAircraft),
                     ),
                     for (final id in aircraftIds)
                       DropdownMenuItem<String?>(
@@ -1437,15 +1457,24 @@ class _CommandReviewPanel extends StatelessWidget {
                     fontSize: 11,
                   ),
                   underline: const SizedBox.shrink(),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All Types')),
-                    DropdownMenuItem(value: 'heading', child: Text('Heading')),
-                    DropdownMenuItem(value: 'speed', child: Text('Speed')),
+                  items: [
                     DropdownMenuItem(
-                        value: 'altitude', child: Text('Altitude')),
-                    DropdownMenuItem(value: 'direct', child: Text('Direct')),
-                    DropdownMenuItem(value: 'hold', child: Text('Hold')),
-                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                        value: 'all', child: Text(l10n.radarTrainingAllTypes)),
+                    DropdownMenuItem(
+                        value: 'heading', child: Text(l10n.radarTechHeading)),
+                    DropdownMenuItem(
+                        value: 'speed', child: Text(l10n.radarTechSpeed)),
+                    DropdownMenuItem(
+                        value: 'altitude', child: Text(l10n.radarTechAltitude)),
+                    DropdownMenuItem(
+                        value: 'direct',
+                        child: Text(l10n.radarTrainingCommandTypeDirect)),
+                    DropdownMenuItem(
+                        value: 'hold',
+                        child: Text(l10n.radarTrainingCommandTypeHold)),
+                    DropdownMenuItem(
+                        value: 'other',
+                        child: Text(l10n.radarTrainingCommandTypeOther)),
                   ],
                   onChanged: (value) {
                     if (value != null) onTypeChanged(value);
@@ -1456,9 +1485,10 @@ class _CommandReviewPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           if (visible.isEmpty)
-            const Text(
-              'No command events for current filter',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+            Text(
+              l10n.radarTrainingNoCommandEventsForFilter,
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
             ),
           for (final event in visible)
             Padding(
@@ -1493,7 +1523,7 @@ class _CommandReviewPanel extends StatelessWidget {
                           height: 20,
                         ),
                         padding: EdgeInsets.zero,
-                        tooltip: 'Jump to paired command/ack',
+                        tooltip: l10n.radarTrainingJumpPairedCommand,
                         onPressed: () => onJumpToPair(event),
                         icon: const Icon(
                           Icons.compare_arrows,
@@ -1547,6 +1577,7 @@ class _PairedCommandLane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final issued = events
         .where((event) => event.type == 'commandIssued')
         .toList(growable: false);
@@ -1590,7 +1621,7 @@ class _PairedCommandLane extends StatelessWidget {
                 left: 2,
                 top: 0,
                 child: Text(
-                  'Issued',
+                  l10n.radarTrainingIssuedShort,
                   style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 9,
@@ -1601,7 +1632,7 @@ class _PairedCommandLane extends StatelessWidget {
                 left: 2,
                 top: 40,
                 child: Text(
-                  'Ack',
+                  l10n.radarTrainingAckShort,
                   style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 9,
@@ -2028,6 +2059,7 @@ class _BriefingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final definition = runtime.definition;
     return Center(
       child: SingleChildScrollView(
@@ -2080,10 +2112,11 @@ class _BriefingView extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 _BriefingSection(
-                    title: 'Objectives', items: definition.objectives),
+                    title: l10n.radarTrainingObjective,
+                    items: definition.objectives),
                 const SizedBox(height: 12),
                 _BriefingSection(
-                  title: 'Expected Techniques',
+                  title: l10n.radarTrainingExpectedTechnique,
                   items: definition.expectedTechniques,
                 ),
                 const SizedBox(height: 16),
@@ -2092,7 +2125,7 @@ class _BriefingView extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onStart,
                     icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start Scenario'),
+                    label: Text(l10n.radarTrainingStartScenario),
                   ),
                 ),
               ],

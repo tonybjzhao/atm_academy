@@ -2287,4 +2287,92 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get radarTrainingLateSpeedControlClosureRate => '速度控制过晚导致闭合率上升。';
+
+  @override
+  String get radarTrainingCommandChannelBusy => '指令通道繁忙。请等待上一条指令确认。';
+
+  @override
+  String radarTrainingCommandSent(String feedback) {
+    return '指令已发送：$feedback';
+  }
+
+  @override
+  String radarTrainingCommandAcknowledged(String label) {
+    return '已确认：$label';
+  }
+
+  @override
+  String get radarTrainingMuteAudioCues => '静音提示音';
+
+  @override
+  String get radarTrainingUnmuteAudioCues => '恢复提示音';
+
+  @override
+  String get radarTrainingRestartScenario => '重新开始场景';
+
+  @override
+  String get radarTrainingScenarioLoadFailed => '场景加载失败。';
+
+  @override
+  String get radarTrainingScenarioLoadFailedHelp => '请重试；若仍失败，请选择其他训练场景。';
+
+  @override
+  String get radarTrainingCommandIssued => '指令已下达';
+
+  @override
+  String get radarTrainingAcknowledged => '已确认';
+
+  @override
+  String get radarTrainingReturnToLive => '返回实时';
+
+  @override
+  String get radarTrainingResume => '继续';
+
+  @override
+  String get radarTrainingPause => '暂停';
+
+  @override
+  String get radarTrainingStatusFailed => '失败';
+
+  @override
+  String get radarTrainingStatusComplete => '完成';
+
+  @override
+  String get radarTrainingStatusRunning => '进行中';
+
+  @override
+  String get radarTrainingViewResults => '查看结果';
+
+  @override
+  String get radarTrainingReviewLabel => '回放定位';
+
+  @override
+  String get radarTrainingCommandReview => '指令复核';
+
+  @override
+  String get radarTrainingAllAircraft => '全部航空器';
+
+  @override
+  String get radarTrainingAllTypes => '全部类型';
+
+  @override
+  String get radarTrainingCommandTypeDirect => '直飞';
+
+  @override
+  String get radarTrainingCommandTypeHold => '等待';
+
+  @override
+  String get radarTrainingCommandTypeOther => '其他';
+
+  @override
+  String get radarTrainingNoCommandEventsForFilter => '当前筛选下无指令事件';
+
+  @override
+  String get radarTrainingJumpPairedCommand => '跳转到配对的下达/确认';
+
+  @override
+  String get radarTrainingIssuedShort => '下达';
+
+  @override
+  String get radarTrainingAckShort => '确认';
 }
