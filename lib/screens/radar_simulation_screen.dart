@@ -53,7 +53,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
         final dx = _aircraft[i].x - _aircraft[j].x;
         final dy = _aircraft[i].y - _aircraft[j].y;
         final horiz = sqrt(dx * dx + dy * dy);
-        final vert  = (_aircraft[i].altitude - _aircraft[j].altitude).abs();
+        final vert = (_aircraft[i].altitude - _aircraft[j].altitude).abs();
         if (horiz < _config.conflictDistancePx && vert < 10) return true;
       }
     }
@@ -62,18 +62,21 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
 
   // ── Init ──────────────────────────────────────────────────────────────────
   void _loadConfig() {
-    _config = RadarLevelConfig.forLevel(ProgressionService.instance.currentLevel);
+    _config =
+        RadarLevelConfig.forLevel(ProgressionService.instance.currentLevel);
   }
 
   void _initAircraft() {
-    _aircraft = _config.aircraft.map((a) => Aircraft(
-      callsign: a.callsign,
-      x: a.x,
-      y: a.y,
-      heading: a.heading,
-      speed: a.speed * _config.speedMultiplier,
-      altitude: a.altitude,
-    )).toList();
+    _aircraft = _config.aircraft
+        .map((a) => Aircraft(
+              callsign: a.callsign,
+              x: a.x,
+              y: a.y,
+              heading: a.heading,
+              speed: a.speed * _config.speedMultiplier,
+              altitude: a.altitude,
+            ))
+        .toList();
   }
 
   void _startTimers() {
@@ -106,7 +109,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
     _loadConfig();
     _initAircraft();
     _timeLeft = _config.timeLimitSeconds;
-    _score    = _config.startingScore;
+    _score = _config.startingScore;
 
     _sweepCtrl = AnimationController(
       vsync: this,
@@ -127,7 +130,8 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
             if (_conflictFreeTicks >= _config.requiredClearTicks) {
               _xpEarned = _config.successBonus + 100;
               if (_score >= 100) _xpEarned += 50;
-              _score = min(_config.startingScore + _config.successBonus, _score + _config.successBonus);
+              _score = min(_config.startingScore + _config.successBonus,
+                  _score + _config.successBonus);
               _state = _ScenarioState.success;
               _stopTimers();
               ProgressionService.instance.completeLevel(_config.level, _score);
@@ -176,12 +180,18 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
     setState(() {
       _score = max(0, _score - 2);
       switch (type) {
-        case 'left':    a.heading -= 15;
-        case 'right':   a.heading += 15;
-        case 'climb':   a.altitude += 10;
-        case 'descend': a.altitude -= 10;
-        case 'slow':    a.speed = max(0.2, a.speed - 0.1);
-        case 'fast':    a.speed = min(1.8, a.speed + 0.1);
+        case 'left':
+          a.heading -= 15;
+        case 'right':
+          a.heading += 15;
+        case 'climb':
+          a.altitude += 10;
+        case 'descend':
+          a.altitude -= 10;
+        case 'slow':
+          a.speed = max(0.2, a.speed - 0.1);
+        case 'fast':
+          a.speed = min(1.8, a.speed + 0.1);
       }
     });
   }
@@ -196,66 +206,99 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
   // ── Technique label ───────────────────────────────────────────────────────
   String _techniqueLabel(AppLocalizations l10n) {
     switch (_config.primaryTechnique) {
-      case 'heading':  return l10n.radarTechHeading;
-      case 'altitude': return l10n.radarTechAltitude;
-      case 'speed':    return l10n.radarTechSpeed;
-      default:         return l10n.radarTechMixed;
+      case 'heading':
+        return l10n.radarTechHeading;
+      case 'altitude':
+        return l10n.radarTechAltitude;
+      case 'speed':
+        return l10n.radarTechSpeed;
+      default:
+        return l10n.radarTechMixed;
     }
   }
 
   // ── Rank label ────────────────────────────────────────────────────────────
   String _rankLabel(AppLocalizations l10n, String key) {
     switch (key) {
-      case 'progRankMaster':     return l10n.progRankMaster;
-      case 'progRankSenior':     return l10n.progRankSenior;
-      case 'progRankController': return l10n.progRankController;
-      case 'progRankTrainee':    return l10n.progRankTrainee;
-      default:                   return l10n.progRankCadet;
+      case 'progRankMaster':
+        return l10n.progRankMaster;
+      case 'progRankSenior':
+        return l10n.progRankSenior;
+      case 'progRankController':
+        return l10n.progRankController;
+      case 'progRankTrainee':
+        return l10n.progRankTrainee;
+      default:
+        return l10n.progRankCadet;
     }
   }
 
   // ── Level scenario name ───────────────────────────────────────────────────
   String _levelName(AppLocalizations l10n) {
     switch (_config.scenarioKey) {
-      case 'radarLevel1Name':  return l10n.radarLevel1Name;
-      case 'radarLevel2Name':  return l10n.radarLevel2Name;
-      case 'radarLevel3Name':  return l10n.radarLevel3Name;
-      case 'radarLevel4Name':  return l10n.radarLevel4Name;
-      case 'radarLevel5Name':  return l10n.radarLevel5Name;
-      case 'radarLevel6Name':  return l10n.radarLevel6Name;
-      case 'radarLevel7Name':  return l10n.radarLevel7Name;
-      case 'radarLevel8Name':  return l10n.radarLevel8Name;
-      case 'radarLevel9Name':  return l10n.radarLevel9Name;
-      case 'radarLevel10Name': return l10n.radarLevel10Name;
-      default: return _config.scenarioKey;
+      case 'radarLevel1Name':
+        return l10n.radarLevel1Name;
+      case 'radarLevel2Name':
+        return l10n.radarLevel2Name;
+      case 'radarLevel3Name':
+        return l10n.radarLevel3Name;
+      case 'radarLevel4Name':
+        return l10n.radarLevel4Name;
+      case 'radarLevel5Name':
+        return l10n.radarLevel5Name;
+      case 'radarLevel6Name':
+        return l10n.radarLevel6Name;
+      case 'radarLevel7Name':
+        return l10n.radarLevel7Name;
+      case 'radarLevel8Name':
+        return l10n.radarLevel8Name;
+      case 'radarLevel9Name':
+        return l10n.radarLevel9Name;
+      case 'radarLevel10Name':
+        return l10n.radarLevel10Name;
+      default:
+        return _config.scenarioKey;
     }
   }
 
   // ── Level failure tip ─────────────────────────────────────────────────────
   String _levelTip(AppLocalizations l10n) {
     switch (_config.tipKey) {
-      case 'radarLevel1Tip':  return l10n.radarLevel1Tip;
-      case 'radarLevel2Tip':  return l10n.radarLevel2Tip;
-      case 'radarLevel3Tip':  return l10n.radarLevel3Tip;
-      case 'radarLevel4Tip':  return l10n.radarLevel4Tip;
-      case 'radarLevel5Tip':  return l10n.radarLevel5Tip;
-      case 'radarLevel6Tip':  return l10n.radarLevel6Tip;
-      case 'radarLevel7Tip':  return l10n.radarLevel7Tip;
-      case 'radarLevel8Tip':  return l10n.radarLevel8Tip;
-      case 'radarLevel9Tip':  return l10n.radarLevel9Tip;
-      case 'radarLevel10Tip': return l10n.radarLevel10Tip;
-      default: return '';
+      case 'radarLevel1Tip':
+        return l10n.radarLevel1Tip;
+      case 'radarLevel2Tip':
+        return l10n.radarLevel2Tip;
+      case 'radarLevel3Tip':
+        return l10n.radarLevel3Tip;
+      case 'radarLevel4Tip':
+        return l10n.radarLevel4Tip;
+      case 'radarLevel5Tip':
+        return l10n.radarLevel5Tip;
+      case 'radarLevel6Tip':
+        return l10n.radarLevel6Tip;
+      case 'radarLevel7Tip':
+        return l10n.radarLevel7Tip;
+      case 'radarLevel8Tip':
+        return l10n.radarLevel8Tip;
+      case 'radarLevel9Tip':
+        return l10n.radarLevel9Tip;
+      case 'radarLevel10Tip':
+        return l10n.radarLevel10Tip;
+      default:
+        return '';
     }
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final l10n    = AppLocalizations.of(context)!;
-    final prog    = ProgressionService.instance;
+    final l10n = AppLocalizations.of(context)!;
+    final prog = ProgressionService.instance;
     final conflict = _hasConflict;
-    final resolving = !conflict && _conflictFreeTicks > 0 && _state == _ScenarioState.playing;
-    final resolvePct = (_conflictFreeTicks / _config.requiredClearTicks).clamp(0.0, 1.0);
+    final resolving =
+        !conflict && _conflictFreeTicks > 0 && _state == _ScenarioState.playing;
+    final resolvePct =
+        (_conflictFreeTicks / _config.requiredClearTicks).clamp(0.0, 1.0);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -292,13 +335,17 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                       : AppTheme.surface,
                   borderRadius: BorderRadius.circular(7),
                   border: Border.all(
-                    color: _timeLeft <= 15 ? AppTheme.danger : AppTheme.borderColor,
+                    color: _timeLeft <= 15
+                        ? AppTheme.danger
+                        : AppTheme.borderColor,
                   ),
                 ),
                 child: Text(
                   '${_timeLeft}s',
                   style: TextStyle(
-                    color: _timeLeft <= 15 ? AppTheme.danger : AppTheme.textPrimary,
+                    color: _timeLeft <= 15
+                        ? AppTheme.danger
+                        : AppTheme.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -324,243 +371,288 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
       ),
       body: Stack(
         children: [
-          Column(
-            children: [
-              // ── Scenario description ──────────────────────────────────────
-              Container(
-                margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.borderColor),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.adjust, color: AppTheme.secondary, size: 13),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${l10n.radarLevelLabel(_config.level)} — ${_levelName(l10n)}',
-                            style: const TextStyle(
-                              color: AppTheme.secondary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          Text(
-                            l10n.radarTechnique(_techniqueLabel(l10n)),
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (prog.getBestScore(_config.level) > 0)
-                      Text(
-                        l10n.radarBestScore(prog.getBestScore(_config.level)),
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // ── Status bar ────────────────────────────────────────────────
-              Container(
-                margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: conflict
-                      ? AppTheme.danger.withValues(alpha: 0.12)
-                      : resolving
-                          ? AppTheme.warning.withValues(alpha: 0.09)
-                          : AppTheme.primary.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: conflict
-                        ? AppTheme.danger
-                        : resolving
-                            ? AppTheme.warning.withValues(alpha: 0.5)
-                            : AppTheme.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      conflict
-                          ? Icons.warning_amber_rounded
-                          : resolving
-                              ? Icons.hourglass_top
-                              : Icons.check_circle_outline,
-                      color: conflict
-                          ? AppTheme.danger
-                          : resolving
-                              ? AppTheme.warning
-                              : AppTheme.primary,
-                      size: 15,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        conflict
-                            ? l10n.radarConflictAlert
-                            : resolving
-                                ? '${l10n.radarV2Resolving} ${(resolvePct * 100).toInt()}%'
-                                : l10n.radarTrafficNormal(_aircraft.length),
-                        style: TextStyle(
-                          color: conflict
-                              ? AppTheme.danger
-                              : resolving
-                                  ? AppTheme.warning
-                                  : AppTheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    if (resolving)
-                      SizedBox(
-                        width: 55,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: resolvePct,
-                            minHeight: 3,
-                            color: AppTheme.primary,
-                            backgroundColor: AppTheme.borderColor,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // ── How-to hint (until first selection) ──────────────────────
-              if (!_everSelected && _state == _ScenarioState.playing)
-                Container(
-                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.secondary.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.touch_app_outlined, color: AppTheme.secondary, size: 13),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          l10n.radarV2HowTo,
-                          style: const TextStyle(color: AppTheme.secondary, fontSize: 10, height: 1.3),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // ── Radar ─────────────────────────────────────────────────────
-              Expanded(
-                child: GestureDetector(
-                  onTapDown: (d) {
-                    if (_state != _ScenarioState.playing) return;
-                    final p = d.localPosition;
-                    Aircraft? hit;
-                    double minDist = 32;
-                    for (final a in _aircraft) {
-                      final dist = sqrt(pow(p.dx - a.x, 2) + pow(p.dy - a.y, 2));
-                      if (dist < minDist) { minDist = dist; hit = a; }
-                    }
-                    setState(() {
-                      _selected = hit;
-                      if (hit != null) _everSelected = true;
-                    });
-                  },
-                  child: CustomPaint(
-                    painter: RadarPainter(
-                      aircraft: _aircraft,
-                      sweepAngle: _sweepAngle,
-                      selected: _selected,
-                      conflict: conflict,
-                    ),
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-              ),
-
-              // ── Selected aircraft info ─────────────────────────────────────
-              if (_selected != null && _state == _ScenarioState.playing)
+          SafeArea(
+            child: Column(
+              children: [
+                // ── Scenario description ──────────────────────────────────────
                 Container(
                   margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppTheme.surface,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.yellowAccent.withValues(alpha: 0.5)),
+                    border: Border.all(color: AppTheme.borderColor),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.flight, color: Colors.yellowAccent, size: 13),
+                      const Icon(Icons.adjust,
+                          color: AppTheme.secondary, size: 13),
                       const SizedBox(width: 8),
-                      Text(
-                        '${_selected!.callsign}  FL${_selected!.altitude}  '
-                        'HDG ${_selected!.heading.toInt()}°  '
-                        'SPD ${_selected!.speed.toStringAsFixed(1)}',
-                        style: const TextStyle(
-                          color: Colors.yellowAccent,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${l10n.radarLevelLabel(_config.level)} — ${_levelName(l10n)}',
+                              style: const TextStyle(
+                                color: AppTheme.secondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            Text(
+                              l10n.radarTechnique(_techniqueLabel(l10n)),
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      if (prog.getBestScore(_config.level) > 0)
+                        Text(
+                          l10n.radarBestScore(prog.getBestScore(_config.level)),
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
                     ],
                   ),
                 ),
 
-              // ── Command buttons ────────────────────────────────────────────
-              if (_state == _ScenarioState.playing)
-                Padding(
-                  padding: EdgeInsets.fromLTRB(12, 4, 12, MediaQuery.of(context).padding.bottom + 14),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
+                // ── Status bar ────────────────────────────────────────────────
+                Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: conflict
+                        ? AppTheme.danger.withValues(alpha: 0.12)
+                        : resolving
+                            ? AppTheme.warning.withValues(alpha: 0.09)
+                            : AppTheme.primary.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: conflict
+                          ? AppTheme.danger
+                          : resolving
+                              ? AppTheme.warning.withValues(alpha: 0.5)
+                              : AppTheme.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      _cmdBtn(l10n.cmdTurnLeft,  _selected != null ? () => _issueCommand('left')    : null),
-                      _cmdBtn(l10n.cmdTurnRight, _selected != null ? () => _issueCommand('right')   : null),
-                      _cmdBtn(l10n.cmdClimb,     _selected != null ? () => _issueCommand('climb')   : null),
-                      _cmdBtn(l10n.cmdDescend,   _selected != null ? () => _issueCommand('descend') : null),
-                      _cmdBtn(l10n.cmdSlow,      _selected != null ? () => _issueCommand('slow')    : null),
-                      _cmdBtn(l10n.cmdFast,      _selected != null ? () => _issueCommand('fast')    : null),
+                      Icon(
+                        conflict
+                            ? Icons.warning_amber_rounded
+                            : resolving
+                                ? Icons.hourglass_top
+                                : Icons.check_circle_outline,
+                        color: conflict
+                            ? AppTheme.danger
+                            : resolving
+                                ? AppTheme.warning
+                                : AppTheme.primary,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          conflict
+                              ? l10n.radarConflictAlert
+                              : resolving
+                                  ? '${l10n.radarV2Resolving} ${(resolvePct * 100).toInt()}%'
+                                  : l10n.radarTrafficNormal(_aircraft.length),
+                          style: TextStyle(
+                            color: conflict
+                                ? AppTheme.danger
+                                : resolving
+                                    ? AppTheme.warning
+                                    : AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      if (resolving)
+                        SizedBox(
+                          width: 55,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: resolvePct,
+                              minHeight: 3,
+                              color: AppTheme.primary,
+                              backgroundColor: AppTheme.borderColor,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-            ],
+
+                // ── How-to hint (until first selection) ──────────────────────
+                if (!_everSelected && _state == _ScenarioState.playing)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.secondary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: AppTheme.secondary.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.touch_app_outlined,
+                            color: AppTheme.secondary, size: 13),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.radarV2HowTo,
+                            style: const TextStyle(
+                                color: AppTheme.secondary,
+                                fontSize: 10,
+                                height: 1.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // ── Radar ─────────────────────────────────────────────────────
+                Expanded(
+                  child: GestureDetector(
+                    onTapDown: (d) {
+                      if (_state != _ScenarioState.playing) return;
+                      final p = d.localPosition;
+                      Aircraft? hit;
+                      double minDist = 32;
+                      for (final a in _aircraft) {
+                        final dist =
+                            sqrt(pow(p.dx - a.x, 2) + pow(p.dy - a.y, 2));
+                        if (dist < minDist) {
+                          minDist = dist;
+                          hit = a;
+                        }
+                      }
+                      setState(() {
+                        _selected = hit;
+                        if (hit != null) _everSelected = true;
+                      });
+                    },
+                    child: CustomPaint(
+                      painter: RadarPainter(
+                        aircraft: _aircraft,
+                        sweepAngle: _sweepAngle,
+                        selected: _selected,
+                        conflict: conflict,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ),
+
+                // ── Selected aircraft info ─────────────────────────────────────
+                if (_selected != null && _state == _ScenarioState.playing)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: Colors.yellowAccent.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.flight,
+                            color: Colors.yellowAccent, size: 13),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_selected!.callsign}  FL${_selected!.altitude}  '
+                          'HDG ${_selected!.heading.toInt()}°  '
+                          'SPD ${_selected!.speed.toStringAsFixed(1)}',
+                          style: const TextStyle(
+                            color: Colors.yellowAccent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // ── Command buttons ────────────────────────────────────────────
+                if (_state == _ScenarioState.playing)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                        12, 4, 12, MediaQuery.of(context).padding.bottom + 14),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _cmdBtn(
+                            l10n.cmdTurnLeft,
+                            _selected != null
+                                ? () => _issueCommand('left')
+                                : null),
+                        _cmdBtn(
+                            l10n.cmdTurnRight,
+                            _selected != null
+                                ? () => _issueCommand('right')
+                                : null),
+                        _cmdBtn(
+                            l10n.cmdClimb,
+                            _selected != null
+                                ? () => _issueCommand('climb')
+                                : null),
+                        _cmdBtn(
+                            l10n.cmdDescend,
+                            _selected != null
+                                ? () => _issueCommand('descend')
+                                : null),
+                        _cmdBtn(
+                            l10n.cmdSlow,
+                            _selected != null
+                                ? () => _issueCommand('slow')
+                                : null),
+                        _cmdBtn(
+                            l10n.cmdFast,
+                            _selected != null
+                                ? () => _issueCommand('fast')
+                                : null),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
 
           // ── Result overlay ─────────────────────────────────────────────────
           if (_state != _ScenarioState.playing)
-            _ResultOverlay(
-              success: _state == _ScenarioState.success,
-              level: _config.level,
-              score: _score,
-              xpEarned: _xpEarned,
-              tip: _state == _ScenarioState.failed ? _levelTip(l10n) : null,
-              hasNextLevel: _config.level < RadarLevelConfig.maxLevel,
-              onReset: () => _resetScenario(),
-              onNextLevel: _config.level < RadarLevelConfig.maxLevel
-                  ? () => _resetScenario(level: _config.level + 1)
-                  : null,
+            SafeArea(
+              child: _ResultOverlay(
+                success: _state == _ScenarioState.success,
+                level: _config.level,
+                score: _score,
+                xpEarned: _xpEarned,
+                tip: _state == _ScenarioState.failed ? _levelTip(l10n) : null,
+                hasNextLevel: _config.level < RadarLevelConfig.maxLevel,
+                onReset: () => _resetScenario(),
+                onNextLevel: _config.level < RadarLevelConfig.maxLevel
+                    ? () => _resetScenario(level: _config.level + 1)
+                    : null,
+              ),
             ),
         ],
       ),
@@ -573,7 +665,8 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
         foregroundColor: enabled ? AppTheme.primary : AppTheme.textSecondary,
-        side: BorderSide(color: enabled ? AppTheme.primary : AppTheme.borderColor),
+        side: BorderSide(
+            color: enabled ? AppTheme.primary : AppTheme.borderColor),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -610,7 +703,8 @@ class _ResultOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final prog = ProgressionService.instance;
-    final maxScore = allLevels[level - 1].startingScore + allLevels[level - 1].successBonus;
+    final maxScore =
+        allLevels[level - 1].startingScore + allLevels[level - 1].successBonus;
 
     return Container(
       color: AppTheme.background.withValues(alpha: 0.94),
@@ -642,13 +736,15 @@ class _ResultOverlay extends StatelessWidget {
                 Text(
                   l10n.radarV2SuccessHint,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11, height: 1.4),
+                  style: const TextStyle(
+                      color: AppTheme.textSecondary, fontSize: 11, height: 1.4),
                 ),
               ],
               const SizedBox(height: 12),
               // Score / XP row
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(12),
@@ -657,10 +753,15 @@ class _ResultOverlay extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _InfoCell(label: l10n.radarV2FinalScore, value: '$score / $maxScore'),
+                    _InfoCell(
+                        label: l10n.radarV2FinalScore,
+                        value: '$score / $maxScore'),
                     if (success) ...[
                       const SizedBox(width: 24),
-                      _InfoCell(label: 'XP', value: '+$xpEarned', valueColor: AppTheme.primary),
+                      _InfoCell(
+                          label: 'XP',
+                          value: '+$xpEarned',
+                          valueColor: AppTheme.primary),
                     ],
                     const SizedBox(width: 24),
                     _InfoCell(
@@ -680,16 +781,21 @@ class _ResultOverlay extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppTheme.warning.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.warning.withValues(alpha: 0.4)),
+                    border: Border.all(
+                        color: AppTheme.warning.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.lightbulb_outline, color: AppTheme.warning, size: 15),
+                      const Icon(Icons.lightbulb_outline,
+                          color: AppTheme.warning, size: 15),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           tip!,
-                          style: const TextStyle(color: AppTheme.warning, fontSize: 11, height: 1.4),
+                          style: const TextStyle(
+                              color: AppTheme.warning,
+                              fontSize: 11,
+                              height: 1.4),
                         ),
                       ),
                     ],
@@ -794,7 +900,11 @@ class _InfoCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9, letterSpacing: 0.8)),
+        Text(label,
+            style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 9,
+                letterSpacing: 0.8)),
         const SizedBox(height: 2),
         Text(
           value,

@@ -21,9 +21,9 @@ class UnityReplayScreen extends StatelessWidget {
   const UnityReplayScreen({super.key, required this.replayData});
 
   @override
-  Widget build(BuildContext context) =>
-      kUnityEnabled ? _UnityReplayView(replayData: replayData)
-                    : _FlutterReplayView(replayData: replayData);
+  Widget build(BuildContext context) => kUnityEnabled
+      ? _UnityReplayView(replayData: replayData)
+      : _FlutterReplayView(replayData: replayData);
 }
 
 // ── Unity live view (disabled — see TODO above) ────────────────────────────
@@ -32,7 +32,8 @@ class _UnityReplayView extends StatelessWidget {
   final ScenarioReplayData replayData;
   const _UnityReplayView({required this.replayData});
   @override
-  Widget build(BuildContext context) => _FlutterReplayView(replayData: replayData);
+  Widget build(BuildContext context) =>
+      _FlutterReplayView(replayData: replayData);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -50,12 +51,11 @@ class _FlutterReplayView extends StatefulWidget {
 
 class _FlutterReplayViewState extends State<_FlutterReplayView>
     with TickerProviderStateMixin {
-
   static const _totalSec = 7.0; // replay playback duration in seconds
 
-  late final AnimationController _replayCtr;  // 0→1 over _totalSec
-  late final AnimationController _sweepCtr;   // continuous radar sweep
-  late final AnimationController _pulseCtr;   // conflict pulse
+  late final AnimationController _replayCtr; // 0→1 over _totalSec
+  late final AnimationController _sweepCtr; // continuous radar sweep
+  late final AnimationController _pulseCtr; // conflict pulse
 
   @override
   void initState() {
@@ -92,7 +92,7 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   double get _t => _replayCtr.value; // 0→1
-  bool   get _done => _replayCtr.isCompleted;
+  bool get _done => _replayCtr.isCompleted;
 
   // Normalised time at which the closest approach occurred
   double get _conflictT {
@@ -105,36 +105,51 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
     return (widget.replayData.actionTimeSec / _totalSec).clamp(0.0, 1.0);
   }
 
-  void _restart() { _replayCtr.reset(); _replayCtr.forward(); }
+  void _restart() {
+    _replayCtr.reset();
+    _replayCtr.forward();
+  }
+
   void _togglePlay() {
-    if (_done) { _restart(); return; }
+    if (_done) {
+      _restart();
+      return;
+    }
     _replayCtr.isAnimating ? _replayCtr.stop() : _replayCtr.forward();
   }
 
   Color _ratingColor() {
     switch (widget.replayData.ratingKey) {
-      case 'ratingExcellent': return AppTheme.primary;
-      case 'ratingSafe':      return Colors.greenAccent;
-      case 'ratingNeedsImprovement': return AppTheme.warning;
-      default: return AppTheme.danger;
+      case 'ratingExcellent':
+        return AppTheme.primary;
+      case 'ratingSafe':
+        return Colors.greenAccent;
+      case 'ratingNeedsImprovement':
+        return AppTheme.warning;
+      default:
+        return AppTheme.danger;
     }
   }
 
   String _ratingLabel(AppLocalizations l10n) {
     switch (widget.replayData.ratingKey) {
-      case 'ratingExcellent':        return l10n.ratingExcellent;
-      case 'ratingSafe':             return l10n.ratingSafe;
-      case 'ratingNeedsImprovement': return l10n.ratingNeedsImprovement;
-      default:                       return l10n.ratingUnsafe;
+      case 'ratingExcellent':
+        return l10n.ratingExcellent;
+      case 'ratingSafe':
+        return l10n.ratingSafe;
+      case 'ratingNeedsImprovement':
+        return l10n.ratingNeedsImprovement;
+      default:
+        return l10n.ratingUnsafe;
     }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final l10n  = AppLocalizations.of(context)!;
-    final data  = widget.replayData;
-    final rc    = _ratingColor();
+    final l10n = AppLocalizations.of(context)!;
+    final data = widget.replayData;
+    final rc = _ratingColor();
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -145,268 +160,310 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
-        children: [
-
-          // ── Radar display ─────────────────────────────────────────────────
-          Expanded(
-            flex: 5,
-            child: Stack(
-              children: [
-                CustomPaint(
-                  painter: _ReplayPainter(
-                    data:         data,
-                    t:            _t,
-                    sweepAngle:   _sweepCtr.value * 2 * pi,
-                    conflictT:    _conflictT,
-                    actionT:      _actionT,
-                    pulseVal:     _pulseCtr.value,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
-                // "REPLAY COMPLETE" banner
-                if (_done)
-                  Positioned(
-                    top: 10, left: 0, right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppTheme.borderColor),
-                        ),
-                        child: const Text(
-                          'REPLAY COMPLETE',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // ── Timeline + controls ───────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-            child: Row(
-              children: [
-                // Play / Pause / Replay
-                GestureDetector(
-                  onTap: _togglePlay,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.borderColor),
-                    ),
-                    child: Icon(
-                      _done ? Icons.replay
-                            : _replayCtr.isAnimating ? Icons.pause : Icons.play_arrow,
-                      color: AppTheme.primary,
-                      size: 18,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      // Background track
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: _t,
-                          minHeight: 6,
-                          color: AppTheme.primary,
-                          backgroundColor: AppTheme.surface,
-                        ),
-                      ),
-                      // Conflict marker on timeline
-                      if (_conflictT > 0)
-                        FractionallySizedBox(
-                          widthFactor: _conflictT,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              width: 8, height: 8,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: data.hadLOS ? AppTheme.danger : AppTheme.warning,
-                                border: Border.all(color: AppTheme.background, width: 1),
-                              ),
-                            ),
-                          ),
-                        ),
-                      // Action marker on timeline
-                      if (_actionT > 0)
-                        FractionallySizedBox(
-                          widthFactor: _actionT,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              width: 8, height: 8,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.yellowAccent,
-                                border: Border.all(color: AppTheme.background, width: 1),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '${(_t * _totalSec).toStringAsFixed(1)}s',
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
-                ),
-              ],
-            ),
-          ),
-
-          // Legend
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Row(
-              children: [
-                _Dot(color: data.hadLOS ? AppTheme.danger : AppTheme.warning),
-                const SizedBox(width: 4),
-                const Text('Closest approach', style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
-                const SizedBox(width: 16),
-                _Dot(color: Colors.yellowAccent),
-                const SizedBox(width: 4),
-                const Text('Your action', style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
-              ],
-            ),
-          ),
-
-          // ── Score + detail ────────────────────────────────────────────────
-          Expanded(
-            flex: 4,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Radar display ─────────────────────────────────────────────────
+            Expanded(
+              flex: 5,
+              child: Stack(
                 children: [
-
-                  // Score header
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.borderColor),
+                  CustomPaint(
+                    painter: _ReplayPainter(
+                      data: data,
+                      t: _t,
+                      sweepAngle: _sweepCtr.value * 2 * pi,
+                      conflictT: _conflictT,
+                      actionT: _actionT,
+                      pulseVal: _pulseCtr.value,
                     ),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${data.score}',
-                          style: TextStyle(
-                            color: rc, fontSize: 36, fontWeight: FontWeight.w900),
+                    child: const SizedBox.expand(),
+                  ),
+                  // "REPLAY COMPLETE" banner
+                  if (_done)
+                    Positioned(
+                      top: 10,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppTheme.borderColor),
+                          ),
+                          child: const Text(
+                            'REPLAY COMPLETE',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
                         ),
-                        const Text(' / 120',
-                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 18)),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(_ratingLabel(l10n),
-                                style: TextStyle(color: rc, fontWeight: FontWeight.w800, fontSize: 13)),
-                            const SizedBox(height: 2),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: (data.hadLOS ? AppTheme.danger : AppTheme.primary)
-                                    .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: (data.hadLOS ? AppTheme.danger : AppTheme.primary)
-                                      .withValues(alpha: 0.5),
-                                ),
-                              ),
-                              child: Text(
-                                data.hadLOS ? l10n.scenarioLOSResult : l10n.scenarioSafeResult,
-                                style: TextStyle(
-                                  color: data.hadLOS ? AppTheme.danger : AppTheme.primary,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ── Timeline + controls ───────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+              child: Row(
+                children: [
+                  // Play / Pause / Replay
+                  GestureDetector(
+                    onTap: _togglePlay,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.borderColor),
+                      ),
+                      child: Icon(
+                        _done
+                            ? Icons.replay
+                            : _replayCtr.isAnimating
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                        color: AppTheme.primary,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        // Background track
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: _t,
+                            minHeight: 6,
+                            color: AppTheme.primary,
+                            backgroundColor: AppTheme.surface,
+                          ),
+                        ),
+                        // Conflict marker on timeline
+                        if (_conflictT > 0)
+                          FractionallySizedBox(
+                            widthFactor: _conflictT,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: data.hadLOS
+                                      ? AppTheme.danger
+                                      : AppTheme.warning,
+                                  border: Border.all(
+                                      color: AppTheme.background, width: 1),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        // Action marker on timeline
+                        if (_actionT > 0)
+                          FractionallySizedBox(
+                            widthFactor: _actionT,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.yellowAccent,
+                                  border: Border.all(
+                                      color: AppTheme.background, width: 1),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 10),
-
-                  // Key metrics
-                  _MetricRow(l10n.scenarioConflictPair,
-                      data.conflictPairCallsigns.join(' ↔ '),
-                      data.hadLOS ? AppTheme.danger : AppTheme.warning),
-                  _MetricRow(l10n.scenarioMinHorizSep,
-                      '${data.minHorizDist.toStringAsFixed(0)} px  (threshold ${data.thresholdHorizontalPx.toStringAsFixed(0)} px)',
-                      data.hadLOS ? AppTheme.danger : AppTheme.textSecondary),
-                  _MetricRow(l10n.scenarioMinVertSep,
-                      '${data.thresholdVerticalFt} ft threshold',
-                      AppTheme.textSecondary),
-                  _MetricRow('Action',
-                      data.actionTimeSec > 0
-                          ? '${data.userCommandSummary}  (${data.actionTimeSec.toStringAsFixed(1)} s)'
-                          : 'No command issued',
-                      data.actionTimeSec > 0 ? Colors.yellowAccent : AppTheme.danger),
-
-                  const SizedBox(height: 10),
-
-                  // Why you lost / gained points
-                  if (data.penaltyBreakdown.isNotEmpty && data.penaltyBreakdown.first != 'None')
-                    _BreakdownSection(
-                      icon: Icons.remove_circle_outline,
-                      color: AppTheme.danger,
-                      title: l10n.scenarioPenalties,
-                      items: data.penaltyBreakdown,
-                    ),
-                  const SizedBox(height: 8),
-                  if (data.bonusBreakdown.isNotEmpty && data.bonusBreakdown.first != 'None')
-                    _BreakdownSection(
-                      icon: Icons.add_circle_outline,
-                      color: AppTheme.primary,
-                      title: l10n.scenarioBonuses,
-                      items: data.bonusBreakdown,
-                    ),
-
-                  const SizedBox(height: 10),
-
-                  // Back button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.arrow_back, size: 15),
-                      label: Text(l10n.unityReplayBack),
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.textSecondary,
-                        side: const BorderSide(color: AppTheme.borderColor),
-                      ),
-                    ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${(_t * _totalSec).toStringAsFixed(1)}s',
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 10),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+
+            // Legend
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Row(
+                children: [
+                  _Dot(color: data.hadLOS ? AppTheme.danger : AppTheme.warning),
+                  const SizedBox(width: 4),
+                  const Text('Closest approach',
+                      style: TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 10)),
+                  const SizedBox(width: 16),
+                  _Dot(color: Colors.yellowAccent),
+                  const SizedBox(width: 4),
+                  const Text('Your action',
+                      style: TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 10)),
+                ],
+              ),
+            ),
+
+            // ── Score + detail ────────────────────────────────────────────────
+            Expanded(
+              flex: 4,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(14, 4, 14,
+                    max(20.0, MediaQuery.of(context).viewPadding.bottom + 12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Score header
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.borderColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${data.score}',
+                            style: TextStyle(
+                                color: rc,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900),
+                          ),
+                          const Text(' / 120',
+                              style: TextStyle(
+                                  color: AppTheme.textSecondary, fontSize: 18)),
+                          const Spacer(),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(_ratingLabel(l10n),
+                                  style: TextStyle(
+                                      color: rc,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13)),
+                              const SizedBox(height: 2),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (data.hadLOS
+                                          ? AppTheme.danger
+                                          : AppTheme.primary)
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: (data.hadLOS
+                                            ? AppTheme.danger
+                                            : AppTheme.primary)
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Text(
+                                  data.hadLOS
+                                      ? l10n.scenarioLOSResult
+                                      : l10n.scenarioSafeResult,
+                                  style: TextStyle(
+                                    color: data.hadLOS
+                                        ? AppTheme.danger
+                                        : AppTheme.primary,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Key metrics
+                    _MetricRow(
+                        l10n.scenarioConflictPair,
+                        data.conflictPairCallsigns.join(' ↔ '),
+                        data.hadLOS ? AppTheme.danger : AppTheme.warning),
+                    _MetricRow(
+                        l10n.scenarioMinHorizSep,
+                        '${data.minHorizDist.toStringAsFixed(0)} px  (threshold ${data.thresholdHorizontalPx.toStringAsFixed(0)} px)',
+                        data.hadLOS ? AppTheme.danger : AppTheme.textSecondary),
+                    _MetricRow(
+                        l10n.scenarioMinVertSep,
+                        '${data.thresholdVerticalFt} ft threshold',
+                        AppTheme.textSecondary),
+                    _MetricRow(
+                        'Action',
+                        data.actionTimeSec > 0
+                            ? '${data.userCommandSummary}  (${data.actionTimeSec.toStringAsFixed(1)} s)'
+                            : 'No command issued',
+                        data.actionTimeSec > 0
+                            ? Colors.yellowAccent
+                            : AppTheme.danger),
+
+                    const SizedBox(height: 10),
+
+                    // Why you lost / gained points
+                    if (data.penaltyBreakdown.isNotEmpty &&
+                        data.penaltyBreakdown.first != 'None')
+                      _BreakdownSection(
+                        icon: Icons.remove_circle_outline,
+                        color: AppTheme.danger,
+                        title: l10n.scenarioPenalties,
+                        items: data.penaltyBreakdown,
+                      ),
+                    const SizedBox(height: 8),
+                    if (data.bonusBreakdown.isNotEmpty &&
+                        data.bonusBreakdown.first != 'None')
+                      _BreakdownSection(
+                        icon: Icons.add_circle_outline,
+                        color: AppTheme.primary,
+                        title: l10n.scenarioBonuses,
+                        items: data.bonusBreakdown,
+                      ),
+
+                    const SizedBox(height: 10),
+
+                    // Back button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.arrow_back, size: 15),
+                        label: Text(l10n.unityReplayBack),
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.textSecondary,
+                          side: const BorderSide(color: AppTheme.borderColor),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -416,11 +473,11 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
 
 class _ReplayPainter extends CustomPainter {
   final ScenarioReplayData data;
-  final double t;          // replay progress 0→1
+  final double t; // replay progress 0→1
   final double sweepAngle; // radians
-  final double conflictT;  // normalised time of closest approach
-  final double actionT;    // normalised time of user action
-  final double pulseVal;   // 0→1 for conflict pulse
+  final double conflictT; // normalised time of closest approach
+  final double actionT; // normalised time of user action
+  final double pulseVal; // 0→1 for conflict pulse
 
   const _ReplayPainter({
     required this.data,
@@ -440,7 +497,8 @@ class _ReplayPainter extends CustomPainter {
         y / _srcH * canvas.height,
       );
 
-  Offset _lerp(AircraftReplayState a, AircraftReplayState b, double frac, Size sz) {
+  Offset _lerp(
+      AircraftReplayState a, AircraftReplayState b, double frac, Size sz) {
     final ease = Curves.easeInOut.transform(frac.clamp(0.0, 1.0));
     return _map(a.x + (b.x - a.x) * ease, a.y + (b.y - a.y) * ease, sz);
   }
@@ -460,8 +518,7 @@ class _ReplayPainter extends CustomPainter {
     final radius = min(size.width, size.height) * 0.46;
 
     // Dark fill
-    canvas.drawCircle(center, radius,
-        Paint()..color = const Color(0xFF050F0A));
+    canvas.drawCircle(center, radius, Paint()..color = const Color(0xFF050F0A));
 
     // Range rings
     final ringPaint = Paint()
@@ -486,7 +543,7 @@ class _ReplayPainter extends CustomPainter {
     canvas.drawLine(
       center,
       Offset(center.dx + cos(sweepAngle) * radius,
-             center.dy + sin(sweepAngle) * radius),
+          center.dy + sin(sweepAngle) * radius),
       Paint()
         ..color = AppTheme.primary.withValues(alpha: 0.08)
         ..strokeWidth = 12,
@@ -495,7 +552,7 @@ class _ReplayPainter extends CustomPainter {
     canvas.drawLine(
       center,
       Offset(center.dx + cos(sweepAngle) * radius,
-             center.dy + sin(sweepAngle) * radius),
+          center.dy + sin(sweepAngle) * radius),
       Paint()
         ..color = AppTheme.primary.withValues(alpha: 0.75)
         ..strokeWidth = 1.5,
@@ -513,13 +570,15 @@ class _ReplayPainter extends CustomPainter {
     // Pulsing outer ring
     final outerRadius = 18.0 + pulseVal * (isLOS ? 12.0 : 7.0);
     canvas.drawCircle(
-      pos, outerRadius,
+      pos,
+      outerRadius,
       Paint()
         ..color = color.withValues(alpha: 0.15 + pulseVal * 0.20)
         ..style = PaintingStyle.fill,
     );
     canvas.drawCircle(
-      pos, outerRadius,
+      pos,
+      outerRadius,
       Paint()
         ..color = color.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
@@ -527,18 +586,15 @@ class _ReplayPainter extends CustomPainter {
     );
 
     // Inner dot
-    canvas.drawCircle(pos, 5,
-        Paint()..color = color.withValues(alpha: 0.8));
+    canvas.drawCircle(pos, 5, Paint()..color = color.withValues(alpha: 0.8));
 
     // Label
     final label = isLOS ? 'LOS' : '⚠';
     _drawLabel(canvas, pos + const Offset(0, -22), label,
         color: color, fontSize: 9);
-    _drawLabel(canvas,
-        pos + const Offset(0, -32),
+    _drawLabel(canvas, pos + const Offset(0, -32),
         '${data.minHorizDist.toStringAsFixed(0)} px',
-        color: color.withValues(alpha: 0.7),
-        fontSize: 8);
+        color: color.withValues(alpha: 0.7), fontSize: 8);
   }
 
   void _drawActionMarker(Canvas canvas, Size size) {
@@ -558,14 +614,17 @@ class _ReplayPainter extends CustomPainter {
       ..lineTo(pos.dx, pos.dy + 12)
       ..lineTo(pos.dx - 8, pos.dy)
       ..close();
-    canvas.drawPath(path,
-        Paint()..color = Colors.yellowAccent.withValues(alpha: 0.25));
-    canvas.drawPath(path,
+    canvas.drawPath(
+        path, Paint()..color = Colors.yellowAccent.withValues(alpha: 0.25));
+    canvas.drawPath(
+        path,
         Paint()
           ..color = Colors.yellowAccent.withValues(alpha: 0.7)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1);
-    _drawLabel(canvas, pos + const Offset(12, -8),
+    _drawLabel(
+        canvas,
+        pos + const Offset(12, -8),
         data.userCommandSummary.length > 20
             ? '${data.userCommandSummary.substring(0, 20)}…'
             : data.userCommandSummary,
@@ -576,19 +635,22 @@ class _ReplayPainter extends CustomPainter {
   void _drawTrails(Canvas canvas, Size size) {
     for (int i = 0; i < data.initialAircraft.length; i++) {
       if (i >= data.finalAircraft.length) continue;
-      final init  = data.initialAircraft[i];
+      final init = data.initialAircraft[i];
       final final_ = data.finalAircraft[i];
       final isConflict = data.conflictPairCallsigns.contains(init.callsign);
       final isSelected = final_.wasSelected;
-      final color = isConflict ? AppTheme.danger
-                  : isSelected ? Colors.yellowAccent
-                  : AppTheme.primary;
+      final color = isConflict
+          ? AppTheme.danger
+          : isSelected
+              ? Colors.yellowAccent
+              : AppTheme.primary;
 
       final startPt = _map(init.x, init.y, size);
-      final endPt   = _lerp(init, final_, t, size);
+      final endPt = _lerp(init, final_, t, size);
 
       canvas.drawLine(
-        startPt, endPt,
+        startPt,
+        endPt,
         Paint()
           ..color = color.withValues(alpha: 0.35)
           ..strokeWidth = 1.5
@@ -600,14 +662,16 @@ class _ReplayPainter extends CustomPainter {
   void _drawBlips(Canvas canvas, Size size) {
     for (int i = 0; i < data.initialAircraft.length; i++) {
       if (i >= data.finalAircraft.length) continue;
-      final init  = data.initialAircraft[i];
+      final init = data.initialAircraft[i];
       final final_ = data.finalAircraft[i];
       final isConflict = data.conflictPairCallsigns.contains(init.callsign);
       final isSelected = final_.wasSelected;
 
-      final color = isConflict ? AppTheme.danger
-                  : isSelected ? Colors.yellowAccent
-                  : AppTheme.primary;
+      final color = isConflict
+          ? AppTheme.danger
+          : isSelected
+              ? Colors.yellowAccent
+              : AppTheme.primary;
 
       final pos = _lerp(init, final_, t, size);
 
@@ -618,7 +682,13 @@ class _ReplayPainter extends CustomPainter {
       }
 
       // Blip
-      canvas.drawCircle(pos, isConflict ? 7 : isSelected ? 6 : 5,
+      canvas.drawCircle(
+          pos,
+          isConflict
+              ? 7
+              : isSelected
+                  ? 6
+                  : 5,
           Paint()..color = color);
 
       // Heading vector
@@ -663,9 +733,10 @@ class _Dot extends StatelessWidget {
   final Color color;
   const _Dot({required this.color});
   @override
-  Widget build(BuildContext context) =>
-      Container(width: 8, height: 8,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: color));
+  Widget build(BuildContext context) => Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color));
 }
 
 class _MetricRow extends StatelessWidget {
@@ -677,12 +748,17 @@ class _MetricRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
           children: [
-            Expanded(child: Text(label,
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11))),
-            Flexible(child: Text(value,
-                textAlign: TextAlign.right,
-                style: TextStyle(color: valueColor,
-                    fontSize: 11, fontWeight: FontWeight.w600))),
+            Expanded(
+                child: Text(label,
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 11))),
+            Flexible(
+                child: Text(value,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: valueColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600))),
           ],
         ),
       );
@@ -690,12 +766,14 @@ class _MetricRow extends StatelessWidget {
 
 class _BreakdownSection extends StatelessWidget {
   final IconData icon;
-  final Color    color;
-  final String   title;
+  final Color color;
+  final String title;
   final List<String> items;
   const _BreakdownSection({
-    required this.icon, required this.color,
-    required this.title, required this.items,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.items,
   });
 
   @override
@@ -713,9 +791,12 @@ class _BreakdownSection extends StatelessWidget {
             Row(children: [
               Icon(icon, color: color, size: 12),
               const SizedBox(width: 5),
-              Text(title, style: TextStyle(
-                  color: color, fontSize: 10,
-                  fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              Text(title,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5)),
             ]),
             const SizedBox(height: 6),
             for (final s in items)
@@ -725,8 +806,10 @@ class _BreakdownSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('• ', style: TextStyle(color: color, fontSize: 11)),
-                    Expanded(child: Text(s,
-                        style: TextStyle(color: color, fontSize: 11, height: 1.4))),
+                    Expanded(
+                        child: Text(s,
+                            style: TextStyle(
+                                color: color, fontSize: 11, height: 1.4))),
                   ],
                 ),
               ),
