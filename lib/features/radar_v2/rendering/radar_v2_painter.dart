@@ -5,37 +5,58 @@ import 'package:flutter/material.dart';
 import '../models/aircraft_state.dart';
 import '../models/separation_result.dart';
 import '../models/simulation_snapshot.dart';
+import 'radar_declutter_profile.dart';
+import 'radar_view_transform.dart';
 
 class RadarV2Painter extends CustomPainter {
   final SimulationSnapshot snapshot;
   final SimulationSnapshot? previousSnapshot;
   final double interpolation;
   final double rangeNm;
+  final double sectorRangeNm;
   final String? selectedAircraftId;
   final String? recentlyCommandedAircraftId;
   final String? recentlyAcknowledgedAircraftId;
+  final bool replayMode;
   final bool alertPulse;
   final bool sweepEnabled;
   final double sweepAngleRad;
+  final Offset viewCenterNm;
 
   const RadarV2Painter({
     required this.snapshot,
     this.previousSnapshot,
     this.interpolation = 1,
     this.rangeNm = 40,
+    this.sectorRangeNm = 40,
     this.selectedAircraftId,
     this.recentlyCommandedAircraftId,
     this.recentlyAcknowledgedAircraftId,
+    this.replayMode = false,
     this.alertPulse = false,
     this.sweepEnabled = true,
     this.sweepAngleRad = 0,
+    this.viewCenterNm = Offset.zero,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) * 0.46;
-    final scale = radius / rangeNm;
+    final profile = RadarDeclutterProfile.fromVisibleRange(
+      visibleRangeNm: rangeNm,
+      sectorRangeNm: sectorRangeNm,
+    );
+    final transform = RadarViewTransform(
+      size: size,
+      sectorRangeNm: sectorRangeNm,
+      visibleRangeNm: rangeNm,
+      viewCenterNm: viewCenterNm,
+    );
+    final center = transform.canvasCenter.translate(
+      -viewCenterNm.dx * transform.scalePxPerNm,
+      viewCenterNm.dy * transform.scalePxPerNm,
+    );
+    final radius = transform.radiusPx;
+    final scale = transform.scalePxPerNm;
 
     final gridPaint = Paint()
       ..style = PaintingStyle.stroke
@@ -53,18 +74,18 @@ class RadarV2Painter extends CustomPainter {
         center.translate(-radius, 0), center.translate(radius, 0), axisPaint);
     canvas.drawLine(
         center.translate(0, -radius), center.translate(0, radius), axisPaint);
-    _drawWeather(canvas, center, scale);
+    _drawWeather(canvas, center, scale, profile);
     _drawArrivalFlows(canvas, center, scale);
     _drawRunwayCrossingConflicts(canvas, center, scale);
     _drawHoldPatterns(canvas, center, scale);
-    _drawWaypoints(canvas, center, scale);
+    _drawWaypoints(canvas, center, scale, profile);
     if (sweepEnabled) {
       _drawSweep(canvas, center, radius);
     }
 
     for (final aircraft in snapshot.aircraft) {
       if (!aircraft.active) continue;
-      _drawTrail(canvas, center, scale, aircraft);
+      _drawTrail(canvas, center, scale, aircraft, profile);
     }
 
     for (final loss
@@ -82,28 +103,56 @@ class RadarV2Painter extends CustomPainter {
       if (!aircraft.active) continue;
       renderAircraft.add(_interpolatedAircraft(aircraft));
     }
-
-    final labelOffsets = _resolveLabelOffsets(center, scale, renderAircraft);
+    final criticalIds = _criticalAircraftIds();
 
     renderAircraft.sort((a, b) {
       final aUrgency = _urgencyForAircraft(a.id).index;
       final bUrgency = _urgencyForAircraft(b.id).index;
       final selectedBonusA = selectedAircraftId == a.id ? 10 : 0;
       final selectedBonusB = selectedAircraftId == b.id ? 10 : 0;
-      return (aUrgency + selectedBonusA).compareTo(bUrgency + selectedBonusB);
+      return (bUrgency + selectedBonusB).compareTo(aUrgency + selectedBonusA);
     });
 
+    final labelsToRender = <AircraftState>[];
+    var nonCriticalRank = 0;
     for (final aircraft in renderAircraft) {
+      final priority = _labelPriorityFor(aircraft.id, criticalIds);
+      final show = profile.shouldShowAircraftLabel(
+        priority: priority,
+        nonCriticalRank: nonCriticalRank,
+      );
+      if (priority == RadarLabelPriority.normal) {
+        nonCriticalRank += 1;
+      }
+      if (show) {
+        labelsToRender.add(aircraft);
+      }
+    }
+
+    final labelOffsets = _resolveLabelOffsets(
+      center,
+      scale,
+      labelsToRender,
+      labelWidth: profile.showSecondaryLabelDetails ? 88 : 72,
+      labelHeight: profile.showSecondaryLabelDetails ? 24 : 13,
+    );
+
+    for (final aircraft in renderAircraft) {
+      final priority = _labelPriorityFor(aircraft.id, criticalIds);
       _drawAircraft(
         canvas,
         center,
         scale,
         aircraft,
+        profile: profile,
         urgency: _urgencyForAircraft(aircraft.id),
         selected: selectedAircraftId == aircraft.id,
         recentlyCommanded: recentlyCommandedAircraftId == aircraft.id,
         recentlyAcknowledged: recentlyAcknowledgedAircraftId == aircraft.id,
         labelOffset: labelOffsets[aircraft.id] ?? const Offset(8, -18),
+        showLabel: labelOffsets.containsKey(aircraft.id),
+        warningAircraft: priority == RadarLabelPriority.warning,
+        conflictAircraft: priority == RadarLabelPriority.conflict,
         sweepPulse: sweepEnabled ? _sweepPulseFor(aircraft) : 0,
       );
     }
@@ -111,17 +160,25 @@ class RadarV2Painter extends CustomPainter {
 
   void _drawAircraft(
       Canvas canvas, Offset center, double scale, AircraftState aircraft,
-      {required _ConflictUrgency urgency,
+      {required RadarDeclutterProfile profile,
+      required _ConflictUrgency urgency,
       required bool selected,
       required bool recentlyCommanded,
       required bool recentlyAcknowledged,
       required Offset labelOffset,
+      required bool showLabel,
+      required bool warningAircraft,
+      required bool conflictAircraft,
       required double sweepPulse}) {
     final basePosition = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
     final position = basePosition + _weatherWobbleOffset(aircraft, scale);
     final headingRad = aircraft.headingDeg * math.pi / 180;
+    final symbolScale = selected
+        ? math.max(1.15, profile.symbolScale + 0.2)
+        : profile.symbolScale;
     final vectorLength =
-        (aircraft.groundSpeedKt * 60 / 3600 * scale).clamp(12.0, 70.0);
+        (aircraft.groundSpeedKt * 60 / 3600 * scale).clamp(12.0, 70.0) *
+            symbolScale;
     final vectorEnd = position.translate(
       math.sin(headingRad) * vectorLength,
       -math.cos(headingRad) * vectorLength,
@@ -137,17 +194,24 @@ class RadarV2Painter extends CustomPainter {
       ..color = aircraftColor.withValues(alpha: 0.8);
     final labelPainter = TextPainter(
       text: TextSpan(
-        text: _datablockText(aircraft),
-        style: const TextStyle(
+        text: _datablockText(
+          aircraft,
+          profile: profile,
+          preserveFullCallsign:
+              selected || conflictAircraft || warningAircraft || recentlyCommanded,
+          forceSecondaryDetails:
+              selected || conflictAircraft || warningAircraft || recentlyCommanded,
+        ),
+        style: TextStyle(
           color: Color(0xFFE7FFF4),
-          fontSize: 9,
+          fontSize: (selected ? 10 : 9) * (selected ? 1.06 : profile.labelScale),
           height: 1.1,
           fontFamily: 'monospace',
           fontFeatures: [FontFeature.tabularFigures()],
         ),
       ),
       textDirection: TextDirection.ltr,
-    )..layout(maxWidth: 88);
+    )..layout(maxWidth: profile.showSecondaryLabelDetails ? 92 : 74);
 
     if (urgency != _ConflictUrgency.normal) {
       final severity = switch (urgency) {
@@ -158,7 +222,7 @@ class RadarV2Painter extends CustomPainter {
       };
       canvas.drawCircle(
         position,
-        14 + (urgency.index * 2),
+        (14 + (urgency.index * 2)) * profile.conflictRingScale,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.1
@@ -178,7 +242,7 @@ class RadarV2Painter extends CustomPainter {
     if (selected || recentlyCommanded || recentlyAcknowledged) {
       canvas.drawCircle(
         position,
-        selected ? 22 : 18,
+        (selected ? 22 : 18) * symbolScale,
         Paint()
           ..style = PaintingStyle.fill
           ..color = (selected
@@ -188,9 +252,10 @@ class RadarV2Painter extends CustomPainter {
                       : const Color(0xFF62D2FF))
               .withValues(alpha: selected ? 0.12 : 0.08),
       );
-      _drawIntentVector(canvas, position, aircraft, selected ? 54 : 42);
+      _drawIntentVector(
+          canvas, position, aircraft, (selected ? 54 : 42) * symbolScale);
     }
-    canvas.drawCircle(position, 4, targetPaint);
+    canvas.drawCircle(position, 4 * symbolScale, targetPaint);
     if (sweepPulse > 0) {
       canvas.drawCircle(
         position,
@@ -203,7 +268,7 @@ class RadarV2Painter extends CustomPainter {
     }
     canvas.drawCircle(
       position,
-      selected ? 12 : 8,
+      (selected ? 12 : 8) * symbolScale,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = selected ? 2 : 1
@@ -212,7 +277,7 @@ class RadarV2Painter extends CustomPainter {
     if (recentlyCommanded) {
       canvas.drawCircle(
         position,
-        17,
+        17 * symbolScale,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.2
@@ -222,17 +287,19 @@ class RadarV2Painter extends CustomPainter {
     if (recentlyAcknowledged) {
       canvas.drawCircle(
         position,
-        20,
+        20 * symbolScale,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.3
           ..color = const Color(0xFF46F5A7),
       );
     }
-    labelPainter.paint(
-      canvas,
-      position.translate(labelOffset.dx, labelOffset.dy),
-    );
+    if (showLabel) {
+      labelPainter.paint(
+        canvas,
+        position.translate(labelOffset.dx, labelOffset.dy),
+      );
+    }
   }
 
   void _drawTrail(
@@ -240,16 +307,23 @@ class RadarV2Painter extends CustomPainter {
     Offset center,
     double scale,
     AircraftState aircraft,
+    RadarDeclutterProfile profile,
   ) {
     final points = snapshot.trailFor(aircraft.id);
     if (points.length < 2) return;
-    for (var i = 1; i < points.length; i++) {
+    final startIndex = points.length > profile.maxTrailPoints
+        ? points.length - profile.maxTrailPoints
+        : 0;
+    final trimmed = points.sublist(startIndex);
+    if (trimmed.length < 2) return;
+    final stride = profile.trailPointStride;
+    for (var i = stride; i < trimmed.length; i += stride) {
       final from =
-          _toCanvas(center, scale, points[i - 1].xNm, points[i - 1].yNm);
-      final to = _toCanvas(center, scale, points[i].xNm, points[i].yNm);
-      final t = i / points.length;
+          _toCanvas(center, scale, trimmed[i - stride].xNm, trimmed[i - stride].yNm);
+      final to = _toCanvas(center, scale, trimmed[i].xNm, trimmed[i].yNm);
+      final t = i / trimmed.length;
       final alpha = (0.06 + t * 0.5).clamp(0.06, 0.56);
-      final width = 0.8 + t * 1.4;
+      final width = (0.8 + t * 1.4) * profile.symbolScale;
       canvas.drawLine(
         from,
         to,
@@ -266,7 +340,9 @@ class RadarV2Painter extends CustomPainter {
     Offset center,
     double scale,
     List<AircraftState> aircraft,
-  ) {
+    {required double labelWidth,
+    required double labelHeight,
+  }) {
     final placements = <String, Offset>{};
     final occupiedRects = <Rect>[];
 
@@ -278,15 +354,15 @@ class RadarV2Painter extends CustomPainter {
         -math.cos(headingRad) * 10,
       );
       final base = Offset(
-        headingOffset.dx >= 0 ? 10 : -92,
+        headingOffset.dx >= 0 ? 10 : -(labelWidth + 4),
         headingOffset.dy <= 0 ? -22 : 8,
       );
       final candidates = <Offset>[
         base,
         base.translate(0, 14),
         base.translate(0, -14),
-        Offset(base.dx < 0 ? 10 : -92, base.dy),
-        Offset(base.dx < 0 ? 10 : -92, base.dy + 14),
+        Offset(base.dx < 0 ? 10 : -(labelWidth + 4), base.dy),
+        Offset(base.dx < 0 ? 10 : -(labelWidth + 4), base.dy + 14),
       ];
 
       Offset picked = candidates.first;
@@ -294,10 +370,11 @@ class RadarV2Painter extends CustomPainter {
         final rect = Rect.fromLTWH(
           position.dx + candidate.dx,
           position.dy + candidate.dy,
-          88,
-          24,
+          labelWidth,
+          labelHeight,
         ).inflate(3);
-        final overlaps = occupiedRects.any((existing) => existing.overlaps(rect));
+        final overlaps =
+            occupiedRects.any((existing) => existing.overlaps(rect));
         if (!overlaps) {
           picked = candidate;
           occupiedRects.add(rect);
@@ -308,8 +385,8 @@ class RadarV2Painter extends CustomPainter {
       final pickedRect = Rect.fromLTWH(
         position.dx + picked.dx,
         position.dy + picked.dy,
-        88,
-        24,
+        labelWidth,
+        labelHeight,
       ).inflate(3);
       if (!occupiedRects.any((existing) => existing.overlaps(pickedRect))) {
         occupiedRects.add(pickedRect);
@@ -320,8 +397,16 @@ class RadarV2Painter extends CustomPainter {
     return placements;
   }
 
-  String _datablockText(AircraftState aircraft) {
-    final callsign = aircraft.callsign.padRight(6).substring(0, 6);
+  String _datablockText(
+    AircraftState aircraft, {
+    required RadarDeclutterProfile profile,
+    required bool preserveFullCallsign,
+    required bool forceSecondaryDetails,
+  }) {
+    final callsign = profile
+        .formatCallsign(aircraft.callsign, preserveFull: preserveFullCallsign)
+        .padRight(profile.callsignChars)
+        .substring(0, profile.callsignChars);
     final heading = aircraft.headingDeg.round().toString().padLeft(3, '0');
     final altitude = (aircraft.altitudeFt ~/ 100).toString().padLeft(3, '0');
     final speed = aircraft.groundSpeedKt.round().toString().padLeft(3, '0');
@@ -330,37 +415,56 @@ class RadarV2Painter extends CustomPainter {
         : aircraft.verticalSpeedFpm < -100
             ? '↓'
             : ' ';
+    if (!profile.showSecondaryLabelDetails && !forceSecondaryDetails) {
+      return '$callsign A$altitude$vertical';
+    }
     return '$callsign HDG→$heading\nA$altitude$vertical  S$speed';
   }
 
-  void _drawWeather(Canvas canvas, Offset center, double scale) {
+  void _drawWeather(
+    Canvas canvas,
+    Offset center,
+    double scale,
+    RadarDeclutterProfile profile,
+  ) {
     for (final zone in snapshot.weatherZones) {
+      if (profile.simplifyWeather && zone.severity < profile.weatherLabelSeverityMin) {
+        continue;
+      }
       final position = _toCanvas(center, scale, zone.xNm, zone.yNm);
       final radius = zone.radiusNm * scale;
       final color = zone.severity >= 2
           ? const Color(0xFFFF4D4D)
           : const Color(0xFFFFD166);
-      canvas.drawCircle(
-        position,
-        radius + (alertPulse ? 1.8 : 0),
-        Paint()
-          ..style = PaintingStyle.fill
-          ..color = color.withValues(alpha: alertPulse ? 0.16 : 0.1),
-      );
+      if (!profile.simplifyWeather) {
+        canvas.drawCircle(
+          position,
+          radius + (alertPulse ? 1.8 : 0),
+          Paint()
+            ..style = PaintingStyle.fill
+            ..color = color.withValues(alpha: alertPulse ? 0.16 : 0.1),
+        );
+      }
       canvas.drawCircle(
         position,
         radius + (alertPulse ? 2.5 : 0),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1
-          ..color = color.withValues(alpha: alertPulse ? 0.85 : 0.58),
+          ..color = color.withValues(
+            alpha: alertPulse
+                ? (profile.simplifyWeather ? 0.72 : 0.85)
+                : (profile.simplifyWeather ? 0.44 : 0.58),
+          ),
       );
-      _drawAlertLabel(
-        canvas,
-        position.translate(radius + 4, -8),
-        zone.id,
-        color,
-      );
+      if (!profile.simplifyWeather || zone.severity >= 2) {
+        _drawAlertLabel(
+          canvas,
+          position.translate(radius + 4, -8),
+          zone.id,
+          color,
+        );
+      }
     }
   }
 
@@ -631,11 +735,17 @@ class RadarV2Painter extends CustomPainter {
     }
   }
 
-  void _drawWaypoints(Canvas canvas, Offset center, double scale) {
+  void _drawWaypoints(
+    Canvas canvas,
+    Offset center,
+    double scale,
+    RadarDeclutterProfile profile,
+  ) {
+    final routeAlpha = profile.simplifyWeather ? 0.25 : 0.4;
     final routePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = const Color(0x4446F5A7);
+      ..color = const Color(0xFF46F5A7).withValues(alpha: routeAlpha);
     for (final aircraft in snapshot.aircraft) {
       if (!aircraft.active || aircraft.intent.route.length < 2) continue;
       final routePath = Path();
@@ -654,27 +764,36 @@ class RadarV2Painter extends CustomPainter {
       if (started) canvas.drawPath(routePath, routePaint);
     }
 
+    var waypointIndex = 0;
     for (final waypoint in snapshot.waypoints.values) {
+      if (profile.simplifyWeather && waypointIndex.isOdd) {
+        waypointIndex += 1;
+        continue;
+      }
       final position = _toCanvas(center, scale, waypoint.xNm, waypoint.yNm);
       canvas.drawRect(
         Rect.fromCenter(center: position, width: 4, height: 4),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1
-          ..color = const Color(0xAA46F5A7),
+          ..color = const Color(0xAA46F5A7)
+              .withValues(alpha: profile.simplifyWeather ? 0.72 : 1.0),
       );
-      final painter = TextPainter(
-        text: TextSpan(
-          text: waypoint.id,
-          style: const TextStyle(
-            color: Color(0x9946F5A7),
-            fontSize: 8,
-            fontFamily: 'monospace',
+      if (!profile.simplifyWeather) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: waypoint.id,
+            style: const TextStyle(
+              color: Color(0x9946F5A7),
+              fontSize: 8,
+              fontFamily: 'monospace',
+            ),
           ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: 70);
-      painter.paint(canvas, position.translate(5, -5));
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: 70);
+        painter.paint(canvas, position.translate(5, -5));
+      }
+      waypointIndex += 1;
     }
   }
 
@@ -776,10 +895,14 @@ class RadarV2Painter extends CustomPainter {
           : const Color(0xFFFFD166);
     final seconds = conflict.timeToConflict?.inSeconds;
     final anticipatory = seconds != null && seconds > 60 && seconds <= 150;
-    canvas.drawCircle(position, 10, paint);
+    final profile = RadarDeclutterProfile.fromVisibleRange(
+      visibleRangeNm: rangeNm,
+      sectorRangeNm: sectorRangeNm,
+    );
+    canvas.drawCircle(position, 10 * profile.conflictRingScale, paint);
     canvas.drawCircle(
       position,
-      alertPulse ? 18 : (anticipatory ? 17 : 14),
+      (alertPulse ? 18 : (anticipatory ? 17 : 14)) * profile.conflictRingScale,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.1
@@ -790,7 +913,7 @@ class RadarV2Painter extends CustomPainter {
     if (anticipatory) {
       canvas.drawCircle(
         position,
-        24,
+        24 * profile.conflictRingScale,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1
@@ -803,8 +926,8 @@ class RadarV2Painter extends CustomPainter {
         position.translate(-8, 8), position.translate(8, -8), paint);
     final label = seconds == null
         ? 'CONFLICT'
-      : '${anticipatory ? 'CLOSING' : 'CONFLICT'} T-${seconds}s '
-        '${conflict.lateralNm.toStringAsFixed(1)}NM';
+        : '${anticipatory ? 'CLOSING' : 'CONFLICT'} T-${seconds}s '
+            '${conflict.lateralNm.toStringAsFixed(1)}NM';
     _drawAlertLabel(
         canvas, position.translate(12, -22), label, const Color(0xFFFFD166));
     _drawClosureArrow(canvas, center, scale, conflict, paint);
@@ -848,19 +971,74 @@ class RadarV2Painter extends CustomPainter {
     String text,
     Color color,
   ) {
+    final fontScale = replayMode ? 1.08 : 1.0;
     final painter = TextPainter(
       text: TextSpan(
         text: text,
         style: TextStyle(
           color: color,
-          fontSize: 10,
+          fontSize: 10 * fontScale,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.4,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: 140);
+    if (replayMode) {
+      final rect = Rect.fromLTWH(
+        position.dx - 2,
+        position.dy - 1,
+        painter.width + 4,
+        painter.height + 2,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(3)),
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color(0xAA041611),
+      );
+    }
     painter.paint(canvas, position);
+  }
+
+  Set<String> _criticalAircraftIds() {
+    final ids = <String>{};
+    if (selectedAircraftId != null) ids.add(selectedAircraftId!);
+    if (recentlyCommandedAircraftId != null) ids.add(recentlyCommandedAircraftId!);
+    if (recentlyAcknowledgedAircraftId != null) {
+      ids.add(recentlyAcknowledgedAircraftId!);
+    }
+    for (final result in snapshot.separation) {
+      if (result.isLossOfSeparation || result.isPredictedConflict) {
+        ids
+          ..add(result.aircraftAId)
+          ..add(result.aircraftBId);
+      }
+    }
+    for (final alert in snapshot.operationalAlerts) {
+      if (alert.priority.sortWeight >= 4) {
+        ids.addAll(alert.relatedAircraftIds);
+      }
+    }
+    return ids;
+  }
+
+  RadarLabelPriority _labelPriorityFor(
+    String aircraftId,
+    Set<String> criticalIds,
+  ) {
+    if (selectedAircraftId == aircraftId) return RadarLabelPriority.selected;
+    if (recentlyCommandedAircraftId == aircraftId ||
+        recentlyAcknowledgedAircraftId == aircraftId) {
+      return RadarLabelPriority.commanded;
+    }
+    if (_urgencyForAircraft(aircraftId) != _ConflictUrgency.normal) {
+      return RadarLabelPriority.conflict;
+    }
+    if (criticalIds.contains(aircraftId)) {
+      return RadarLabelPriority.warning;
+    }
+    return RadarLabelPriority.normal;
   }
 
   _ConflictUrgency _urgencyForAircraft(String aircraftId) {
@@ -958,14 +1136,17 @@ class RadarV2Painter extends CustomPainter {
         oldDelegate.previousSnapshot != previousSnapshot ||
         oldDelegate.interpolation != interpolation ||
         oldDelegate.rangeNm != rangeNm ||
+        oldDelegate.sectorRangeNm != sectorRangeNm ||
         oldDelegate.selectedAircraftId != selectedAircraftId ||
         oldDelegate.recentlyCommandedAircraftId !=
             recentlyCommandedAircraftId ||
         oldDelegate.recentlyAcknowledgedAircraftId !=
-          recentlyAcknowledgedAircraftId ||
+            recentlyAcknowledgedAircraftId ||
+        oldDelegate.replayMode != replayMode ||
         oldDelegate.alertPulse != alertPulse ||
         oldDelegate.sweepEnabled != sweepEnabled ||
-        oldDelegate.sweepAngleRad != sweepAngleRad;
+        oldDelegate.sweepAngleRad != sweepAngleRad ||
+        oldDelegate.viewCenterNm != viewCenterNm;
   }
 }
 

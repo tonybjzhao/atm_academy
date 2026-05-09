@@ -19,6 +19,7 @@ import 'models/aircraft_state.dart';
 import 'models/simulation_event.dart';
 import 'models/simulation_snapshot.dart';
 import 'rendering/radar_v2_painter.dart';
+import 'rendering/radar_view_transform.dart';
 import 'scenario/scenario_asset_loader.dart';
 import 'scenario/scenario_runtime.dart';
 import 'scoring/radar_v2_score.dart';
@@ -100,6 +101,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   DateTime _lastAudioCue = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastSweepCue = DateTime.fromMillisecondsSinceEpoch(0);
   final Map<String, DateTime> _commandCooldownUntil = {};
+  double? _radarVisibleRangeNm;
+  Offset _radarViewCenterNm = Offset.zero;
+  double _scaleStartRangeNm = 40;
+  Offset _scaleStartCenterNm = Offset.zero;
+  Offset _scaleStartFocalNm = Offset.zero;
+  Offset _scaleStartFocalCanvas = Offset.zero;
+  bool _radarGestureMoved = false;
   bool _muted = false;
   Object? _loadError;
   int _audioProbeCount = 0;
@@ -175,6 +183,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _reviewingReplay = false;
       _simulationAccumulatorSeconds = 0;
       _renderInterpolation = 0;
+      _resetRadarView(definition.radarRangeNm);
       _scenarioStarted = widget.betaMode;
       _paused = !widget.betaMode;
       _resultShown = false;
@@ -315,6 +324,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final snapshot = _snapshot;
     final runtime = _runtime;
     if (snapshot == null || runtime == null) return;
+    if (_radarGestureMoved) {
+      _radarGestureMoved = false;
+      return;
+    }
     final selected = _nearestAircraft(
       snapshot,
       details.localPosition,
@@ -331,15 +344,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     Size size,
     double rangeNm,
   ) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.shortestSide * 0.46;
-    final scale = radius / rangeNm;
+    final transform = _radarTransform(size, rangeNm);
     AircraftState? closest;
     var closestDistance = 18.0;
     for (final aircraft in snapshot.aircraft) {
       if (!aircraft.active) continue;
-      final position =
-          center.translate(aircraft.xNm * scale, -aircraft.yNm * scale);
+      final position = transform.nmToCanvas(aircraft.xNm, aircraft.yNm);
       final distance = (position - tap).distance;
       if (distance < closestDistance) {
         closest = aircraft;
@@ -347,6 +357,97 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       }
     }
     return closest;
+  }
+
+  RadarViewTransform _radarTransform(Size size, double sectorRangeNm) {
+    final visibleRange = (_radarVisibleRangeNm ?? sectorRangeNm)
+        .clamp(RadarViewTransform.minTacticalRangeNm, sectorRangeNm)
+        .toDouble();
+    return RadarViewTransform(
+      size: size,
+      sectorRangeNm: sectorRangeNm,
+      visibleRangeNm: visibleRange,
+      viewCenterNm: _radarViewCenterNm,
+    ).withView();
+  }
+
+  void _resetRadarView(double sectorRangeNm) {
+    _radarVisibleRangeNm = sectorRangeNm;
+    _radarViewCenterNm = Offset.zero;
+    _scaleStartRangeNm = sectorRangeNm;
+    _scaleStartCenterNm = Offset.zero;
+    _scaleStartFocalNm = Offset.zero;
+  }
+
+  void _onRadarScaleStart(ScaleStartDetails details, Size size) {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    final transform = _radarTransform(size, runtime.definition.radarRangeNm);
+    _scaleStartRangeNm = transform.visibleRangeNm;
+    _scaleStartCenterNm = transform.viewCenterNm;
+    _scaleStartFocalNm = transform.canvasToNm(details.localFocalPoint);
+    _scaleStartFocalCanvas = details.localFocalPoint;
+    _radarGestureMoved = false;
+  }
+
+  void _onRadarScaleUpdate(ScaleUpdateDetails details, Size size) {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    final sectorRange = runtime.definition.radarRangeNm;
+    final base = RadarViewTransform(
+      size: size,
+      sectorRangeNm: sectorRange,
+      visibleRangeNm: _scaleStartRangeNm,
+      viewCenterNm: _scaleStartCenterNm,
+    ).withView();
+    final targetRange = (_scaleStartRangeNm / details.scale)
+        .clamp(
+          RadarViewTransform.minTacticalRangeNm,
+          sectorRange,
+        )
+        .toDouble();
+    final nextScale = base.radiusPx / targetRange;
+    final nextCenter = Offset(
+      _scaleStartFocalNm.dx -
+          (details.localFocalPoint.dx - base.canvasCenter.dx) / nextScale,
+      _scaleStartFocalNm.dy +
+          (details.localFocalPoint.dy - base.canvasCenter.dy) / nextScale,
+    );
+    final next = base.withView(
+      visibleRangeNm: targetRange,
+      viewCenterNm: nextCenter,
+    );
+    final focalMoved =
+        (details.localFocalPoint - _scaleStartFocalCanvas).distance > 6;
+    final scaleMoved = (details.scale - 1).abs() > 0.02;
+    _radarGestureMoved = _radarGestureMoved || focalMoved || scaleMoved;
+    setState(() {
+      _radarVisibleRangeNm = next.visibleRangeNm;
+      _radarViewCenterNm = next.viewCenterNm;
+    });
+  }
+
+  void _zoomRadar(double factor) {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    final sectorRange = runtime.definition.radarRangeNm;
+    final current = _radarVisibleRangeNm ?? sectorRange;
+    final next = RadarViewTransform(
+      size: const Size(1, 1),
+      sectorRangeNm: sectorRange,
+      visibleRangeNm: current / factor,
+      viewCenterNm: _radarViewCenterNm,
+    ).withView();
+    setState(() {
+      _radarVisibleRangeNm = next.visibleRangeNm;
+      _radarViewCenterNm = next.viewCenterNm;
+    });
+  }
+
+  void _resetRadarZoom() {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    setState(() => _resetRadarView(runtime.definition.radarRangeNm));
   }
 
   void _issueCommand(ControllerCommand command, String feedback) {
@@ -995,6 +1096,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                     RepaintBoundary(
                                       child: GestureDetector(
                                         behavior: HitTestBehavior.opaque,
+                                        onScaleStart: (details) =>
+                                            _onRadarScaleStart(details, size),
+                                        onScaleUpdate: (details) =>
+                                            _onRadarScaleUpdate(details, size),
                                         onTapUp: (details) =>
                                             _selectAircraft(details, size),
                                         child: CustomPaint(
@@ -1002,20 +1107,48 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                             snapshot: snapshot,
                                             previousSnapshot: _previousSnapshot,
                                             interpolation: _renderInterpolation,
-                                            rangeNm: _runtime!
-                                                .definition.radarRangeNm,
+                                            rangeNm: _radarTransform(
+                                              size,
+                                              _runtime!.definition.radarRangeNm,
+                                            ).visibleRangeNm,
+                                            sectorRangeNm:
+                                                _runtime!.definition.radarRangeNm,
+                                            viewCenterNm: _radarViewCenterNm,
                                             selectedAircraftId:
                                                 _selectedAircraftId,
                                             recentlyCommandedAircraftId:
                                                 _recentlyCommandedAircraftId,
                                             recentlyAcknowledgedAircraftId:
                                                 _recentlyAcknowledgedAircraftId,
+                                            replayMode: _reviewingReplay,
                                             alertPulse: _alertPulse,
                                             sweepEnabled: _sweepEnabled,
                                             sweepAngleRad: _sweepAngleRad,
                                           ),
                                           child: const SizedBox.expand(),
                                         ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 8,
+                                      left: 8,
+                                      child: _RadarRangeControls(
+                                        rangeNm: _radarTransform(
+                                          size,
+                                          runtime.definition.radarRangeNm,
+                                        ).visibleRangeNm,
+                                        canZoomIn: (_radarVisibleRangeNm ??
+                                                runtime
+                                                    .definition.radarRangeNm) >
+                                            RadarViewTransform
+                                                .minTacticalRangeNm,
+                                        canZoomOut: (_radarVisibleRangeNm ??
+                                                runtime
+                                                    .definition.radarRangeNm) <
+                                            runtime.definition.radarRangeNm,
+                                        onZoomIn: () => _zoomRadar(1.25),
+                                        onZoomOut: () => _zoomRadar(0.8),
+                                        onReset: _resetRadarZoom,
                                       ),
                                     ),
                                     Positioned(
@@ -2489,6 +2622,90 @@ class _BriefingSection extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _RadarRangeControls extends StatelessWidget {
+  final double rangeNm;
+  final bool canZoomIn;
+  final bool canZoomOut;
+  final VoidCallback onZoomIn;
+  final VoidCallback onZoomOut;
+  final VoidCallback onReset;
+
+  const _RadarRangeControls({
+    required this.rangeNm,
+    required this.canZoomIn,
+    required this.canZoomOut,
+    required this.onZoomIn,
+    required this.onZoomOut,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xD904111B),
+        border: Border.all(color: const Color(0x5546F5A7)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Range ${rangeNm.round()} NM',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 6),
+            _RangeButton(
+              icon: Icons.remove,
+              onPressed: canZoomOut ? onZoomOut : null,
+            ),
+            _RangeButton(
+              icon: Icons.add,
+              onPressed: canZoomIn ? onZoomIn : null,
+            ),
+            _RangeButton(
+              icon: Icons.center_focus_strong,
+              onPressed: onReset,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RangeButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const _RangeButton({
+    required this.icon,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 32,
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        iconSize: 17,
+        color: AppTheme.primary,
+        disabledColor: AppTheme.textSecondary.withValues(alpha: 0.35),
+        onPressed: onPressed,
+        icon: Icon(icon),
+      ),
     );
   }
 }
