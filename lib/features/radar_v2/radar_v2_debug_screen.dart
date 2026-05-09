@@ -3560,7 +3560,7 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
   }
 }
 
-class _QuickCommandRadialMenu extends StatelessWidget {
+class _QuickCommandRadialMenu extends StatefulWidget {
   final AircraftState aircraft;
   final List<String> waypointIds;
   final ValueChanged<int> onHeadingDelta;
@@ -3584,56 +3584,361 @@ class _QuickCommandRadialMenu extends StatelessWidget {
   });
 
   @override
+  State<_QuickCommandRadialMenu> createState() =>
+      _QuickCommandRadialMenuState();
+}
+
+class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
+  int? _hoveredIndex;
+  bool _dragging = false;
+
+  static const double _wheelSize = 284;
+  static const double _innerRadius = 46;
+  static const double _outerRadius = 126;
+
+  List<_RadialCommandEntry> _entries() {
+    final entries = <_RadialCommandEntry>[
+      _RadialCommandEntry(
+        icon: Icons.rotate_left,
+        label: 'L20',
+        onSelected: () => widget.onHeadingDelta(-20),
+      ),
+      _RadialCommandEntry(
+        icon: Icons.rotate_right,
+        label: 'R20',
+        onSelected: () => widget.onHeadingDelta(20),
+      ),
+      _RadialCommandEntry(
+        icon: Icons.arrow_downward,
+        label: 'DESC 10',
+        onSelected: () => widget.onAltitudeDelta(-1000),
+      ),
+      _RadialCommandEntry(
+        icon: Icons.arrow_upward,
+        label: 'CLB 10',
+        onSelected: () => widget.onAltitudeDelta(1000),
+      ),
+      _RadialCommandEntry(
+        icon: Icons.remove,
+        label: 'SPD -20',
+        onSelected: () => widget.onSpeedDelta(-20),
+      ),
+      _RadialCommandEntry(
+        icon: Icons.add,
+        label: 'SPD +20',
+        onSelected: () => widget.onSpeedDelta(20),
+      ),
+      _RadialCommandEntry(
+        icon: Icons.link,
+        label: 'HDG+SPD',
+        onSelected: widget.onHeadingAndSpeed,
+      ),
+      _RadialCommandEntry(
+        icon: Icons.alt_route,
+        label: 'VECTOR+ALT',
+        onSelected: widget.onVectorAndAltitude,
+      ),
+    ];
+
+    if (widget.waypointIds.isNotEmpty) {
+      entries.add(
+        _RadialCommandEntry(
+          icon: Icons.call_made,
+          label: 'DIRECT ${widget.waypointIds.first}',
+          onSelected: () => widget.onDirect(widget.waypointIds.first),
+        ),
+      );
+      entries.add(
+        _RadialCommandEntry(
+          icon: Icons.trending_down,
+          label: 'DES+DIRECT',
+          onSelected: () => widget.onDescendAndDirect(widget.waypointIds.first),
+        ),
+      );
+    }
+
+    return entries;
+  }
+
+  int? _indexFromLocal(Offset local, int count) {
+    final center = const Offset(_wheelSize / 2, _wheelSize / 2);
+    final delta = local - center;
+    final distance = delta.distance;
+    if (distance < _innerRadius || distance > _outerRadius) {
+      return null;
+    }
+    final sector = (math.pi * 2) / count;
+    final angle = (math.atan2(delta.dy, delta.dx) + (math.pi / 2) + math.pi * 2) %
+        (math.pi * 2);
+    return (angle / sector).floor().clamp(0, count - 1);
+  }
+
+  void _applySelected() {
+    final entries = _entries();
+    final index = _hoveredIndex;
+    if (index == null || index < 0 || index >= entries.length) {
+      Navigator.of(context).pop();
+      return;
+    }
+    entries[index].onSelected();
+    Navigator.of(context).pop();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final entries = _entries();
+    final selectedLabel = _hoveredIndex == null
+        ? 'Drag on wheel, release to issue command'
+        : 'Selected: ${entries[_hoveredIndex!].label}';
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '${aircraft.callsign} QUICK COMMANDS',
+              '${widget.aircraft.callsign} RADIAL COMMAND',
               style: const TextStyle(
                 color: AppTheme.primary,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _PresetPill(label: 'L20', onTap: () => onHeadingDelta(-20)),
-                _PresetPill(label: 'R20', onTap: () => onHeadingDelta(20)),
-                _PresetPill(label: 'SPD -20', onTap: () => onSpeedDelta(-20)),
-                _PresetPill(label: 'SPD +20', onTap: () => onSpeedDelta(20)),
-                _PresetPill(
-                    label: 'DESC 10', onTap: () => onAltitudeDelta(-1000)),
-                _PresetPill(label: 'CLB 10', onTap: () => onAltitudeDelta(1000)),
-                if (waypointIds.isNotEmpty)
-                  _PresetPill(
-                    label: 'DIRECT ${waypointIds.first}',
-                    onTap: () => onDirect(waypointIds.first),
-                  ),
-              ],
+            const SizedBox(height: 6),
+            Text(
+              selectedLabel,
+              style: TextStyle(
+                color: _hoveredIndex == null
+                    ? AppTheme.textSecondary
+                    : AppTheme.primary,
+                fontSize: 11,
+                fontWeight: _hoveredIndex == null ? FontWeight.w500 : FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _ChainButton(label: 'HDG+SPD', onPressed: onHeadingAndSpeed),
-                _ChainButton(
-                  label: 'VECTOR+ALT',
-                  onPressed: onVectorAndAltitude,
-                ),
-                if (waypointIds.isNotEmpty)
-                  _ChainButton(
-                    label: 'DES+DIRECT',
-                    onPressed: () => onDescendAndDirect(waypointIds.first),
+            Center(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (details) {
+                  setState(() {
+                    _dragging = true;
+                    _hoveredIndex = _indexFromLocal(details.localPosition, entries.length);
+                  });
+                },
+                onPanUpdate: (details) {
+                  setState(() {
+                    _hoveredIndex = _indexFromLocal(details.localPosition, entries.length);
+                  });
+                },
+                onPanEnd: (_) {
+                  _applySelected();
+                },
+                onPanCancel: () {
+                  setState(() {
+                    _dragging = false;
+                    _hoveredIndex = null;
+                  });
+                },
+                child: SizedBox(
+                  width: _wheelSize,
+                  height: _wheelSize,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(_wheelSize, _wheelSize),
+                        painter: _RadialCommandWheelPainter(
+                          itemCount: entries.length,
+                          highlightedIndex: _hoveredIndex,
+                        ),
+                      ),
+                      for (var i = 0; i < entries.length; i++)
+                        _RadialActionBadge(
+                          index: i,
+                          total: entries.length,
+                          radius: 94,
+                          icon: entries[i].icon,
+                          label: entries[i].label,
+                          highlighted: _hoveredIndex == i,
+                        ),
+                      Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          color: const Color(0xCC041018),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0x7755D6BE)),
+                        ),
+                        child: Center(
+                          child: Text(
+                            _dragging ? 'RELEASE' : 'HOLD',
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-              ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RadialCommandEntry {
+  final IconData icon;
+  final String label;
+  final VoidCallback onSelected;
+
+  const _RadialCommandEntry({
+    required this.icon,
+    required this.label,
+    required this.onSelected,
+  });
+}
+
+class _RadialCommandWheelPainter extends CustomPainter {
+  final int itemCount;
+  final int? highlightedIndex;
+
+  const _RadialCommandWheelPainter({
+    required this.itemCount,
+    required this.highlightedIndex,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    const inner = 46.0;
+    const outer = 126.0;
+    final sector = (math.pi * 2) / itemCount;
+
+    for (var i = 0; i < itemCount; i++) {
+      final start = -math.pi / 2 + i * sector;
+      final path = Path()
+        ..moveTo(
+          center.dx + inner * math.cos(start),
+          center.dy + inner * math.sin(start),
+        )
+        ..arcTo(
+          Rect.fromCircle(center: center, radius: outer),
+          start,
+          sector,
+          false,
+        )
+        ..lineTo(
+          center.dx + inner * math.cos(start + sector),
+          center.dy + inner * math.sin(start + sector),
+        )
+        ..arcTo(
+          Rect.fromCircle(center: center, radius: inner),
+          start + sector,
+          -sector,
+          false,
+        )
+        ..close();
+
+      final highlighted = highlightedIndex == i;
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = highlighted
+              ? const Color(0x4446F5A7)
+              : const Color(0x1A62D2FF),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = highlighted ? 1.6 : 1.0
+          ..color = highlighted
+              ? const Color(0xFF46F5A7)
+              : const Color(0x6655D6BE),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadialCommandWheelPainter oldDelegate) {
+    return oldDelegate.itemCount != itemCount ||
+        oldDelegate.highlightedIndex != highlightedIndex;
+  }
+}
+
+class _RadialActionBadge extends StatelessWidget {
+  final int index;
+  final int total;
+  final double radius;
+  final IconData icon;
+  final String label;
+  final bool highlighted;
+
+  const _RadialActionBadge({
+    required this.index,
+    required this.total,
+    required this.radius,
+    required this.icon,
+    required this.label,
+    required this.highlighted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sector = (math.pi * 2) / total;
+    final angle = -math.pi / 2 + index * sector + sector / 2;
+    final dx = radius * math.cos(angle);
+    final dy = radius * math.sin(angle);
+
+    return Transform.translate(
+      offset: Offset(dx, dy),
+      child: Container(
+        width: 58,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        decoration: BoxDecoration(
+          color: highlighted
+              ? const Color(0xAA0A2333)
+              : const Color(0xAA07131C),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: highlighted
+                ? const Color(0xFF46F5A7)
+                : const Color(0x8855D6BE),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: highlighted ? AppTheme.primary : AppTheme.textSecondary,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color:
+                    highlighted ? AppTheme.primary : AppTheme.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
