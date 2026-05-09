@@ -10,7 +10,7 @@
 ## Build Summary
 
 **Branch:** feature/v2-radar-engine  
-**Latest Commit:** aa8e364  
+**Latest Commit:** HEAD (feature/v2-radar-engine)  
 **Tests:** 201/201 passing  
 **Static Analysis:** Clean  
 

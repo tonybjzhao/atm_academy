@@ -2,7 +2,7 @@
 **Status: ✅ READY FOR INTERNAL TESTING**  
 **Date:** 9 May 2026  
 **Build Number:** 1.0.0+3  
-**Commit:** cb09bd1
+**Commit:** HEAD (feature/v2-radar-engine)
 
 ---
 

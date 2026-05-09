@@ -3099,6 +3099,1027 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SEPARATION MAINTAINED'**
   String get scenarioSafeResult;
+
+  /// No description provided for @radarTrainingBetaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Radar Training Beta'**
+  String get radarTrainingBetaTitle;
+
+  /// No description provided for @radarTrainingOnboardingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This simulator trains'**
+  String get radarTrainingOnboardingTitle;
+
+  /// No description provided for @radarTrainingDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get radarTrainingDismiss;
+
+  /// No description provided for @radarTrainingOnboardingChipWorkload.
+  ///
+  /// In en, this message translates to:
+  /// **'Workload management'**
+  String get radarTrainingOnboardingChipWorkload;
+
+  /// No description provided for @radarTrainingOnboardingChipAwareness.
+  ///
+  /// In en, this message translates to:
+  /// **'Situational awareness'**
+  String get radarTrainingOnboardingChipAwareness;
+
+  /// No description provided for @radarTrainingOnboardingChipAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention control'**
+  String get radarTrainingOnboardingChipAttention;
+
+  /// No description provided for @radarTrainingOnboardingChipAnticipation.
+  ///
+  /// In en, this message translates to:
+  /// **'Anticipation'**
+  String get radarTrainingOnboardingChipAnticipation;
+
+  /// No description provided for @radarTrainingBest.
+  ///
+  /// In en, this message translates to:
+  /// **'Best {grade} {score}'**
+  String radarTrainingBest(String grade, int score);
+
+  /// No description provided for @radarTrainingCompletedTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed {count} time(s)'**
+  String radarTrainingCompletedTimes(int count);
+
+  /// No description provided for @radarTrainingDifficultyCadet.
+  ///
+  /// In en, this message translates to:
+  /// **'Cadet'**
+  String get radarTrainingDifficultyCadet;
+
+  /// No description provided for @radarTrainingDifficultyApproach.
+  ///
+  /// In en, this message translates to:
+  /// **'Approach'**
+  String get radarTrainingDifficultyApproach;
+
+  /// No description provided for @radarTrainingDifficultySupervisor.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor'**
+  String get radarTrainingDifficultySupervisor;
+
+  /// No description provided for @radarTrainingMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String radarTrainingMinutes(int minutes);
+
+  /// No description provided for @radarTrainingScenarioBriefing.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario Briefing'**
+  String get radarTrainingScenarioBriefing;
+
+  /// No description provided for @radarTrainingObjective.
+  ///
+  /// In en, this message translates to:
+  /// **'Objective'**
+  String get radarTrainingObjective;
+
+  /// No description provided for @radarTrainingTrafficSituation.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic Situation'**
+  String get radarTrainingTrafficSituation;
+
+  /// No description provided for @radarTrainingExpectedTechnique.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected Technique'**
+  String get radarTrainingExpectedTechnique;
+
+  /// No description provided for @radarTrainingRiskFactors.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk Factors'**
+  String get radarTrainingRiskFactors;
+
+  /// No description provided for @radarTrainingSuccessCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'Success Criteria'**
+  String get radarTrainingSuccessCriteria;
+
+  /// No description provided for @radarTrainingStartScenario.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Scenario'**
+  String get radarTrainingStartScenario;
+
+  /// No description provided for @radarTrainingScenarioBeginnerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Beginner Crossing Conflict'**
+  String get radarTrainingScenarioBeginnerTitle;
+
+  /// No description provided for @radarTrainingScenarioBeginnerLearningGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic heading and speed commands'**
+  String get radarTrainingScenarioBeginnerLearningGoal;
+
+  /// No description provided for @radarTrainingScenarioBeginnerObjective.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve a same-level crossing conflict before it becomes urgent.'**
+  String get radarTrainingScenarioBeginnerObjective;
+
+  /// No description provided for @radarTrainingScenarioBeginnerTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'Two arrivals converge near the centre of the sector with a lower third aircraft entering later.'**
+  String get radarTrainingScenarioBeginnerTraffic;
+
+  /// No description provided for @radarTrainingScenarioBeginnerTechnique.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue an early heading vector, then use speed only if the closure rate remains high.'**
+  String get radarTrainingScenarioBeginnerTechnique;
+
+  /// No description provided for @radarTrainingScenarioBeginnerRisk1.
+  ///
+  /// In en, this message translates to:
+  /// **'Late turns create a short time-to-loss window'**
+  String get radarTrainingScenarioBeginnerRisk1;
+
+  /// No description provided for @radarTrainingScenarioBeginnerRisk2.
+  ///
+  /// In en, this message translates to:
+  /// **'The lower arrival can draw attention away from the real conflict'**
+  String get radarTrainingScenarioBeginnerRisk2;
+
+  /// No description provided for @radarTrainingScenarioBeginnerRisk3.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnecessary altitude changes reduce command efficiency'**
+  String get radarTrainingScenarioBeginnerRisk3;
+
+  /// No description provided for @radarTrainingScenarioBeginnerSuccess1.
+  ///
+  /// In en, this message translates to:
+  /// **'No separation loss'**
+  String get radarTrainingScenarioBeginnerSuccess1;
+
+  /// No description provided for @radarTrainingScenarioBeginnerSuccess2.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve the first conflict before the urgent phase'**
+  String get radarTrainingScenarioBeginnerSuccess2;
+
+  /// No description provided for @radarTrainingScenarioBeginnerSuccess3.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep commands precise and minimal'**
+  String get radarTrainingScenarioBeginnerSuccess3;
+
+  /// No description provided for @radarTrainingScenarioStormTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Melbourne Storm Arrival Rush'**
+  String get radarTrainingScenarioStormTitle;
+
+  /// No description provided for @radarTrainingScenarioStormLearningGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival compression, weather pressure, runway timing, and attention control'**
+  String get radarTrainingScenarioStormLearningGoal;
+
+  /// No description provided for @radarTrainingScenarioStormObjective.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage arrival compression, weather deviation, runway pressure, and attention traps without losing situational awareness.'**
+  String get radarTrainingScenarioStormObjective;
+
+  /// No description provided for @radarTrainingScenarioStormTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'A calm Melbourne arrival stream compresses as storm cells force reroutes, a departure creates runway pressure, and a quiet conflict develops away from the salient aircraft.'**
+  String get radarTrainingScenarioStormTraffic;
+
+  /// No description provided for @radarTrainingScenarioStormTechnique.
+  ///
+  /// In en, this message translates to:
+  /// **'Use early speed control, vector weather-affected traffic decisively, then return to a broad scan before the overload window.'**
+  String get radarTrainingScenarioStormTechnique;
+
+  /// No description provided for @radarTrainingScenarioStormRisk1.
+  ///
+  /// In en, this message translates to:
+  /// **'Storm cells narrow vector options and compress final spacing'**
+  String get radarTrainingScenarioStormRisk1;
+
+  /// No description provided for @radarTrainingScenarioStormRisk2.
+  ///
+  /// In en, this message translates to:
+  /// **'QFA214 can pull attention away from the quieter crossing threat'**
+  String get radarTrainingScenarioStormRisk2;
+
+  /// No description provided for @radarTrainingScenarioStormRisk3.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway occupancy and departure timing reduce recovery margin'**
+  String get radarTrainingScenarioStormRisk3;
+
+  /// No description provided for @radarTrainingScenarioStormRisk4.
+  ///
+  /// In en, this message translates to:
+  /// **'Several weak stressors align near the overload window'**
+  String get radarTrainingScenarioStormRisk4;
+
+  /// No description provided for @radarTrainingScenarioStormSuccess1.
+  ///
+  /// In en, this message translates to:
+  /// **'No separation loss'**
+  String get radarTrainingScenarioStormSuccess1;
+
+  /// No description provided for @radarTrainingScenarioStormSuccess2.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintain final approach spacing through the storm reroute'**
+  String get radarTrainingScenarioStormSuccess2;
+
+  /// No description provided for @radarTrainingScenarioStormSuccess3.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid weather penetration and ignored critical alerts'**
+  String get radarTrainingScenarioStormSuccess3;
+
+  /// No description provided for @radarTrainingScenarioStormSuccess4.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover the sector after the overload moment'**
+  String get radarTrainingScenarioStormSuccess4;
+
+  /// No description provided for @radarTrainingScenarioTunnelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'False Recovery / Tunnel Vision'**
+  String get radarTrainingScenarioTunnelTitle;
+
+  /// No description provided for @radarTrainingScenarioTunnelLearningGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Mental model drift and attention management'**
+  String get radarTrainingScenarioTunnelLearningGoal;
+
+  /// No description provided for @radarTrainingScenarioTunnelObjective.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize false recovery and keep scanning while pressure appears to ease.'**
+  String get radarTrainingScenarioTunnelObjective;
+
+  /// No description provided for @radarTrainingScenarioTunnelTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather deviation and delayed arrivals create a quiet period before spacing compresses again.'**
+  String get radarTrainingScenarioTunnelTraffic;
+
+  /// No description provided for @radarTrainingScenarioTunnelTechnique.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep a broad scan, protect runway flow, and avoid over-focusing on the first conflict.'**
+  String get radarTrainingScenarioTunnelTechnique;
+
+  /// No description provided for @radarTrainingScenarioTunnelRisk1.
+  ///
+  /// In en, this message translates to:
+  /// **'False stability reduces perceived threat'**
+  String get radarTrainingScenarioTunnelRisk1;
+
+  /// No description provided for @radarTrainingScenarioTunnelRisk2.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-priority distractions compete with emerging conflicts'**
+  String get radarTrainingScenarioTunnelRisk2;
+
+  /// No description provided for @radarTrainingScenarioTunnelRisk3.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway and merge pressure can recover visually before it is actually safe'**
+  String get radarTrainingScenarioTunnelRisk3;
+
+  /// No description provided for @radarTrainingScenarioTunnelSuccess1.
+  ///
+  /// In en, this message translates to:
+  /// **'Respond before expectation drift becomes critical'**
+  String get radarTrainingScenarioTunnelSuccess1;
+
+  /// No description provided for @radarTrainingScenarioTunnelSuccess2.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid ignored critical alerts'**
+  String get radarTrainingScenarioTunnelSuccess2;
+
+  /// No description provided for @radarTrainingScenarioTunnelSuccess3.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete with no separation loss'**
+  String get radarTrainingScenarioTunnelSuccess3;
+
+  /// No description provided for @radarTrainingMainDebrief.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Debrief'**
+  String get radarTrainingMainDebrief;
+
+  /// No description provided for @radarTrainingReplayTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay Timeline'**
+  String get radarTrainingReplayTimeline;
+
+  /// No description provided for @radarTrainingMoment.
+  ///
+  /// In en, this message translates to:
+  /// **'Moment {current}/{total}'**
+  String radarTrainingMoment(int current, int total);
+
+  /// No description provided for @radarTrainingScenarioList.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenario List'**
+  String get radarTrainingScenarioList;
+
+  /// No description provided for @radarTrainingFinalScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Final score'**
+  String get radarTrainingFinalScore;
+
+  /// No description provided for @radarTrainingMetricLosses.
+  ///
+  /// In en, this message translates to:
+  /// **'Losses'**
+  String get radarTrainingMetricLosses;
+
+  /// No description provided for @radarTrainingMetricGoArounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Go-arounds'**
+  String get radarTrainingMetricGoArounds;
+
+  /// No description provided for @radarTrainingMetricCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get radarTrainingMetricCommands;
+
+  /// No description provided for @radarTrainingMetricOverload.
+  ///
+  /// In en, this message translates to:
+  /// **'Overload'**
+  String get radarTrainingMetricOverload;
+
+  /// No description provided for @radarTrainingMetricIgnoredCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored critical'**
+  String get radarTrainingMetricIgnoredCritical;
+
+  /// No description provided for @radarTrainingMetricTunnelVision.
+  ///
+  /// In en, this message translates to:
+  /// **'Tunnel vision'**
+  String get radarTrainingMetricTunnelVision;
+
+  /// No description provided for @radarTrainingMetricExpectationDrift.
+  ///
+  /// In en, this message translates to:
+  /// **'Expectation drift'**
+  String get radarTrainingMetricExpectationDrift;
+
+  /// No description provided for @radarTrainingMoreDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'More details'**
+  String get radarTrainingMoreDetails;
+
+  /// No description provided for @radarTrainingAdvancedAnalysisReplayContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced analysis and replay context'**
+  String get radarTrainingAdvancedAnalysisReplayContext;
+
+  /// No description provided for @radarTrainingTopMistake.
+  ///
+  /// In en, this message translates to:
+  /// **'Top mistake'**
+  String get radarTrainingTopMistake;
+
+  /// No description provided for @radarTrainingBestRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Best recovery'**
+  String get radarTrainingBestRecovery;
+
+  /// No description provided for @radarTrainingAdditionalDebrief.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Debrief'**
+  String get radarTrainingAdditionalDebrief;
+
+  /// No description provided for @radarTrainingOperationalPressureEcology.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational Pressure Ecology'**
+  String get radarTrainingOperationalPressureEcology;
+
+  /// No description provided for @radarTrainingTimelineSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline Summary'**
+  String get radarTrainingTimelineSummary;
+
+  /// No description provided for @radarTrainingReplayExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay Explanation'**
+  String get radarTrainingReplayExplanation;
+
+  /// No description provided for @radarTrainingControllerEvaluation.
+  ///
+  /// In en, this message translates to:
+  /// **'Controller Evaluation'**
+  String get radarTrainingControllerEvaluation;
+
+  /// No description provided for @radarTrainingMomentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'T+{seconds}s  {label}'**
+  String radarTrainingMomentLabel(int seconds, String label);
+
+  /// No description provided for @radarTrainingTimelineStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'T+0s: Scenario started'**
+  String get radarTrainingTimelineStarted;
+
+  /// No description provided for @radarTrainingTimelineOverload.
+  ///
+  /// In en, this message translates to:
+  /// **'Overload lasted {seconds}s'**
+  String radarTrainingTimelineOverload(int seconds);
+
+  /// No description provided for @radarTrainingTimelineSeparationLossEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} separation loss event(s)'**
+  String radarTrainingTimelineSeparationLossEvents(int count);
+
+  /// No description provided for @radarTrainingTimelineControllerCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} controller commands'**
+  String radarTrainingTimelineControllerCommands(int count);
+
+  /// No description provided for @radarTrainingTimelineExpectationDrift.
+  ///
+  /// In en, this message translates to:
+  /// **'Expectation drift detected near final workload phase'**
+  String get radarTrainingTimelineExpectationDrift;
+
+  /// No description provided for @radarTrainingTimelineStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic remained inside planned operating limits'**
+  String get radarTrainingTimelineStable;
+
+  /// No description provided for @radarTrainingNoRadioCadenceSample.
+  ///
+  /// In en, this message translates to:
+  /// **'No radio cadence sample available.'**
+  String get radarTrainingNoRadioCadenceSample;
+
+  /// No description provided for @radarTrainingNoTimelyReadbacks.
+  ///
+  /// In en, this message translates to:
+  /// **'No timely readbacks captured (all beyond 12s).'**
+  String get radarTrainingNoTimelyReadbacks;
+
+  /// No description provided for @radarTrainingStableNoMajorDebrief.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic flow remained stable with no major debrief item.'**
+  String get radarTrainingStableNoMajorDebrief;
+
+  /// No description provided for @radarTrainingStableNoMajorCognitiveEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic flow remained stable with no major cognitive events.'**
+  String get radarTrainingStableNoMajorCognitiveEvents;
+
+  /// No description provided for @radarTrainingNoMajorReplayMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'No major replay markers captured.'**
+  String get radarTrainingNoMajorReplayMarkers;
+
+  /// No description provided for @radarTrainingNoCascadePropagationDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No cascade propagation detected in this replay.'**
+  String get radarTrainingNoCascadePropagationDetected;
+
+  /// No description provided for @radarTrainingPrimaryPropagationChain.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary propagation chain'**
+  String get radarTrainingPrimaryPropagationChain;
+
+  /// No description provided for @radarTrainingCognitiveTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Cognitive Timeline'**
+  String get radarTrainingCognitiveTimeline;
+
+  /// No description provided for @radarTrainingCascadePropagation.
+  ///
+  /// In en, this message translates to:
+  /// **'Cascade Propagation'**
+  String get radarTrainingCascadePropagation;
+
+  /// No description provided for @radarTrainingMarkerWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'warning'**
+  String get radarTrainingMarkerWarning;
+
+  /// No description provided for @radarTrainingMarkerLate.
+  ///
+  /// In en, this message translates to:
+  /// **'late'**
+  String get radarTrainingMarkerLate;
+
+  /// No description provided for @radarTrainingMarkerMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'memory'**
+  String get radarTrainingMarkerMemory;
+
+  /// No description provided for @radarTrainingMarkerExpectation.
+  ///
+  /// In en, this message translates to:
+  /// **'expectation'**
+  String get radarTrainingMarkerExpectation;
+
+  /// No description provided for @radarTrainingMarkerCascade.
+  ///
+  /// In en, this message translates to:
+  /// **'cascade'**
+  String get radarTrainingMarkerCascade;
+
+  /// No description provided for @radarTrainingMarkerOverload.
+  ///
+  /// In en, this message translates to:
+  /// **'overload'**
+  String get radarTrainingMarkerOverload;
+
+  /// No description provided for @radarTrainingMarkerRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'recovery'**
+  String get radarTrainingMarkerRecovery;
+
+  /// No description provided for @radarTrainingMarkerDebrief.
+  ///
+  /// In en, this message translates to:
+  /// **'debrief'**
+  String get radarTrainingMarkerDebrief;
+
+  /// No description provided for @radarTrainingAdditionalOperationalDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional operational detail recorded.'**
+  String get radarTrainingAdditionalOperationalDetail;
+
+  /// No description provided for @radarTrainingRootSurpriseEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Root surprise event: {event}.'**
+  String radarTrainingRootSurpriseEvent(String event);
+
+  /// No description provided for @radarTrainingRecoveredTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovered tasks: {recovered}; unrecovered: {unrecovered}.'**
+  String radarTrainingRecoveredTasks(int recovered, int unrecovered);
+
+  /// No description provided for @radarTrainingChainsAt.
+  ///
+  /// In en, this message translates to:
+  /// **'{chains} chain(s)  T+{seconds}s'**
+  String radarTrainingChainsAt(int chains, int seconds);
+
+  /// No description provided for @radarTrainingParallelChain.
+  ///
+  /// In en, this message translates to:
+  /// **'Parallel chain {index}'**
+  String radarTrainingParallelChain(int index);
+
+  /// No description provided for @radarTrainingInsightSeparationRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation Risk'**
+  String get radarTrainingInsightSeparationRisk;
+
+  /// No description provided for @radarTrainingInsightIgnoredAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored Alert'**
+  String get radarTrainingInsightIgnoredAlert;
+
+  /// No description provided for @radarTrainingInsightAttentionFixation.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention Fixation'**
+  String get radarTrainingInsightAttentionFixation;
+
+  /// No description provided for @radarTrainingInsightWorkloadSpike.
+  ///
+  /// In en, this message translates to:
+  /// **'Workload Spike'**
+  String get radarTrainingInsightWorkloadSpike;
+
+  /// No description provided for @radarTrainingInsightRunwayFlowRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Runway Flow Risk'**
+  String get radarTrainingInsightRunwayFlowRisk;
+
+  /// No description provided for @radarTrainingInsightExpectationDrift.
+  ///
+  /// In en, this message translates to:
+  /// **'Expectation Drift'**
+  String get radarTrainingInsightExpectationDrift;
+
+  /// No description provided for @radarTrainingInsightDestabilisation.
+  ///
+  /// In en, this message translates to:
+  /// **'Destabilisation'**
+  String get radarTrainingInsightDestabilisation;
+
+  /// No description provided for @radarTrainingInsightTaskFollowThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Follow-Through'**
+  String get radarTrainingInsightTaskFollowThrough;
+
+  /// No description provided for @radarTrainingInsightSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Insight'**
+  String get radarTrainingInsightSafety;
+
+  /// No description provided for @radarTrainingInsightWorkload.
+  ///
+  /// In en, this message translates to:
+  /// **'Workload Insight'**
+  String get radarTrainingInsightWorkload;
+
+  /// No description provided for @radarTrainingInsightAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention Insight'**
+  String get radarTrainingInsightAttention;
+
+  /// No description provided for @radarTrainingInsightMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Insight'**
+  String get radarTrainingInsightMemory;
+
+  /// No description provided for @radarTrainingInsightPrediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Prediction Insight'**
+  String get radarTrainingInsightPrediction;
+
+  /// No description provided for @radarTrainingInsightCascade.
+  ///
+  /// In en, this message translates to:
+  /// **'Cascade Insight'**
+  String get radarTrainingInsightCascade;
+
+  /// No description provided for @radarTrainingInsightSelfMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-Monitoring Insight'**
+  String get radarTrainingInsightSelfMonitoring;
+
+  /// No description provided for @radarTrainingInsightControllerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Controller Profile'**
+  String get radarTrainingInsightControllerProfile;
+
+  /// No description provided for @radarTrainingInsightTrainingPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Training Pattern'**
+  String get radarTrainingInsightTrainingPattern;
+
+  /// No description provided for @radarTrainingInsightRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery Insight'**
+  String get radarTrainingInsightRecovery;
+
+  /// No description provided for @radarTrainingInsightTrafficFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic Flow Insight'**
+  String get radarTrainingInsightTrafficFlow;
+
+  /// No description provided for @radarTrainingCascadeOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Cascade origin'**
+  String get radarTrainingCascadeOrigin;
+
+  /// No description provided for @radarTrainingCascadeFixation.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixation'**
+  String get radarTrainingCascadeFixation;
+
+  /// No description provided for @radarTrainingCascadeScanNeglect.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan neglect'**
+  String get radarTrainingCascadeScanNeglect;
+
+  /// No description provided for @radarTrainingCascadeTaskMemoryFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Task memory failure'**
+  String get radarTrainingCascadeTaskMemoryFailure;
+
+  /// No description provided for @radarTrainingCascadeMissedConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed conflict'**
+  String get radarTrainingCascadeMissedConflict;
+
+  /// No description provided for @radarTrainingCascadeOverloadIncrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Overload increase'**
+  String get radarTrainingCascadeOverloadIncrease;
+
+  /// No description provided for @radarTrainingCascadeExpectationDrift.
+  ///
+  /// In en, this message translates to:
+  /// **'Expectation drift'**
+  String get radarTrainingCascadeExpectationDrift;
+
+  /// No description provided for @radarTrainingCascadeConfidenceErosion.
+  ///
+  /// In en, this message translates to:
+  /// **'Confidence erosion'**
+  String get radarTrainingCascadeConfidenceErosion;
+
+  /// No description provided for @radarTrainingCascadeDelayedIntervention.
+  ///
+  /// In en, this message translates to:
+  /// **'Delayed intervention'**
+  String get radarTrainingCascadeDelayedIntervention;
+
+  /// No description provided for @radarTrainingCascadeRecoveryInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery interrupted'**
+  String get radarTrainingCascadeRecoveryInterrupted;
+
+  /// No description provided for @radarTrainingCascadeStabilization.
+  ///
+  /// In en, this message translates to:
+  /// **'Stabilization'**
+  String get radarTrainingCascadeStabilization;
+
+  /// No description provided for @radarTrainingCascadeRecoveryBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery breakdown'**
+  String get radarTrainingCascadeRecoveryBreakdown;
+
+  /// No description provided for @radarTrainingLabelWorkload.
+  ///
+  /// In en, this message translates to:
+  /// **'Workload'**
+  String get radarTrainingLabelWorkload;
+
+  /// No description provided for @radarTrainingLabelAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention'**
+  String get radarTrainingLabelAttention;
+
+  /// No description provided for @radarTrainingLabelMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get radarTrainingLabelMemory;
+
+  /// No description provided for @radarTrainingLabelSurprise.
+  ///
+  /// In en, this message translates to:
+  /// **'Surprise'**
+  String get radarTrainingLabelSurprise;
+
+  /// No description provided for @radarTrainingLabelScanBlind.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan blind'**
+  String get radarTrainingLabelScanBlind;
+
+  /// No description provided for @radarTrainingLabelRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery'**
+  String get radarTrainingLabelRecovery;
+
+  /// No description provided for @radarTrainingLabelExpectation.
+  ///
+  /// In en, this message translates to:
+  /// **'Expectation'**
+  String get radarTrainingLabelExpectation;
+
+  /// No description provided for @radarTrainingLabelSelfCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-check'**
+  String get radarTrainingLabelSelfCheck;
+
+  /// No description provided for @radarTrainingLabelBaselineWorkload.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline workload'**
+  String get radarTrainingLabelBaselineWorkload;
+
+  /// No description provided for @radarTrainingLabelOverloadPeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Overload peak'**
+  String get radarTrainingLabelOverloadPeak;
+
+  /// No description provided for @radarTrainingLabelSustainedOverload.
+  ///
+  /// In en, this message translates to:
+  /// **'Sustained overload'**
+  String get radarTrainingLabelSustainedOverload;
+
+  /// No description provided for @radarTrainingLabelAttentionQuality.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention quality'**
+  String get radarTrainingLabelAttentionQuality;
+
+  /// No description provided for @radarTrainingLabelLongUnseenInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Long unseen interval'**
+  String get radarTrainingLabelLongUnseenInterval;
+
+  /// No description provided for @radarTrainingLabelTaskStability.
+  ///
+  /// In en, this message translates to:
+  /// **'Task stability'**
+  String get radarTrainingLabelTaskStability;
+
+  /// No description provided for @radarTrainingLabelSurpriseLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Surprise load'**
+  String get radarTrainingLabelSurpriseLoad;
+
+  /// No description provided for @radarTrainingLabelStabilizedFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Stabilized flow'**
+  String get radarTrainingLabelStabilizedFlow;
+
+  /// No description provided for @radarTrainingLabelFalseRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'False recovery'**
+  String get radarTrainingLabelFalseRecovery;
+
+  /// No description provided for @radarTrainingLabelFixationRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixation risk'**
+  String get radarTrainingLabelFixationRisk;
+
+  /// No description provided for @radarTrainingLabelScanNarrowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan narrowing'**
+  String get radarTrainingLabelScanNarrowing;
+
+  /// No description provided for @radarTrainingLabelConfidenceCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Confidence collapse'**
+  String get radarTrainingLabelConfidenceCollapse;
+
+  /// No description provided for @radarTrainingLabelSelfAssessmentDivergence.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-assessment divergence'**
+  String get radarTrainingLabelSelfAssessmentDivergence;
+
+  /// No description provided for @radarTrainingCascadeEvidenceInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence suggests {from} was interrupted by recovery activity ({factor}).'**
+  String radarTrainingCascadeEvidenceInterrupted(String from, String factor);
+
+  /// No description provided for @radarTrainingCascadeEvidenceContributed.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence suggests {from} likely contributed to {to} through {factor}.'**
+  String radarTrainingCascadeEvidenceContributed(
+      String from, String to, String factor);
+
+  /// No description provided for @radarTrainingCascadeEvidenceRecoveryWeakens.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery activity weakens this inference.'**
+  String get radarTrainingCascadeEvidenceRecoveryWeakens;
+
+  /// No description provided for @radarTrainingCascadeLateResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'A conflict was resolved later than the traffic picture required.'**
+  String get radarTrainingCascadeLateResolution;
+
+  /// No description provided for @radarTrainingCascadeWorkloadCompetition.
+  ///
+  /// In en, this message translates to:
+  /// **'Workload rose as unresolved alerts and commands competed.'**
+  String get radarTrainingCascadeWorkloadCompetition;
+
+  /// No description provided for @radarTrainingCascadeConflictSeparationPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict cue was not resolved before separation pressure rose.'**
+  String get radarTrainingCascadeConflictSeparationPressure;
+
+  /// No description provided for @radarTrainingCascadeRecoveryUnstable.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery stayed unstable while safety-critical pressure remained.'**
+  String get radarTrainingCascadeRecoveryUnstable;
+
+  /// No description provided for @radarTrainingCascadeFactorCloseTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'close timing'**
+  String get radarTrainingCascadeFactorCloseTiming;
+
+  /// No description provided for @radarTrainingCascadeFactorAlertDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'alert density'**
+  String get radarTrainingCascadeFactorAlertDensity;
+
+  /// No description provided for @radarTrainingCascadeFactorAttentionDegradation.
+  ///
+  /// In en, this message translates to:
+  /// **'attention degradation overlap'**
+  String get radarTrainingCascadeFactorAttentionDegradation;
+
+  /// No description provided for @radarTrainingCascadeFactorUnresolvedConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'unresolved conflict pressure'**
+  String get radarTrainingCascadeFactorUnresolvedConflict;
+
+  /// No description provided for @radarTrainingCascadeFactorRecoveryInterruption.
+  ///
+  /// In en, this message translates to:
+  /// **'recovery interruption reduced confidence'**
+  String get radarTrainingCascadeFactorRecoveryInterruption;
+
+  /// No description provided for @radarTrainingCascadeFactorWeakTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'weak timing signal'**
+  String get radarTrainingCascadeFactorWeakTiming;
 }
 
 class _AppLocalizationsDelegate

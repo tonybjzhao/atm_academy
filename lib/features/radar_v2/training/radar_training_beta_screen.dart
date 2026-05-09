@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../radar_v2_debug_screen.dart';
 import 'radar_training_briefing_screen.dart';
 import 'radar_training_catalog.dart';
@@ -38,10 +39,12 @@ class _RadarTrainingBetaScreenState extends State<RadarTrainingBetaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scenarios = RadarTrainingCatalog.localizedScenarios(l10n);
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Radar Training Beta'),
+        title: Text(l10n.radarTrainingBetaTitle),
         backgroundColor: AppTheme.surface,
       ),
       body: SafeArea(
@@ -52,7 +55,7 @@ class _RadarTrainingBetaScreenState extends State<RadarTrainingBetaScreen> {
               _OnboardingCard(onDismiss: _dismissOnboarding),
               const SizedBox(height: 14),
             ],
-            for (final scenario in RadarTrainingCatalog.scenarios) ...[
+            for (final scenario in scenarios) ...[
               _ProgressScenarioCard(
                 scenario: scenario,
                 progressStore: _progressStore,
@@ -123,6 +126,7 @@ class _OnboardingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -144,9 +148,9 @@ class _OnboardingCard extends StatelessWidget {
             children: [
               const Icon(Icons.radar, color: AppTheme.primary),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'This simulator trains',
+                  l10n.radarTrainingOnboardingTitle,
                   style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 16,
@@ -155,21 +159,21 @@ class _OnboardingCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Dismiss',
+                tooltip: l10n.radarTrainingDismiss,
                 onPressed: onDismiss,
                 icon: const Icon(Icons.close),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Wrap(
+          Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _Chip(label: 'Workload management'),
-              _Chip(label: 'Situational awareness'),
-              _Chip(label: 'Attention control'),
-              _Chip(label: 'Anticipation'),
+              _Chip(label: l10n.radarTrainingOnboardingChipWorkload),
+              _Chip(label: l10n.radarTrainingOnboardingChipAwareness),
+              _Chip(label: l10n.radarTrainingOnboardingChipAttention),
+              _Chip(label: l10n.radarTrainingOnboardingChipAnticipation),
             ],
           ),
         ],
@@ -191,6 +195,7 @@ class _ScenarioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -235,10 +240,9 @@ class _ScenarioCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 6,
               children: [
-                _Chip(label: scenario.difficultyLabel),
-                _Chip(label: scenario.estimatedTimeLabel),
-                _Chip(
-                    label: 'Best ${progress.bestGrade} ${progress.bestScore}'),
+                _Chip(label: scenario.difficultyLabelLocalized(l10n)),
+                _Chip(label: scenario.estimatedTimeLabelLocalized(l10n)),
+                _Chip(label: l10n.radarTrainingBest(progress.bestGrade, progress.bestScore)),
                 _Stars(value: progress.stars),
               ],
             ),
@@ -254,7 +258,7 @@ class _ScenarioCard extends StatelessWidget {
             if (progress.completedCount > 0) ...[
               const SizedBox(height: 10),
               Text(
-                'Completed ${progress.completedCount} time(s)',
+                l10n.radarTrainingCompletedTimes(progress.completedCount),
                 style: const TextStyle(
                   color: AppTheme.primary,
                   fontSize: 11,

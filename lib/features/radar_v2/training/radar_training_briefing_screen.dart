@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import 'radar_training_scenario.dart';
 
 class RadarTrainingBriefingScreen extends StatelessWidget {
@@ -15,10 +16,11 @@ class RadarTrainingBriefingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Scenario Briefing'),
+        title: Text(l10n.radarTrainingScenarioBriefing),
         backgroundColor: AppTheme.surface,
       ),
       body: SafeArea(
@@ -35,7 +37,7 @@ class RadarTrainingBriefingScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${scenario.difficultyLabel} · ${scenario.estimatedTimeLabel}',
+              '${scenario.difficultyLabelLocalized(l10n)} · ${scenario.estimatedTimeLabelLocalized(l10n)}',
               style: const TextStyle(
                 color: AppTheme.primary,
                 fontSize: 13,
@@ -43,21 +45,21 @@ class RadarTrainingBriefingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            _Section(title: 'Objective', body: scenario.objective),
+            _Section(title: l10n.radarTrainingObjective, body: scenario.objective),
             _Section(
-                title: 'Traffic Situation', body: scenario.trafficSituation),
+                title: l10n.radarTrainingTrafficSituation, body: scenario.trafficSituation),
             _Section(
-                title: 'Expected Technique', body: scenario.expectedTechnique),
-            _ListSection(title: 'Risk Factors', items: scenario.riskFactors),
+                title: l10n.radarTrainingExpectedTechnique, body: scenario.expectedTechnique),
+            _ListSection(title: l10n.radarTrainingRiskFactors, items: scenario.riskFactors),
             _ListSection(
-              title: 'Success Criteria',
+              title: l10n.radarTrainingSuccessCriteria,
               items: scenario.successCriteria,
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: onStart,
               icon: const Icon(Icons.radar),
-              label: const Text('Start Scenario'),
+              label: Text(l10n.radarTrainingStartScenario),
             ),
           ],
         ),

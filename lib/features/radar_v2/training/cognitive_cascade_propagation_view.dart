@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import 'cognitive_cascade_propagation.dart';
+import 'radar_training_text_localizer.dart';
 
 class CognitiveCascadePropagationView extends StatefulWidget {
   final CognitiveCascadePropagationData data;
   final Duration selectedElapsed;
+  final AppLocalizations localizations;
   final ValueChanged<Duration> onJump;
 
   const CognitiveCascadePropagationView({
     super.key,
     required this.data,
     required this.selectedElapsed,
+    required this.localizations,
     required this.onJump,
   });
 
@@ -27,8 +31,8 @@ class _CognitiveCascadePropagationViewState
   @override
   Widget build(BuildContext context) {
     if (widget.data.chains.isEmpty) {
-      return const Text(
-        'No cascade propagation detected in this replay.',
+      return Text(
+        widget.localizations.radarTrainingNoCascadePropagationDetected,
         style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
       );
     }
@@ -37,10 +41,10 @@ class _CognitiveCascadePropagationViewState
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'Cascade Propagation',
-                style: TextStyle(
+                widget.localizations.radarTrainingCascadePropagation,
+                style: const TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -48,7 +52,10 @@ class _CognitiveCascadePropagationViewState
               ),
             ),
             Text(
-              '${widget.data.chains.length} chain(s)  T+${widget.selectedElapsed.inSeconds}s',
+              widget.localizations.radarTrainingChainsAt(
+                widget.data.chains.length,
+                widget.selectedElapsed.inSeconds,
+              ),
               style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 12,
@@ -59,7 +66,12 @@ class _CognitiveCascadePropagationViewState
         ),
         const SizedBox(height: 8),
         for (final chain in widget.data.chains) ...[
-          _ChainHeader(title: chain.title),
+          _ChainHeader(
+            title: RadarTrainingTextLocalizer.cascadeChainTitle(
+              widget.localizations,
+              chain.title,
+            ),
+          ),
           const SizedBox(height: 6),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -69,6 +81,7 @@ class _CognitiveCascadePropagationViewState
                 for (var i = 0; i < chain.nodes.length; i++) ...[
                   _PropagationNodeCard(
                     node: chain.nodes[i],
+                    localizations: widget.localizations,
                     selected: _selectedNodeId == chain.nodes[i].id,
                     onTap: () => _selectNode(chain.nodes[i]),
                   ),
@@ -137,11 +150,13 @@ class _ChainHeader extends StatelessWidget {
 
 class _PropagationNodeCard extends StatelessWidget {
   final CascadePropagationNode node;
+  final AppLocalizations localizations;
   final bool selected;
   final VoidCallback onTap;
 
   const _PropagationNodeCard({
     required this.node,
+    required this.localizations,
     required this.selected,
     required this.onTap,
   });
@@ -195,7 +210,7 @@ class _PropagationNodeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              node.label,
+              RadarTrainingTextLocalizer.cascadeNodeLabel(localizations, node.label),
               style: const TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 13,
@@ -204,7 +219,7 @@ class _PropagationNodeCard extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             Text(
-              node.detail,
+              RadarTrainingTextLocalizer.line(localizations, node.detail),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(

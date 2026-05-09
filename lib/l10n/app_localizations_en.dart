@@ -1692,4 +1692,595 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scenarioSafeResult => 'SEPARATION MAINTAINED';
+
+  @override
+  String get radarTrainingBetaTitle => 'Radar Training Beta';
+
+  @override
+  String get radarTrainingOnboardingTitle => 'This simulator trains';
+
+  @override
+  String get radarTrainingDismiss => 'Dismiss';
+
+  @override
+  String get radarTrainingOnboardingChipWorkload => 'Workload management';
+
+  @override
+  String get radarTrainingOnboardingChipAwareness => 'Situational awareness';
+
+  @override
+  String get radarTrainingOnboardingChipAttention => 'Attention control';
+
+  @override
+  String get radarTrainingOnboardingChipAnticipation => 'Anticipation';
+
+  @override
+  String radarTrainingBest(String grade, int score) {
+    return 'Best $grade $score';
+  }
+
+  @override
+  String radarTrainingCompletedTimes(int count) {
+    return 'Completed $count time(s)';
+  }
+
+  @override
+  String get radarTrainingDifficultyCadet => 'Cadet';
+
+  @override
+  String get radarTrainingDifficultyApproach => 'Approach';
+
+  @override
+  String get radarTrainingDifficultySupervisor => 'Supervisor';
+
+  @override
+  String radarTrainingMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get radarTrainingScenarioBriefing => 'Scenario Briefing';
+
+  @override
+  String get radarTrainingObjective => 'Objective';
+
+  @override
+  String get radarTrainingTrafficSituation => 'Traffic Situation';
+
+  @override
+  String get radarTrainingExpectedTechnique => 'Expected Technique';
+
+  @override
+  String get radarTrainingRiskFactors => 'Risk Factors';
+
+  @override
+  String get radarTrainingSuccessCriteria => 'Success Criteria';
+
+  @override
+  String get radarTrainingStartScenario => 'Start Scenario';
+
+  @override
+  String get radarTrainingScenarioBeginnerTitle => 'Beginner Crossing Conflict';
+
+  @override
+  String get radarTrainingScenarioBeginnerLearningGoal =>
+      'Basic heading and speed commands';
+
+  @override
+  String get radarTrainingScenarioBeginnerObjective =>
+      'Resolve a same-level crossing conflict before it becomes urgent.';
+
+  @override
+  String get radarTrainingScenarioBeginnerTraffic =>
+      'Two arrivals converge near the centre of the sector with a lower third aircraft entering later.';
+
+  @override
+  String get radarTrainingScenarioBeginnerTechnique =>
+      'Issue an early heading vector, then use speed only if the closure rate remains high.';
+
+  @override
+  String get radarTrainingScenarioBeginnerRisk1 =>
+      'Late turns create a short time-to-loss window';
+
+  @override
+  String get radarTrainingScenarioBeginnerRisk2 =>
+      'The lower arrival can draw attention away from the real conflict';
+
+  @override
+  String get radarTrainingScenarioBeginnerRisk3 =>
+      'Unnecessary altitude changes reduce command efficiency';
+
+  @override
+  String get radarTrainingScenarioBeginnerSuccess1 => 'No separation loss';
+
+  @override
+  String get radarTrainingScenarioBeginnerSuccess2 =>
+      'Resolve the first conflict before the urgent phase';
+
+  @override
+  String get radarTrainingScenarioBeginnerSuccess3 =>
+      'Keep commands precise and minimal';
+
+  @override
+  String get radarTrainingScenarioStormTitle => 'Melbourne Storm Arrival Rush';
+
+  @override
+  String get radarTrainingScenarioStormLearningGoal =>
+      'Arrival compression, weather pressure, runway timing, and attention control';
+
+  @override
+  String get radarTrainingScenarioStormObjective =>
+      'Manage arrival compression, weather deviation, runway pressure, and attention traps without losing situational awareness.';
+
+  @override
+  String get radarTrainingScenarioStormTraffic =>
+      'A calm Melbourne arrival stream compresses as storm cells force reroutes, a departure creates runway pressure, and a quiet conflict develops away from the salient aircraft.';
+
+  @override
+  String get radarTrainingScenarioStormTechnique =>
+      'Use early speed control, vector weather-affected traffic decisively, then return to a broad scan before the overload window.';
+
+  @override
+  String get radarTrainingScenarioStormRisk1 =>
+      'Storm cells narrow vector options and compress final spacing';
+
+  @override
+  String get radarTrainingScenarioStormRisk2 =>
+      'QFA214 can pull attention away from the quieter crossing threat';
+
+  @override
+  String get radarTrainingScenarioStormRisk3 =>
+      'Runway occupancy and departure timing reduce recovery margin';
+
+  @override
+  String get radarTrainingScenarioStormRisk4 =>
+      'Several weak stressors align near the overload window';
+
+  @override
+  String get radarTrainingScenarioStormSuccess1 => 'No separation loss';
+
+  @override
+  String get radarTrainingScenarioStormSuccess2 =>
+      'Maintain final approach spacing through the storm reroute';
+
+  @override
+  String get radarTrainingScenarioStormSuccess3 =>
+      'Avoid weather penetration and ignored critical alerts';
+
+  @override
+  String get radarTrainingScenarioStormSuccess4 =>
+      'Recover the sector after the overload moment';
+
+  @override
+  String get radarTrainingScenarioTunnelTitle =>
+      'False Recovery / Tunnel Vision';
+
+  @override
+  String get radarTrainingScenarioTunnelLearningGoal =>
+      'Mental model drift and attention management';
+
+  @override
+  String get radarTrainingScenarioTunnelObjective =>
+      'Recognize false recovery and keep scanning while pressure appears to ease.';
+
+  @override
+  String get radarTrainingScenarioTunnelTraffic =>
+      'Weather deviation and delayed arrivals create a quiet period before spacing compresses again.';
+
+  @override
+  String get radarTrainingScenarioTunnelTechnique =>
+      'Keep a broad scan, protect runway flow, and avoid over-focusing on the first conflict.';
+
+  @override
+  String get radarTrainingScenarioTunnelRisk1 =>
+      'False stability reduces perceived threat';
+
+  @override
+  String get radarTrainingScenarioTunnelRisk2 =>
+      'Low-priority distractions compete with emerging conflicts';
+
+  @override
+  String get radarTrainingScenarioTunnelRisk3 =>
+      'Runway and merge pressure can recover visually before it is actually safe';
+
+  @override
+  String get radarTrainingScenarioTunnelSuccess1 =>
+      'Respond before expectation drift becomes critical';
+
+  @override
+  String get radarTrainingScenarioTunnelSuccess2 =>
+      'Avoid ignored critical alerts';
+
+  @override
+  String get radarTrainingScenarioTunnelSuccess3 =>
+      'Complete with no separation loss';
+
+  @override
+  String get radarTrainingMainDebrief => 'Main Debrief';
+
+  @override
+  String get radarTrainingReplayTimeline => 'Replay Timeline';
+
+  @override
+  String radarTrainingMoment(int current, int total) {
+    return 'Moment $current/$total';
+  }
+
+  @override
+  String get radarTrainingScenarioList => 'Scenario List';
+
+  @override
+  String get radarTrainingFinalScore => 'Final score';
+
+  @override
+  String get radarTrainingMetricLosses => 'Losses';
+
+  @override
+  String get radarTrainingMetricGoArounds => 'Go-arounds';
+
+  @override
+  String get radarTrainingMetricCommands => 'Commands';
+
+  @override
+  String get radarTrainingMetricOverload => 'Overload';
+
+  @override
+  String get radarTrainingMetricIgnoredCritical => 'Ignored critical';
+
+  @override
+  String get radarTrainingMetricTunnelVision => 'Tunnel vision';
+
+  @override
+  String get radarTrainingMetricExpectationDrift => 'Expectation drift';
+
+  @override
+  String get radarTrainingMoreDetails => 'More details';
+
+  @override
+  String get radarTrainingAdvancedAnalysisReplayContext =>
+      'Advanced analysis and replay context';
+
+  @override
+  String get radarTrainingTopMistake => 'Top mistake';
+
+  @override
+  String get radarTrainingBestRecovery => 'Best recovery';
+
+  @override
+  String get radarTrainingAdditionalDebrief => 'Additional Debrief';
+
+  @override
+  String get radarTrainingOperationalPressureEcology =>
+      'Operational Pressure Ecology';
+
+  @override
+  String get radarTrainingTimelineSummary => 'Timeline Summary';
+
+  @override
+  String get radarTrainingReplayExplanation => 'Replay Explanation';
+
+  @override
+  String get radarTrainingControllerEvaluation => 'Controller Evaluation';
+
+  @override
+  String radarTrainingMomentLabel(int seconds, String label) {
+    return 'T+${seconds}s  $label';
+  }
+
+  @override
+  String get radarTrainingTimelineStarted => 'T+0s: Scenario started';
+
+  @override
+  String radarTrainingTimelineOverload(int seconds) {
+    return 'Overload lasted ${seconds}s';
+  }
+
+  @override
+  String radarTrainingTimelineSeparationLossEvents(int count) {
+    return '$count separation loss event(s)';
+  }
+
+  @override
+  String radarTrainingTimelineControllerCommands(int count) {
+    return '$count controller commands';
+  }
+
+  @override
+  String get radarTrainingTimelineExpectationDrift =>
+      'Expectation drift detected near final workload phase';
+
+  @override
+  String get radarTrainingTimelineStable =>
+      'Traffic remained inside planned operating limits';
+
+  @override
+  String get radarTrainingNoRadioCadenceSample =>
+      'No radio cadence sample available.';
+
+  @override
+  String get radarTrainingNoTimelyReadbacks =>
+      'No timely readbacks captured (all beyond 12s).';
+
+  @override
+  String get radarTrainingStableNoMajorDebrief =>
+      'Traffic flow remained stable with no major debrief item.';
+
+  @override
+  String get radarTrainingStableNoMajorCognitiveEvents =>
+      'Traffic flow remained stable with no major cognitive events.';
+
+  @override
+  String get radarTrainingNoMajorReplayMarkers =>
+      'No major replay markers captured.';
+
+  @override
+  String get radarTrainingNoCascadePropagationDetected =>
+      'No cascade propagation detected in this replay.';
+
+  @override
+  String get radarTrainingPrimaryPropagationChain =>
+      'Primary propagation chain';
+
+  @override
+  String get radarTrainingCognitiveTimeline => 'Cognitive Timeline';
+
+  @override
+  String get radarTrainingCascadePropagation => 'Cascade Propagation';
+
+  @override
+  String get radarTrainingMarkerWarning => 'warning';
+
+  @override
+  String get radarTrainingMarkerLate => 'late';
+
+  @override
+  String get radarTrainingMarkerMemory => 'memory';
+
+  @override
+  String get radarTrainingMarkerExpectation => 'expectation';
+
+  @override
+  String get radarTrainingMarkerCascade => 'cascade';
+
+  @override
+  String get radarTrainingMarkerOverload => 'overload';
+
+  @override
+  String get radarTrainingMarkerRecovery => 'recovery';
+
+  @override
+  String get radarTrainingMarkerDebrief => 'debrief';
+
+  @override
+  String get radarTrainingAdditionalOperationalDetail =>
+      'Additional operational detail recorded.';
+
+  @override
+  String radarTrainingRootSurpriseEvent(String event) {
+    return 'Root surprise event: $event.';
+  }
+
+  @override
+  String radarTrainingRecoveredTasks(int recovered, int unrecovered) {
+    return 'Recovered tasks: $recovered; unrecovered: $unrecovered.';
+  }
+
+  @override
+  String radarTrainingChainsAt(int chains, int seconds) {
+    return '$chains chain(s)  T+${seconds}s';
+  }
+
+  @override
+  String radarTrainingParallelChain(int index) {
+    return 'Parallel chain $index';
+  }
+
+  @override
+  String get radarTrainingInsightSeparationRisk => 'Separation Risk';
+
+  @override
+  String get radarTrainingInsightIgnoredAlert => 'Ignored Alert';
+
+  @override
+  String get radarTrainingInsightAttentionFixation => 'Attention Fixation';
+
+  @override
+  String get radarTrainingInsightWorkloadSpike => 'Workload Spike';
+
+  @override
+  String get radarTrainingInsightRunwayFlowRisk => 'Runway Flow Risk';
+
+  @override
+  String get radarTrainingInsightExpectationDrift => 'Expectation Drift';
+
+  @override
+  String get radarTrainingInsightDestabilisation => 'Destabilisation';
+
+  @override
+  String get radarTrainingInsightTaskFollowThrough => 'Task Follow-Through';
+
+  @override
+  String get radarTrainingInsightSafety => 'Safety Insight';
+
+  @override
+  String get radarTrainingInsightWorkload => 'Workload Insight';
+
+  @override
+  String get radarTrainingInsightAttention => 'Attention Insight';
+
+  @override
+  String get radarTrainingInsightMemory => 'Memory Insight';
+
+  @override
+  String get radarTrainingInsightPrediction => 'Prediction Insight';
+
+  @override
+  String get radarTrainingInsightCascade => 'Cascade Insight';
+
+  @override
+  String get radarTrainingInsightSelfMonitoring => 'Self-Monitoring Insight';
+
+  @override
+  String get radarTrainingInsightControllerProfile => 'Controller Profile';
+
+  @override
+  String get radarTrainingInsightTrainingPattern => 'Training Pattern';
+
+  @override
+  String get radarTrainingInsightRecovery => 'Recovery Insight';
+
+  @override
+  String get radarTrainingInsightTrafficFlow => 'Traffic Flow Insight';
+
+  @override
+  String get radarTrainingCascadeOrigin => 'Cascade origin';
+
+  @override
+  String get radarTrainingCascadeFixation => 'Fixation';
+
+  @override
+  String get radarTrainingCascadeScanNeglect => 'Scan neglect';
+
+  @override
+  String get radarTrainingCascadeTaskMemoryFailure => 'Task memory failure';
+
+  @override
+  String get radarTrainingCascadeMissedConflict => 'Missed conflict';
+
+  @override
+  String get radarTrainingCascadeOverloadIncrease => 'Overload increase';
+
+  @override
+  String get radarTrainingCascadeExpectationDrift => 'Expectation drift';
+
+  @override
+  String get radarTrainingCascadeConfidenceErosion => 'Confidence erosion';
+
+  @override
+  String get radarTrainingCascadeDelayedIntervention => 'Delayed intervention';
+
+  @override
+  String get radarTrainingCascadeRecoveryInterrupted => 'Recovery interrupted';
+
+  @override
+  String get radarTrainingCascadeStabilization => 'Stabilization';
+
+  @override
+  String get radarTrainingCascadeRecoveryBreakdown => 'Recovery breakdown';
+
+  @override
+  String get radarTrainingLabelWorkload => 'Workload';
+
+  @override
+  String get radarTrainingLabelAttention => 'Attention';
+
+  @override
+  String get radarTrainingLabelMemory => 'Memory';
+
+  @override
+  String get radarTrainingLabelSurprise => 'Surprise';
+
+  @override
+  String get radarTrainingLabelScanBlind => 'Scan blind';
+
+  @override
+  String get radarTrainingLabelRecovery => 'Recovery';
+
+  @override
+  String get radarTrainingLabelExpectation => 'Expectation';
+
+  @override
+  String get radarTrainingLabelSelfCheck => 'Self-check';
+
+  @override
+  String get radarTrainingLabelBaselineWorkload => 'Baseline workload';
+
+  @override
+  String get radarTrainingLabelOverloadPeak => 'Overload peak';
+
+  @override
+  String get radarTrainingLabelSustainedOverload => 'Sustained overload';
+
+  @override
+  String get radarTrainingLabelAttentionQuality => 'Attention quality';
+
+  @override
+  String get radarTrainingLabelLongUnseenInterval => 'Long unseen interval';
+
+  @override
+  String get radarTrainingLabelTaskStability => 'Task stability';
+
+  @override
+  String get radarTrainingLabelSurpriseLoad => 'Surprise load';
+
+  @override
+  String get radarTrainingLabelStabilizedFlow => 'Stabilized flow';
+
+  @override
+  String get radarTrainingLabelFalseRecovery => 'False recovery';
+
+  @override
+  String get radarTrainingLabelFixationRisk => 'Fixation risk';
+
+  @override
+  String get radarTrainingLabelScanNarrowing => 'Scan narrowing';
+
+  @override
+  String get radarTrainingLabelConfidenceCollapse => 'Confidence collapse';
+
+  @override
+  String get radarTrainingLabelSelfAssessmentDivergence =>
+      'Self-assessment divergence';
+
+  @override
+  String radarTrainingCascadeEvidenceInterrupted(String from, String factor) {
+    return 'Evidence suggests $from was interrupted by recovery activity ($factor).';
+  }
+
+  @override
+  String radarTrainingCascadeEvidenceContributed(
+      String from, String to, String factor) {
+    return 'Evidence suggests $from likely contributed to $to through $factor.';
+  }
+
+  @override
+  String get radarTrainingCascadeEvidenceRecoveryWeakens =>
+      'Recovery activity weakens this inference.';
+
+  @override
+  String get radarTrainingCascadeLateResolution =>
+      'A conflict was resolved later than the traffic picture required.';
+
+  @override
+  String get radarTrainingCascadeWorkloadCompetition =>
+      'Workload rose as unresolved alerts and commands competed.';
+
+  @override
+  String get radarTrainingCascadeConflictSeparationPressure =>
+      'Conflict cue was not resolved before separation pressure rose.';
+
+  @override
+  String get radarTrainingCascadeRecoveryUnstable =>
+      'Recovery stayed unstable while safety-critical pressure remained.';
+
+  @override
+  String get radarTrainingCascadeFactorCloseTiming => 'close timing';
+
+  @override
+  String get radarTrainingCascadeFactorAlertDensity => 'alert density';
+
+  @override
+  String get radarTrainingCascadeFactorAttentionDegradation =>
+      'attention degradation overlap';
+
+  @override
+  String get radarTrainingCascadeFactorUnresolvedConflict =>
+      'unresolved conflict pressure';
+
+  @override
+  String get radarTrainingCascadeFactorRecoveryInterruption =>
+      'recovery interruption reduced confidence';
+
+  @override
+  String get radarTrainingCascadeFactorWeakTiming => 'weak timing signal';
 }

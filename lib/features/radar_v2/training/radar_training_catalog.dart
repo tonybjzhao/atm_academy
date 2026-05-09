@@ -1,3 +1,4 @@
+import '../../../l10n/app_localizations.dart';
 import 'radar_training_scenario.dart';
 
 class RadarTrainingCatalog {
@@ -87,8 +88,100 @@ class RadarTrainingCatalog {
     return scenarios.firstWhere((scenario) => scenario.id == id);
   }
 
+  static RadarTrainingScenario byIdLocalized(
+    String id,
+    AppLocalizations l10n,
+  ) {
+    return _localizedScenario(byId(id), l10n);
+  }
+
+  static List<RadarTrainingScenario> localizedScenarios(AppLocalizations l10n) {
+    return scenarios.map((scenario) => _localizedScenario(scenario, l10n)).toList();
+  }
+
   static Map<String, String> get scenarioAssets => {
         for (final scenario in scenarios)
           scenario.scenarioName: scenario.assetPath,
       };
+
+  static RadarTrainingScenario _localizedScenario(
+    RadarTrainingScenario scenario,
+    AppLocalizations l10n,
+  ) {
+    switch (scenario.id) {
+      case 'beginner_crossing_conflict':
+        return RadarTrainingScenario(
+          id: scenario.id,
+          title: l10n.radarTrainingScenarioBeginnerTitle,
+          difficulty: scenario.difficulty,
+          estimatedTime: scenario.estimatedTime,
+          learningGoal: l10n.radarTrainingScenarioBeginnerLearningGoal,
+          objective: l10n.radarTrainingScenarioBeginnerObjective,
+          trafficSituation: l10n.radarTrainingScenarioBeginnerTraffic,
+          expectedTechnique: l10n.radarTrainingScenarioBeginnerTechnique,
+          riskFactors: [
+            l10n.radarTrainingScenarioBeginnerRisk1,
+            l10n.radarTrainingScenarioBeginnerRisk2,
+            l10n.radarTrainingScenarioBeginnerRisk3,
+          ],
+          successCriteria: [
+            l10n.radarTrainingScenarioBeginnerSuccess1,
+            l10n.radarTrainingScenarioBeginnerSuccess2,
+            l10n.radarTrainingScenarioBeginnerSuccess3,
+          ],
+          assetPath: scenario.assetPath,
+          scenarioName: scenario.scenarioName,
+        );
+      case 'melbourne_storm_arrival_rush':
+        return RadarTrainingScenario(
+          id: scenario.id,
+          title: l10n.radarTrainingScenarioStormTitle,
+          difficulty: scenario.difficulty,
+          estimatedTime: scenario.estimatedTime,
+          learningGoal: l10n.radarTrainingScenarioStormLearningGoal,
+          objective: l10n.radarTrainingScenarioStormObjective,
+          trafficSituation: l10n.radarTrainingScenarioStormTraffic,
+          expectedTechnique: l10n.radarTrainingScenarioStormTechnique,
+          riskFactors: [
+            l10n.radarTrainingScenarioStormRisk1,
+            l10n.radarTrainingScenarioStormRisk2,
+            l10n.radarTrainingScenarioStormRisk3,
+            l10n.radarTrainingScenarioStormRisk4,
+          ],
+          successCriteria: [
+            l10n.radarTrainingScenarioStormSuccess1,
+            l10n.radarTrainingScenarioStormSuccess2,
+            l10n.radarTrainingScenarioStormSuccess3,
+            l10n.radarTrainingScenarioStormSuccess4,
+          ],
+          assetPath: scenario.assetPath,
+          scenarioName: scenario.scenarioName,
+        );
+      case 'false_recovery_tunnel_vision':
+        return RadarTrainingScenario(
+          id: scenario.id,
+          title: l10n.radarTrainingScenarioTunnelTitle,
+          difficulty: scenario.difficulty,
+          estimatedTime: scenario.estimatedTime,
+          learningGoal: l10n.radarTrainingScenarioTunnelLearningGoal,
+          objective: l10n.radarTrainingScenarioTunnelObjective,
+          trafficSituation: l10n.radarTrainingScenarioTunnelTraffic,
+          expectedTechnique: l10n.radarTrainingScenarioTunnelTechnique,
+          riskFactors: [
+            l10n.radarTrainingScenarioTunnelRisk1,
+            l10n.radarTrainingScenarioTunnelRisk2,
+            l10n.radarTrainingScenarioTunnelRisk3,
+          ],
+          successCriteria: [
+            l10n.radarTrainingScenarioTunnelSuccess1,
+            l10n.radarTrainingScenarioTunnelSuccess2,
+            l10n.radarTrainingScenarioTunnelSuccess3,
+          ],
+          assetPath: scenario.assetPath,
+          scenarioName: scenario.scenarioName,
+        );
+      default:
+        return scenario;
+    }
+  }
 }

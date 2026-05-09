@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import 'cognitive_timeline.dart';
 import 'cognitive_timeline_visualizer.dart';
 import 'cognitive_cascade_propagation.dart';
 import 'cognitive_cascade_propagation_view.dart';
 import 'debrief_insight.dart';
 import 'radar_training_result.dart';
+import 'radar_training_text_localizer.dart';
 
 class RadarTrainingResultScreen extends StatefulWidget {
   final RadarTrainingResult result;
@@ -43,6 +45,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final moments = result.replayMoments;
     final selectedMoment = moments.isEmpty
         ? null
@@ -50,7 +53,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Scenario Result'),
+        title: Text(l10n.scenarioResult),
         backgroundColor: AppTheme.surface,
       ),
       body: SafeArea(
@@ -63,21 +66,22 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             const SizedBox(height: 14),
             _Metrics(result: result),
             const SizedBox(height: 18),
-            const _SectionTitle('Main Debrief'),
+            _SectionTitle(l10n.radarTrainingMainDebrief),
             const SizedBox(height: 8),
             for (final insight in result.debriefSalience.primaryInsights)
               _DebriefInsightCard(
                 insight: insight,
+                localizations: l10n,
                 onTap: () => _jumpToInsight(insight),
               ),
             if (result.debriefSalience.primaryInsights.isEmpty)
-              const _ExplanationCard(
-                text:
-                    'Traffic flow remained stable with no major debrief item.',
+              _ExplanationCard(
+                text: l10n.radarTrainingStableNoMajorDebrief,
               ),
             const SizedBox(height: 12),
             _MoreDetails(
               result: result,
+              localizations: l10n,
               onInsightTap: _jumpToInsight,
             ),
             const SizedBox(height: 18),
@@ -85,6 +89,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               child: CognitiveCascadePropagationView(
                 data: _cascadeData,
                 selectedElapsed: _selectedElapsed,
+                localizations: l10n,
                 onJump: _jumpToElapsed,
               ),
             ),
@@ -93,12 +98,13 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               child: CognitiveTimelineVisualizer(
                 data: _timelineData,
                 selectedElapsed: _selectedElapsed,
+                localizations: l10n,
                 onJump: _jumpToElapsed,
               ),
             ),
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
-              const _SectionTitle('Replay Timeline'),
+              _SectionTitle(l10n.radarTrainingReplayTimeline),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -107,12 +113,12 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
                         ? () => _jumpToMoment(_momentIndex - 1)
                         : null,
                     icon: const Icon(Icons.chevron_left),
-                    label: const Text('Prev'),
+                    label: Text(l10n.btnPrevious),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Moment ${_momentIndex + 1}/${moments.length}',
+                      l10n.radarTrainingMoment(_momentIndex + 1, moments.length),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
@@ -127,7 +133,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
                         ? () => _jumpToMoment(_momentIndex + 1)
                         : null,
                     icon: const Icon(Icons.chevron_right),
-                    label: const Text('Next'),
+                    label: Text(l10n.btnNext),
                   ),
                 ],
               ),
@@ -153,7 +159,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
                       (route) => route.isFirst,
                     ),
                     icon: const Icon(Icons.list_alt),
-                    label: const Text('Scenario List'),
+                    label: Text(l10n.radarTrainingScenarioList),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -161,7 +167,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
                   child: FilledButton.icon(
                     onPressed: widget.onRestart,
                     icon: const Icon(Icons.restart_alt),
-                    label: const Text('Retry'),
+                    label: Text(l10n.scenarioRetry),
                   ),
                 ),
               ],
@@ -276,6 +282,7 @@ class _ScoreReveal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: score.toDouble()),
       duration: const Duration(milliseconds: 900),
@@ -284,8 +291,8 @@ class _ScoreReveal extends StatelessWidget {
         return _Panel(
           child: Row(
             children: [
-              const Text(
-                'Final score',
+              Text(
+                l10n.radarTrainingFinalScore,
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
               const Spacer(),
@@ -312,21 +319,22 @@ class _Metrics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Wrap(
       spacing: 10,
       runSpacing: 10,
       children: [
-        _Metric(label: 'Losses', value: '${result.separationLosses}'),
-        _Metric(label: 'Go-arounds', value: '${result.goArounds}'),
-        _Metric(label: 'Commands', value: '${result.commandCount}'),
+        _Metric(label: l10n.radarTrainingMetricLosses, value: '${result.separationLosses}'),
+        _Metric(label: l10n.radarTrainingMetricGoArounds, value: '${result.goArounds}'),
+        _Metric(label: l10n.radarTrainingMetricCommands, value: '${result.commandCount}'),
         _Metric(
-            label: 'Overload', value: '${result.overloadDuration.inSeconds}s'),
+            label: l10n.radarTrainingMetricOverload, value: '${result.overloadDuration.inSeconds}s'),
         _Metric(
-            label: 'Ignored critical',
+            label: l10n.radarTrainingMetricIgnoredCritical,
             value: '${result.ignoredCriticalAlerts}'),
-        _Metric(label: 'Tunnel vision', value: '${result.tunnelVisionEvents}'),
+        _Metric(label: l10n.radarTrainingMetricTunnelVision, value: '${result.tunnelVisionEvents}'),
         _Metric(
-            label: 'Expectation drift',
+            label: l10n.radarTrainingMetricExpectationDrift,
             value: '${result.expectationDriftEvents}'),
       ],
     );
@@ -387,9 +395,14 @@ class _InsightCard extends StatelessWidget {
 
 class _DebriefInsightCard extends StatelessWidget {
   final DebriefInsight insight;
+  final AppLocalizations localizations;
   final VoidCallback? onTap;
 
-  const _DebriefInsightCard({required this.insight, this.onTap});
+  const _DebriefInsightCard({
+    required this.insight,
+    required this.localizations,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +429,10 @@ class _DebriefInsightCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            insight.title,
+                            RadarTrainingTextLocalizer.insightTitle(
+                              localizations,
+                              insight.title,
+                            ),
                             style: const TextStyle(
                               color: AppTheme.textPrimary,
                               fontSize: 13,
@@ -437,7 +453,7 @@ class _DebriefInsightCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      insight.body,
+                      RadarTrainingTextLocalizer.line(localizations, insight.body),
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 13,
@@ -482,10 +498,12 @@ class _DebriefInsightCard extends StatelessWidget {
 
 class _MoreDetails extends StatelessWidget {
   final RadarTrainingResult result;
+  final AppLocalizations localizations;
   final ValueChanged<DebriefInsight> onInsightTap;
 
   const _MoreDetails({
     required this.result,
+    required this.localizations,
     required this.onInsightTap,
   });
 
@@ -503,64 +521,73 @@ class _MoreDetails extends StatelessWidget {
           childrenPadding: const EdgeInsets.only(top: 8),
           iconColor: AppTheme.primary,
           collapsedIconColor: AppTheme.textSecondary,
-          title: const Text(
-            'More details',
+          title: Text(
+            localizations.radarTrainingMoreDetails,
             style: TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
           ),
-          subtitle: const Text(
-            'Advanced analysis and replay context',
+          subtitle: Text(
+            localizations.radarTrainingAdvancedAnalysisReplayContext,
             style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
           children: [
             _InsightCard(
               icon: Icons.error_outline,
-              title: 'Top mistake',
-              body: result.topMistake,
+              title: localizations.radarTrainingTopMistake,
+              body: RadarTrainingTextLocalizer.line(localizations, result.topMistake),
               accent: AppTheme.warning,
             ),
             const SizedBox(height: 8),
             _InsightCard(
               icon: Icons.healing,
-              title: 'Best recovery',
-              body: result.bestRecovery,
+              title: localizations.radarTrainingBestRecovery,
+              body: RadarTrainingTextLocalizer.line(localizations, result.bestRecovery),
               accent: AppTheme.primary,
             ),
             if (extraInsights.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const _SectionTitle('Additional Debrief'),
+              _SectionTitle(localizations.radarTrainingAdditionalDebrief),
               const SizedBox(height: 8),
               for (final insight in extraInsights.take(6))
                 _DebriefInsightCard(
                   insight: insight,
+                  localizations: localizations,
                   onTap: () => onInsightTap(insight),
                 ),
             ],
             if (result.environmentalEcology.reportLines.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const _SectionTitle('Operational Pressure Ecology'),
+              _SectionTitle(localizations.radarTrainingOperationalPressureEcology),
               const SizedBox(height: 8),
               for (final line in result.environmentalEcology.reportLines)
-                _EvaluationChip(text: line),
+                _EvaluationChip(
+                  text: RadarTrainingTextLocalizer.line(localizations, line),
+                ),
             ],
             const SizedBox(height: 12),
-            const _SectionTitle('Timeline Summary'),
+            _SectionTitle(localizations.radarTrainingTimelineSummary),
             const SizedBox(height: 8),
             for (final line in result.timelineSummary)
-              _TimelineLine(text: line),
+              _TimelineLine(
+                text: RadarTrainingTextLocalizer.line(localizations, line),
+              ),
             const SizedBox(height: 12),
-            const _SectionTitle('Replay Explanation'),
+            _SectionTitle(localizations.radarTrainingReplayExplanation),
             const SizedBox(height: 8),
             for (final line in result.replayExplanation)
-              _ExplanationCard(text: line),
+              _ExplanationCard(
+                text: RadarTrainingTextLocalizer.line(localizations, line),
+              ),
             const SizedBox(height: 12),
-            const _SectionTitle('Controller Evaluation'),
+            _SectionTitle(localizations.radarTrainingControllerEvaluation),
             const SizedBox(height: 8),
             for (final line in _advancedLines(result).take(18))
-              _EvaluationChip(text: line),
+              _EvaluationChip(
+                text: RadarTrainingTextLocalizer.line(localizations, line),
+              ),
           ],
         ),
       ),
@@ -671,6 +698,7 @@ class _ReplayMomentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Panel(
       accent: _typeColor(moment.type),
       child: Row(
@@ -679,7 +707,10 @@ class _ReplayMomentCard extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'T+${moment.elapsed.inSeconds}s  ${moment.label}',
+              l10n.radarTrainingMomentLabel(
+                moment.elapsed.inSeconds,
+                RadarTrainingTextLocalizer.line(l10n, moment.label),
+              ),
               style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 13,

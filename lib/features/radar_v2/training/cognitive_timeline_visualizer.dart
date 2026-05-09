@@ -3,17 +3,21 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import 'cognitive_timeline.dart';
+import 'radar_training_text_localizer.dart';
 
 class CognitiveTimelineVisualizer extends StatelessWidget {
   final CognitiveTimelineData data;
   final Duration selectedElapsed;
+  final AppLocalizations localizations;
   final ValueChanged<Duration> onJump;
 
   const CognitiveTimelineVisualizer({
     super.key,
     required this.data,
     required this.selectedElapsed,
+    required this.localizations,
     required this.onJump,
   });
 
@@ -27,10 +31,10 @@ class CognitiveTimelineVisualizer extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'Cognitive Timeline',
-                style: TextStyle(
+                localizations.radarTrainingCognitiveTimeline,
+                style: const TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -62,6 +66,7 @@ class CognitiveTimelineVisualizer extends StatelessWidget {
                 child: CustomPaint(
                   painter: _CognitiveTimelinePainter(
                     data: data,
+                    localizations: localizations,
                     selectedElapsed: selectedElapsed,
                   ),
                 ),
@@ -75,7 +80,7 @@ class CognitiveTimelineVisualizer extends StatelessWidget {
           max: math.max(1, data.duration.inSeconds).toDouble(),
           onChanged: (value) => onJump(Duration(seconds: value.round())),
         ),
-        _MarkerRail(data: data, onJump: onJump),
+        _MarkerRail(data: data, localizations: localizations, onJump: onJump),
       ],
     );
   }
@@ -92,10 +97,12 @@ class CognitiveTimelineVisualizer extends StatelessWidget {
 
 class _MarkerRail extends StatelessWidget {
   final CognitiveTimelineData data;
+  final AppLocalizations localizations;
   final ValueChanged<Duration> onJump;
 
   const _MarkerRail({
     required this.data,
+    required this.localizations,
     required this.onJump,
   });
 
@@ -103,8 +110,8 @@ class _MarkerRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final markers = data.markers.take(8).toList();
     if (markers.isEmpty) {
-      return const Text(
-        'No major replay markers captured.',
+      return Text(
+        localizations.radarTrainingNoMajorReplayMarkers,
         style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
       );
     }
@@ -119,7 +126,7 @@ class _MarkerRail extends StatelessWidget {
             side: BorderSide(
                 color: _markerColor(marker.type).withValues(alpha: 0.55)),
             label: Text(
-              'T+${marker.elapsed.inSeconds}s ${_markerLabel(marker.type)}',
+              'T+${marker.elapsed.inSeconds}s ${RadarTrainingTextLocalizer.line(localizations, _markerLabel(marker.type))}',
               style:
                   const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
             ),
@@ -132,10 +139,12 @@ class _MarkerRail extends StatelessWidget {
 
 class _CognitiveTimelinePainter extends CustomPainter {
   final CognitiveTimelineData data;
+  final AppLocalizations localizations;
   final Duration selectedElapsed;
 
   const _CognitiveTimelinePainter({
     required this.data,
+    required this.localizations,
     required this.selectedElapsed,
   });
 
@@ -209,7 +218,7 @@ class _CognitiveTimelinePainter extends CustomPainter {
   void _drawLayerLabel(Canvas canvas, String label, double y) {
     _drawText(
       canvas,
-      label,
+      RadarTrainingTextLocalizer.line(localizations, label),
       Offset(0, y - 7),
       const TextStyle(
         color: AppTheme.textSecondary,

@@ -27,9 +27,19 @@ import 'package:atm_flutter/features/radar_v2/training/radar_training_result.dar
 import 'package:atm_flutter/features/radar_v2/models/simulation_snapshot.dart';
 import 'package:atm_flutter/features/radar_v2/models/simulation_event.dart';
 import 'package:atm_flutter/features/radar_v2/models/weather_zone.dart';
+import 'package:atm_flutter/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+Widget _localizedApp(Widget home, {Locale locale = const Locale('en')}) {
+  return MaterialApp(
+    locale: locale,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: home,
+  );
+}
 
 void main() {
   group('Radar Training Beta', () {
@@ -510,7 +520,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       await tester.pumpWidget(
-        const MaterialApp(home: RadarTrainingBetaScreen()),
+        _localizedApp(const RadarTrainingBetaScreen()),
       );
       await tester.pumpAndSettle();
 
@@ -540,8 +550,8 @@ void main() {
         (tester) async {
       var started = false;
       await tester.pumpWidget(
-        MaterialApp(
-          home: RadarTrainingBriefingScreen(
+        _localizedApp(
+          RadarTrainingBriefingScreen(
             scenario: RadarTrainingCatalog.scenarios.first,
             onStart: () => started = true,
           ),
@@ -569,7 +579,7 @@ void main() {
       });
 
       await tester.pumpWidget(
-        const MaterialApp(home: RadarTrainingBetaScreen()),
+        _localizedApp(const RadarTrainingBetaScreen()),
       );
       await tester.pumpAndSettle();
 
@@ -585,8 +595,8 @@ void main() {
     testWidgets('friendly scenario-load error shows retry action',
         (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: RadarV2DebugScreen(
+        _localizedApp(
+          const RadarV2DebugScreen(
             betaMode: true,
             initialScenarioName: 'Broken Scenario',
             scenarioAssets: {

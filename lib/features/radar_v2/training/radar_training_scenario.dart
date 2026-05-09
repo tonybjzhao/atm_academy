@@ -1,3 +1,5 @@
+import '../../../l10n/app_localizations.dart';
+
 enum RadarTrainingDifficulty {
   cadet,
   approach,
@@ -40,4 +42,17 @@ class RadarTrainingScenario {
       };
 
   String get estimatedTimeLabel => '${estimatedTime.inMinutes} min';
+
+  String difficultyLabelLocalized(AppLocalizations l10n) {
+    return switch (difficulty) {
+      RadarTrainingDifficulty.cadet => l10n.radarTrainingDifficultyCadet,
+      RadarTrainingDifficulty.approach => l10n.radarTrainingDifficultyApproach,
+      RadarTrainingDifficulty.supervisor =>
+        l10n.radarTrainingDifficultySupervisor,
+    };
+  }
+
+  String estimatedTimeLabelLocalized(AppLocalizations l10n) {
+    return l10n.radarTrainingMinutes(estimatedTime.inMinutes);
+  }
 }

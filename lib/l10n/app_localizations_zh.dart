@@ -1545,4 +1545,548 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scenarioSafeResult => '间隔维持';
+
+  @override
+  String get radarTrainingBetaTitle => '雷达训练测试版';
+
+  @override
+  String get radarTrainingOnboardingTitle => '本模拟器训练';
+
+  @override
+  String get radarTrainingDismiss => '关闭';
+
+  @override
+  String get radarTrainingOnboardingChipWorkload => '负荷管理';
+
+  @override
+  String get radarTrainingOnboardingChipAwareness => '情景意识';
+
+  @override
+  String get radarTrainingOnboardingChipAttention => '注意力控制';
+
+  @override
+  String get radarTrainingOnboardingChipAnticipation => '预判能力';
+
+  @override
+  String radarTrainingBest(String grade, int score) {
+    return '最佳 $grade $score';
+  }
+
+  @override
+  String radarTrainingCompletedTimes(int count) {
+    return '已完成 $count 次';
+  }
+
+  @override
+  String get radarTrainingDifficultyCadet => '学员';
+
+  @override
+  String get radarTrainingDifficultyApproach => '进近';
+
+  @override
+  String get radarTrainingDifficultySupervisor => '主管';
+
+  @override
+  String radarTrainingMinutes(int minutes) {
+    return '$minutes 分钟';
+  }
+
+  @override
+  String get radarTrainingScenarioBriefing => '场景简报';
+
+  @override
+  String get radarTrainingObjective => '目标';
+
+  @override
+  String get radarTrainingTrafficSituation => '交通态势';
+
+  @override
+  String get radarTrainingExpectedTechnique => '建议技巧';
+
+  @override
+  String get radarTrainingRiskFactors => '风险因素';
+
+  @override
+  String get radarTrainingSuccessCriteria => '成功标准';
+
+  @override
+  String get radarTrainingStartScenario => '开始场景';
+
+  @override
+  String get radarTrainingScenarioBeginnerTitle => '新手交叉冲突';
+
+  @override
+  String get radarTrainingScenarioBeginnerLearningGoal => '基础航向与速度指令';
+
+  @override
+  String get radarTrainingScenarioBeginnerObjective => '在冲突变为紧急前解决同高度交叉冲突。';
+
+  @override
+  String get radarTrainingScenarioBeginnerTraffic =>
+      '两架进港机在扇区中心汇聚，稍后有一架较低高度航空器进入。';
+
+  @override
+  String get radarTrainingScenarioBeginnerTechnique => '尽早下发航向，若闭合率仍高再使用速度控制。';
+
+  @override
+  String get radarTrainingScenarioBeginnerRisk1 => '转向过晚会导致极短的失隔时间窗';
+
+  @override
+  String get radarTrainingScenarioBeginnerRisk2 => '低高度进港机可能分散对真实冲突的注意力';
+
+  @override
+  String get radarTrainingScenarioBeginnerRisk3 => '不必要的高度变化会降低指令效率';
+
+  @override
+  String get radarTrainingScenarioBeginnerSuccess1 => '无失隔';
+
+  @override
+  String get radarTrainingScenarioBeginnerSuccess2 => '在紧急阶段前解决首个冲突';
+
+  @override
+  String get radarTrainingScenarioBeginnerSuccess3 => '指令精确且最小化';
+
+  @override
+  String get radarTrainingScenarioStormTitle => '墨尔本风暴进港高峰';
+
+  @override
+  String get radarTrainingScenarioStormLearningGoal => '进港压缩、天气压力、跑道时序与注意力控制';
+
+  @override
+  String get radarTrainingScenarioStormObjective =>
+      '在不丢失态势感知的前提下，管理进港压缩、天气偏航、跑道压力与注意力陷阱。';
+
+  @override
+  String get radarTrainingScenarioStormTraffic =>
+      '平稳的墨尔本进港流因风暴单体改航而压缩，离港造成跑道压力，显著目标之外还有隐蔽冲突发展。';
+
+  @override
+  String get radarTrainingScenarioStormTechnique =>
+      '尽早实施速度控制，果断引导受天气影响航班，随后在过载窗口前恢复宽扫描。';
+
+  @override
+  String get radarTrainingScenarioStormRisk1 => '风暴单体压缩末进间隔并减少引导选项';
+
+  @override
+  String get radarTrainingScenarioStormRisk2 => 'QFA214 可能将注意力从隐蔽交叉威胁上拉走';
+
+  @override
+  String get radarTrainingScenarioStormRisk3 => '跑道占用与离港时序降低恢复余度';
+
+  @override
+  String get radarTrainingScenarioStormRisk4 => '多个弱压力源会在过载窗口附近叠加';
+
+  @override
+  String get radarTrainingScenarioStormSuccess1 => '无失隔';
+
+  @override
+  String get radarTrainingScenarioStormSuccess2 => '在天气改航过程中维持末进间隔';
+
+  @override
+  String get radarTrainingScenarioStormSuccess3 => '避免穿越天气并避免忽视关键告警';
+
+  @override
+  String get radarTrainingScenarioStormSuccess4 => '过载后恢复扇区稳定';
+
+  @override
+  String get radarTrainingScenarioTunnelTitle => '虚假恢复 / 隧道视野';
+
+  @override
+  String get radarTrainingScenarioTunnelLearningGoal => '心理模型漂移与注意力管理';
+
+  @override
+  String get radarTrainingScenarioTunnelObjective => '在压力看似下降时识别虚假恢复并保持扫描。';
+
+  @override
+  String get radarTrainingScenarioTunnelTraffic => '天气偏航与延误进港形成短暂平静，随后间隔再次压缩。';
+
+  @override
+  String get radarTrainingScenarioTunnelTechnique => '保持宽扫描，保护跑道流，避免过度聚焦首个冲突。';
+
+  @override
+  String get radarTrainingScenarioTunnelRisk1 => '虚假稳定会降低威胁感知';
+
+  @override
+  String get radarTrainingScenarioTunnelRisk2 => '低优先级干扰会与新冲突竞争注意力';
+
+  @override
+  String get radarTrainingScenarioTunnelRisk3 => '跑道与汇聚压力可能在真正安全前视觉上先恢复';
+
+  @override
+  String get radarTrainingScenarioTunnelSuccess1 => '在预期漂移变为关键前做出响应';
+
+  @override
+  String get radarTrainingScenarioTunnelSuccess2 => '避免忽视关键告警';
+
+  @override
+  String get radarTrainingScenarioTunnelSuccess3 => '无失隔完成场景';
+
+  @override
+  String get radarTrainingMainDebrief => '主要复盘';
+
+  @override
+  String get radarTrainingReplayTimeline => '回放时间线';
+
+  @override
+  String radarTrainingMoment(int current, int total) {
+    return '时刻 $current/$total';
+  }
+
+  @override
+  String get radarTrainingScenarioList => '场景列表';
+
+  @override
+  String get radarTrainingFinalScore => '最终得分';
+
+  @override
+  String get radarTrainingMetricLosses => '失隔次数';
+
+  @override
+  String get radarTrainingMetricGoArounds => '复飞次数';
+
+  @override
+  String get radarTrainingMetricCommands => '指令数';
+
+  @override
+  String get radarTrainingMetricOverload => '过载';
+
+  @override
+  String get radarTrainingMetricIgnoredCritical => '忽略关键告警';
+
+  @override
+  String get radarTrainingMetricTunnelVision => '隧道视野';
+
+  @override
+  String get radarTrainingMetricExpectationDrift => '预期漂移';
+
+  @override
+  String get radarTrainingMoreDetails => '更多细节';
+
+  @override
+  String get radarTrainingAdvancedAnalysisReplayContext => '高级分析与回放上下文';
+
+  @override
+  String get radarTrainingTopMistake => '主要失误';
+
+  @override
+  String get radarTrainingBestRecovery => '最佳恢复';
+
+  @override
+  String get radarTrainingAdditionalDebrief => '补充复盘';
+
+  @override
+  String get radarTrainingOperationalPressureEcology => '运行压力生态';
+
+  @override
+  String get radarTrainingTimelineSummary => '时间线摘要';
+
+  @override
+  String get radarTrainingReplayExplanation => '回放说明';
+
+  @override
+  String get radarTrainingControllerEvaluation => '管制评估';
+
+  @override
+  String radarTrainingMomentLabel(int seconds, String label) {
+    return 'T+${seconds}s  $label';
+  }
+
+  @override
+  String get radarTrainingTimelineStarted => 'T+0s：场景开始';
+
+  @override
+  String radarTrainingTimelineOverload(int seconds) {
+    return '过载持续 ${seconds}s';
+  }
+
+  @override
+  String radarTrainingTimelineSeparationLossEvents(int count) {
+    return '失隔事件 $count 次';
+  }
+
+  @override
+  String radarTrainingTimelineControllerCommands(int count) {
+    return '管制指令 $count 条';
+  }
+
+  @override
+  String get radarTrainingTimelineExpectationDrift => '最终负荷阶段检测到预期漂移';
+
+  @override
+  String get radarTrainingTimelineStable => '交通保持在计划运行边界内';
+
+  @override
+  String get radarTrainingNoRadioCadenceSample => '没有可用的无线电节奏样本。';
+
+  @override
+  String get radarTrainingNoTimelyReadbacks => '没有及时复诵（全部超过 12 秒）。';
+
+  @override
+  String get radarTrainingStableNoMajorDebrief => '交通流保持稳定，无主要复盘项。';
+
+  @override
+  String get radarTrainingStableNoMajorCognitiveEvents => '交通流保持稳定，无主要认知事件。';
+
+  @override
+  String get radarTrainingNoMajorReplayMarkers => '未捕获主要回放标记。';
+
+  @override
+  String get radarTrainingNoCascadePropagationDetected => '本次回放未检测到级联传播。';
+
+  @override
+  String get radarTrainingPrimaryPropagationChain => '主传播链';
+
+  @override
+  String get radarTrainingCognitiveTimeline => '认知时间线';
+
+  @override
+  String get radarTrainingCascadePropagation => '级联传播';
+
+  @override
+  String get radarTrainingMarkerWarning => '告警';
+
+  @override
+  String get radarTrainingMarkerLate => '延迟';
+
+  @override
+  String get radarTrainingMarkerMemory => '记忆';
+
+  @override
+  String get radarTrainingMarkerExpectation => '预期';
+
+  @override
+  String get radarTrainingMarkerCascade => '级联';
+
+  @override
+  String get radarTrainingMarkerOverload => '过载';
+
+  @override
+  String get radarTrainingMarkerRecovery => '恢复';
+
+  @override
+  String get radarTrainingMarkerDebrief => '复盘';
+
+  @override
+  String get radarTrainingAdditionalOperationalDetail => '记录了额外运行细节。';
+
+  @override
+  String radarTrainingRootSurpriseEvent(String event) {
+    return '根源性意外事件：$event。';
+  }
+
+  @override
+  String radarTrainingRecoveredTasks(int recovered, int unrecovered) {
+    return '已恢复任务：$recovered；未恢复：$unrecovered。';
+  }
+
+  @override
+  String radarTrainingChainsAt(int chains, int seconds) {
+    return '$chains 条链  T+${seconds}s';
+  }
+
+  @override
+  String radarTrainingParallelChain(int index) {
+    return '并行链 $index';
+  }
+
+  @override
+  String get radarTrainingInsightSeparationRisk => '间隔风险';
+
+  @override
+  String get radarTrainingInsightIgnoredAlert => '忽视告警';
+
+  @override
+  String get radarTrainingInsightAttentionFixation => '注意力固着';
+
+  @override
+  String get radarTrainingInsightWorkloadSpike => '负荷峰值';
+
+  @override
+  String get radarTrainingInsightRunwayFlowRisk => '跑道流风险';
+
+  @override
+  String get radarTrainingInsightExpectationDrift => '预期漂移';
+
+  @override
+  String get radarTrainingInsightDestabilisation => '失稳';
+
+  @override
+  String get radarTrainingInsightTaskFollowThrough => '任务跟进';
+
+  @override
+  String get radarTrainingInsightSafety => '安全洞察';
+
+  @override
+  String get radarTrainingInsightWorkload => '负荷洞察';
+
+  @override
+  String get radarTrainingInsightAttention => '注意力洞察';
+
+  @override
+  String get radarTrainingInsightMemory => '记忆洞察';
+
+  @override
+  String get radarTrainingInsightPrediction => '预测洞察';
+
+  @override
+  String get radarTrainingInsightCascade => '级联洞察';
+
+  @override
+  String get radarTrainingInsightSelfMonitoring => '自我监控洞察';
+
+  @override
+  String get radarTrainingInsightControllerProfile => '管制画像';
+
+  @override
+  String get radarTrainingInsightTrainingPattern => '训练模式';
+
+  @override
+  String get radarTrainingInsightRecovery => '恢复洞察';
+
+  @override
+  String get radarTrainingInsightTrafficFlow => '流量洞察';
+
+  @override
+  String get radarTrainingCascadeOrigin => '级联起点';
+
+  @override
+  String get radarTrainingCascadeFixation => '固着';
+
+  @override
+  String get radarTrainingCascadeScanNeglect => '扫描忽视';
+
+  @override
+  String get radarTrainingCascadeTaskMemoryFailure => '任务记忆失效';
+
+  @override
+  String get radarTrainingCascadeMissedConflict => '遗漏冲突';
+
+  @override
+  String get radarTrainingCascadeOverloadIncrease => '过载上升';
+
+  @override
+  String get radarTrainingCascadeExpectationDrift => '预期漂移';
+
+  @override
+  String get radarTrainingCascadeConfidenceErosion => '信心侵蚀';
+
+  @override
+  String get radarTrainingCascadeDelayedIntervention => '干预延迟';
+
+  @override
+  String get radarTrainingCascadeRecoveryInterrupted => '恢复中断';
+
+  @override
+  String get radarTrainingCascadeStabilization => '稳定化';
+
+  @override
+  String get radarTrainingCascadeRecoveryBreakdown => '恢复失效';
+
+  @override
+  String get radarTrainingLabelWorkload => '负荷';
+
+  @override
+  String get radarTrainingLabelAttention => '注意力';
+
+  @override
+  String get radarTrainingLabelMemory => '记忆';
+
+  @override
+  String get radarTrainingLabelSurprise => '意外';
+
+  @override
+  String get radarTrainingLabelScanBlind => '扫描盲区';
+
+  @override
+  String get radarTrainingLabelRecovery => '恢复';
+
+  @override
+  String get radarTrainingLabelExpectation => '预期';
+
+  @override
+  String get radarTrainingLabelSelfCheck => '自检';
+
+  @override
+  String get radarTrainingLabelBaselineWorkload => '基线负荷';
+
+  @override
+  String get radarTrainingLabelOverloadPeak => '过载峰值';
+
+  @override
+  String get radarTrainingLabelSustainedOverload => '持续过载';
+
+  @override
+  String get radarTrainingLabelAttentionQuality => '注意力质量';
+
+  @override
+  String get radarTrainingLabelLongUnseenInterval => '最长未见间隔';
+
+  @override
+  String get radarTrainingLabelTaskStability => '任务稳定性';
+
+  @override
+  String get radarTrainingLabelSurpriseLoad => '意外负荷';
+
+  @override
+  String get radarTrainingLabelStabilizedFlow => '流量稳定';
+
+  @override
+  String get radarTrainingLabelFalseRecovery => '虚假恢复';
+
+  @override
+  String get radarTrainingLabelFixationRisk => '固着风险';
+
+  @override
+  String get radarTrainingLabelScanNarrowing => '扫描收窄';
+
+  @override
+  String get radarTrainingLabelConfidenceCollapse => '信心崩塌';
+
+  @override
+  String get radarTrainingLabelSelfAssessmentDivergence => '自评偏差';
+
+  @override
+  String radarTrainingCascadeEvidenceInterrupted(String from, String factor) {
+    return '证据表明$from被恢复活动打断（$factor）。';
+  }
+
+  @override
+  String radarTrainingCascadeEvidenceContributed(
+      String from, String to, String factor) {
+    return '证据表明$from可能通过$factor对$to产生了贡献。';
+  }
+
+  @override
+  String get radarTrainingCascadeEvidenceRecoveryWeakens => '恢复活动削弱了这一推论。';
+
+  @override
+  String get radarTrainingCascadeLateResolution => '冲突的解决晚于交通流量所需。';
+
+  @override
+  String get radarTrainingCascadeWorkloadCompetition => '未解决的警报和命令竞争导致工作负载增加。';
+
+  @override
+  String get radarTrainingCascadeConflictSeparationPressure =>
+      '冲突迹象在分离压力上升前未被解决。';
+
+  @override
+  String get radarTrainingCascadeRecoveryUnstable => '在安全关键压力存在期间恢复保持不稳定。';
+
+  @override
+  String get radarTrainingCascadeFactorCloseTiming => '时间接近';
+
+  @override
+  String get radarTrainingCascadeFactorAlertDensity => '警报密度';
+
+  @override
+  String get radarTrainingCascadeFactorAttentionDegradation => '注意力退化重叠';
+
+  @override
+  String get radarTrainingCascadeFactorUnresolvedConflict => '未解决的冲突压力';
+
+  @override
+  String get radarTrainingCascadeFactorRecoveryInterruption => '恢复中断导致信心下降';
+
+  @override
+  String get radarTrainingCascadeFactorWeakTiming => '弱时间信号';
 }
