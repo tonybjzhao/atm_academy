@@ -17,6 +17,8 @@ void main() {
   "lowVisibilitySpacingMultiplier": 1.2,
   "lowVisibilityRunwayOccupancyMultiplier": 1.3,
   "workloadPressureMultiplier": 1.1,
+  "attentionAwarenessSupport": 0.9,
+  "attentionSubtleConflictDelayBudgetSeconds": 16,
   "runwayOccupancySeconds": 40,
   "waypoints": [
     { "id": "FIXA", "xNm": 0, "yNm": 10 },
@@ -129,6 +131,8 @@ void main() {
     expect(scenario.runwayOccupancyDuration, const Duration(seconds: 40));
     expect(scenario.weatherMode, 'low_visibility');
     expect(scenario.lowVisibilitySpacingMultiplier, 1.2);
+    expect(scenario.attentionAwarenessSupport, 0.9);
+    expect(scenario.attentionSubtleConflictDelayBudgetSeconds, 16);
     expect(scenario.routeProcedures['STAR_A']?.name, 'STAR A');
     expect(scenario.departureFlows.single.sidProcedureId, 'SID_A');
     expect(scenario.densityScale, 1.2);
@@ -151,6 +155,98 @@ void main() {
       runtime.snapshot.aircraft.map((aircraft) => aircraft.id),
       contains('a'),
     );
+  });
+
+  test('runtime applies scenario attention override wiring', () {
+    const denseAttentionSource = '''
+{
+  "id": "attention_dense",
+  "title": "Attention Dense",
+  "sectorId": "test_sector",
+  "durationSeconds": 180,
+  "difficulty": 5,
+  "maxControllerLoad": 2,
+  "attentionAwarenessSupport": __SUPPORT__,
+  "attentionSubtleConflictDelayBudgetSeconds": 14,
+  "speedOptions": [1],
+  "waypoints": [
+    { "id": "W1", "xNm": -20, "yNm": -20 }
+  ],
+  "aircraft": [
+    {
+      "id": "a",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": -8, "yNm": 0 },
+      "altitudeFt": 9000,
+      "headingDeg": 90,
+      "groundSpeedKt": 240
+    },
+    {
+      "id": "b",
+      "callsign": "VJA612",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 8, "yNm": 0 },
+      "altitudeFt": 9200,
+      "headingDeg": 270,
+      "groundSpeedKt": 240
+    },
+    {
+      "id": "c",
+      "callsign": "ANZ333",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 0, "yNm": 9 },
+      "altitudeFt": 9400,
+      "headingDeg": 180,
+      "groundSpeedKt": 235
+    },
+    {
+      "id": "d",
+      "callsign": "SIA777",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 0, "yNm": -9 },
+      "altitudeFt": 8800,
+      "headingDeg": 0,
+      "groundSpeedKt": 235
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" }
+  ],
+  "failConditions": [
+    { "type": "timeout" }
+  ]
+}
+''';
+
+    final defaultScenario = const ScenarioLoader().parse(
+      denseAttentionSource.replaceFirst('__SUPPORT__', '0.55'),
+    );
+    final overriddenScenario = const ScenarioLoader().parse(
+      denseAttentionSource.replaceFirst('__SUPPORT__', '1.0'),
+    );
+
+    expect(defaultScenario.attentionAwarenessSupport, 0.55);
+    expect(overriddenScenario.attentionAwarenessSupport, 1.0);
+
+    final defaultRuntime = ScenarioRuntime(definition: defaultScenario);
+    final overrideRuntime = ScenarioRuntime(definition: overriddenScenario);
+
+    defaultRuntime.updateAttentionFocus(selectedAircraftId: 'a');
+    overrideRuntime.updateAttentionFocus(selectedAircraftId: 'a');
+
+    defaultRuntime.tick(speedMultiplier: 70);
+    overrideRuntime.tick(speedMultiplier: 70);
+
+    final defaultFocus = defaultRuntime.snapshot.attentionFocus;
+    final overriddenFocus = overrideRuntime.snapshot.attentionFocus;
+
+    expect(defaultFocus.predictionClarity, inInclusiveRange(0.0, 1.0));
+    expect(overriddenFocus.predictionClarity, inInclusiveRange(0.0, 1.0));
+    expect(defaultFocus.intentConfidence, inInclusiveRange(0.0, 1.0));
+    expect(overriddenFocus.intentConfidence, inInclusiveRange(0.0, 1.0));
+    expect(defaultFocus.surpriseRisk, inInclusiveRange(0.0, 1.0));
+    expect(overriddenFocus.surpriseRisk, inInclusiveRange(0.0, 1.0));
   });
 
   test('runtime queues and releases departures on runway availability', () {

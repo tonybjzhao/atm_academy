@@ -35,6 +35,8 @@ class ScenarioDefinition {
   final double lowVisibilitySpacingMultiplier;
   final double lowVisibilityRunwayOccupancyMultiplier;
   final double workloadPressureMultiplier;
+  final double? attentionAwarenessSupport;
+  final int? attentionSubtleConflictDelayBudgetSeconds;
   final double densityScale;
   final List<int> speedOptions;
   final List<AircraftSpawnDefinition> aircraft;
@@ -66,6 +68,8 @@ class ScenarioDefinition {
     this.lowVisibilitySpacingMultiplier = 1.0,
     this.lowVisibilityRunwayOccupancyMultiplier = 1.0,
     this.workloadPressureMultiplier = 1.0,
+    this.attentionAwarenessSupport,
+    this.attentionSubtleConflictDelayBudgetSeconds,
     this.densityScale = 1,
     required this.speedOptions,
     required this.aircraft,

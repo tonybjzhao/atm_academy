@@ -1861,12 +1861,19 @@ class ScenarioRuntime {
   }
 
   double _awarenessSupportForDifficulty() {
+    final override = definition.attentionAwarenessSupport;
+    if (override != null) {
+      return override.clamp(0.5, 1.0);
+    }
     return _attentionCalibrationForDifficulty().awarenessSupport;
   }
 
   Duration _subtleConflictDelayBudgetForDifficulty() {
-    final seconds = _attentionCalibrationForDifficulty()
-        .subtleConflictDelayBudgetSeconds;
+    final override = definition.attentionSubtleConflictDelayBudgetSeconds;
+    final seconds = (override ??
+            _attentionCalibrationForDifficulty()
+                .subtleConflictDelayBudgetSeconds)
+        .clamp(6, 30);
     return Duration(seconds: seconds);
   }
 

@@ -57,6 +57,10 @@ class ScenarioLoader {
               1,
       workloadPressureMultiplier:
           (json['workloadPressureMultiplier'] as num?)?.toDouble() ?? 1,
+        attentionAwarenessSupport:
+          (json['attentionAwarenessSupport'] as num?)?.toDouble(),
+        attentionSubtleConflictDelayBudgetSeconds:
+          (json['attentionSubtleConflictDelayBudgetSeconds'] as num?)?.round(),
       densityScale: (json['densityScale'] as num?)?.toDouble() ?? 1,
       speedOptions: _intList(json['speedOptions']),
       aircraft: _list(json['aircraft'])
