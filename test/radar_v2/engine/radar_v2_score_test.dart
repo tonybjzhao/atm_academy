@@ -72,4 +72,26 @@ void main() {
     expect(tracker.snapshot.score, lessThan(100));
     expect(tracker.snapshot.commandCount, 9);
   });
+
+  test('low total score does not classify efficiency as excellent', () {
+    const snapshot = RadarV2ScoreSnapshot(
+      score: 36,
+      commandCount: 4,
+      separationLossCount: 2,
+      lateResolutionCount: 2,
+      spacingStability: 92,
+      throughputEfficiency: 88,
+      weatherManagement: 90,
+      commandEfficiency: 95,
+      anticipationScore: 70,
+      lastDelta: 0,
+      lastReason: null,
+      penalties: [],
+      ignoredCriticalAlertCount: 1,
+      commandBurstCount: 1,
+    );
+
+    expect(snapshot.isEfficiencyExcellent, isFalse);
+    expect(snapshot.isEfficiencyGood, isFalse);
+  });
 }
