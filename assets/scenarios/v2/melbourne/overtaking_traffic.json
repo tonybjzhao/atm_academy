@@ -11,6 +11,8 @@
   "lowVisibilitySpacingMultiplier": 1.25,
   "lowVisibilityRunwayOccupancyMultiplier": 1.35,
   "workloadPressureMultiplier": 1.18,
+  "attentionAwarenessSupport": 0.82,
+  "attentionSubtleConflictDelayBudgetSeconds": 14,
   "runwayOccupancySeconds": 50,
   "trafficDescription": "A faster jet catches a slower aircraft on the same track while another arrival descends toward the flow.",
   "objectives": [

@@ -11,6 +11,8 @@
   "lowVisibilitySpacingMultiplier": 1.0,
   "lowVisibilityRunwayOccupancyMultiplier": 1.0,
   "workloadPressureMultiplier": 1.08,
+  "attentionAwarenessSupport": 0.96,
+  "attentionSubtleConflictDelayBudgetSeconds": 9,
   "runwayOccupancySeconds": 45,
   "trafficDescription": "A heavy-leading arrival is followed by converging same-level traffic near the sector centre, forcing wake-sensitive merge timing.",
   "objectives": [

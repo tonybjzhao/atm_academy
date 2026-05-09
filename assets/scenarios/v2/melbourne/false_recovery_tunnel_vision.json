@@ -11,6 +11,8 @@
   "lowVisibilitySpacingMultiplier": 1.2,
   "lowVisibilityRunwayOccupancyMultiplier": 1.25,
   "workloadPressureMultiplier": 1.30,
+  "attentionAwarenessSupport": 0.66,
+  "attentionSubtleConflictDelayBudgetSeconds": 18,
   "runwayOccupancySeconds": 55,
   "trafficDescription": "A weather deviation creates an early conflict, then traffic appears stable before a second arrival stream compresses near the merge point.",
   "objectives": [

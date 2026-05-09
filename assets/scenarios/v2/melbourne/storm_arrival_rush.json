@@ -11,6 +11,8 @@
   "lowVisibilitySpacingMultiplier": 1.22,
   "lowVisibilityRunwayOccupancyMultiplier": 1.35,
   "workloadPressureMultiplier": 1.32,
+  "attentionAwarenessSupport": 0.62,
+  "attentionSubtleConflictDelayBudgetSeconds": 20,
   "runwayOccupancySeconds": 58,
   "trafficDescription": "A heavy-leading Melbourne arrival chain compresses as storm cells force reroutes, runway pressure builds, and wake-sensitive merge timing collides with attention traps.",
   "objectives": [
