@@ -378,7 +378,9 @@ class PredictiveMentalModelEngine {
     final first = firstDeviationAt.putIfAbsent(type, () => now);
     final exposure = now - first;
     final poorAttention = attentionFocus.scanCoverageQuality < 0.58 ||
-        attentionFocus.scanBlindDuration >= const Duration(seconds: 8);
+      attentionFocus.scanBlindDuration >= const Duration(seconds: 8) ||
+      attentionFocus.predictionClarity < 0.62 ||
+      attentionFocus.intentConfidence < 0.64;
     final threshold = poorAttention
         ? const Duration(seconds: 10)
         : const Duration(seconds: 4);
@@ -435,7 +437,8 @@ class PredictiveMentalModelEngine {
     final load = (mismatchWeight * 0.45 +
             confidenceTrap * 0.22 +
             (1 - attentionFocus.scanCoverageQuality) * 0.18 +
-            (cognitiveLoad.totalLoadScore / 10) * 0.15)
+          attentionFocus.surpriseRisk * 0.15 +
+          (cognitiveLoad.totalLoadScore / 10) * 0.12)
         .clamp(0.0, 1.0);
     return load;
   }

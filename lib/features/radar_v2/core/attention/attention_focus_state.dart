@@ -30,7 +30,10 @@ class IgnoredAlertSnapshot {
 }
 
 class AttentionFocusState {
+  final String? selectedAircraftId;
   final String? currentFocusTarget;
+  final List<String> recentlyInteractedAircraftIds;
+  final List<String> visuallySalientAircraftIds;
   final Duration focusDuration;
   final List<IgnoredAlertSnapshot> ignoredAlerts;
   final int competingHighPriorityAlertCount;
@@ -42,6 +45,9 @@ class AttentionFocusState {
   final Duration averageNeglect;
   final Duration longestNeglect;
   final Duration scanBlindDuration;
+  final double predictionClarity;
+  final double intentConfidence;
+  final double surpriseRisk;
   final int fixationWindowCount;
   final int delayedAwarenessMoments;
   final int missedSecondaryProblems;
@@ -50,7 +56,10 @@ class AttentionFocusState {
   final List<String> reportLines;
 
   const AttentionFocusState({
+    this.selectedAircraftId,
     this.currentFocusTarget,
+    this.recentlyInteractedAircraftIds = const [],
+    this.visuallySalientAircraftIds = const [],
     this.focusDuration = Duration.zero,
     this.ignoredAlerts = const [],
     this.competingHighPriorityAlertCount = 0,
@@ -62,6 +71,9 @@ class AttentionFocusState {
     this.averageNeglect = Duration.zero,
     this.longestNeglect = Duration.zero,
     this.scanBlindDuration = Duration.zero,
+    this.predictionClarity = 1,
+    this.intentConfidence = 1,
+    this.surpriseRisk = 0,
     this.fixationWindowCount = 0,
     this.delayedAwarenessMoments = 0,
     this.missedSecondaryProblems = 0,

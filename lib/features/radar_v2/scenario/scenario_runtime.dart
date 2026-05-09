@@ -258,6 +258,7 @@ class ScenarioRuntime {
       selectedAircraftId: effectiveSelectedAircraft,
       selectedRunwayId: _selectedRunwayIdForAttention,
       selectedAlertId: _selectedAlertIdForAttention,
+      awarenessSupport: _awarenessSupportForDifficulty(),
       cognitiveLoad: cognitiveLoad,
       operationalAlerts: _alertManager.activeAlerts,
     );
@@ -1778,6 +1779,9 @@ class ScenarioRuntime {
       () => snapshot.elapsed,
     );
     final attentionPoor = _lastAttentionFocusState.scanCoverageQuality < 0.58 ||
+      _lastAttentionFocusState.predictionClarity < 0.62 ||
+      _lastAttentionFocusState.intentConfidence < 0.64 ||
+      _lastAttentionFocusState.surpriseRisk >= 0.55 ||
         _lastAttentionFocusState.riskLevel.index >=
             AttentionRiskLevel.tunnelVision.index ||
         _lastAttentionResult.remainingAttentionBudget < 0.42;
@@ -1830,5 +1834,13 @@ class ScenarioRuntime {
   String _alertKeyForPair(String a, String b) {
     final ids = [a, b]..sort();
     return '${ids[0]}:${ids[1]}';
+  }
+
+  double _awarenessSupportForDifficulty() {
+    // Beginner scenarios keep more awareness assistance and slower scan decay.
+    if (definition.difficulty <= 2) return 1.0;
+    if (definition.difficulty == 3) return 0.82;
+    if (definition.difficulty == 4) return 0.68;
+    return 0.55;
   }
 }

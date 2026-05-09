@@ -28,6 +28,7 @@ class AttentionCompetitionEngine {
     String? selectedAircraftId,
     String? selectedRunwayId,
     String? selectedAlertId,
+    double awarenessSupport = 1.0,
     CognitiveLoadState? cognitiveLoad,
     Iterable<OperationalAlert>? operationalAlerts,
   }) {
@@ -77,6 +78,14 @@ class AttentionCompetitionEngine {
     );
     final activeInterrupts =
         _activeInterrupts(snapshot, elapsed: elapsed).toList(growable: false);
+    final recentlyInteracted = _recentlyInteractedAircraft(
+      events: snapshot.events,
+      elapsed: elapsed,
+    );
+    final salientAircraft = _visuallySalientAircraft(
+      snapshot: snapshot,
+      alerts: alerts,
+    );
     final delayedAwarenessMoments = snapshot.events
         .where((event) => event.type == 'attentionDelayedRecognition')
         .length;
@@ -87,6 +96,7 @@ class AttentionCompetitionEngine {
       ignoredAlerts: ignoredAlerts,
       focusDuration: focusDuration,
       activeInterruptCount: activeInterrupts.length,
+      salienceCompetitionCount: salientAircraft.length,
     );
     final neglect = _observeNeglect(
       snapshot: snapshot,
@@ -94,6 +104,14 @@ class AttentionCompetitionEngine {
       focusTarget: focusTarget,
       alerts: alerts,
       attentionBudget: attentionBudget,
+      awarenessSupport: awarenessSupport,
+    );
+    final scanDecay = _scanDecayModel(
+      neglect: neglect,
+      attentionBudget: attentionBudget,
+      load: load,
+      awarenessSupport: awarenessSupport,
+      fixationWindowCount: _fixationWindowStarts.length,
     );
     final scanBlindDuration = _scanBlindDuration(
       elapsed: elapsed,
@@ -128,6 +146,9 @@ class AttentionCompetitionEngine {
 
     return AttentionFocusState(
       currentFocusTarget: focusTarget,
+      selectedAircraftId: selectedAircraftId,
+      recentlyInteractedAircraftIds: recentlyInteracted,
+      visuallySalientAircraftIds: salientAircraft,
       focusDuration: focusDuration,
       ignoredAlerts: ignoredAlerts,
       competingHighPriorityAlertCount: competingHighPriorityAlerts,
@@ -139,6 +160,9 @@ class AttentionCompetitionEngine {
       averageNeglect: neglect.averageNeglect,
       longestNeglect: neglect.longestNeglect,
       scanBlindDuration: scanBlindDuration,
+      predictionClarity: scanDecay.predictionClarity,
+      intentConfidence: scanDecay.intentConfidence,
+      surpriseRisk: scanDecay.surpriseRisk,
       fixationWindowCount: fixationWindows,
       delayedAwarenessMoments: delayedAwarenessMoments,
       missedSecondaryProblems: missedSecondaryProblems,
@@ -148,6 +172,9 @@ class AttentionCompetitionEngine {
         elapsed: elapsed,
         focusTarget: focusTarget,
         focusDuration: focusDuration,
+        selectedAircraftId: selectedAircraftId,
+        recentlyInteracted: recentlyInteracted,
+        salientAircraft: salientAircraft,
         ignoredAlerts: ignoredAlerts,
         competingHighPriorityAlerts: competingHighPriorityAlerts,
         focusedCommands: focusedCommands,
@@ -159,6 +186,7 @@ class AttentionCompetitionEngine {
         delayedAwarenessMoments: delayedAwarenessMoments,
         activeInterrupts: activeInterrupts,
         missedSecondaryProblems: missedSecondaryProblems,
+        scanDecay: scanDecay,
       ),
     );
   }
@@ -181,6 +209,7 @@ class AttentionCompetitionEngine {
     required List<IgnoredAlertSnapshot> ignoredAlerts,
     required Duration focusDuration,
     required int activeInterruptCount,
+    required int salienceCompetitionCount,
   }) {
     final loadWeight = (load.totalLoadScore / 10).clamp(0.0, 1.0) * 0.32;
     final competitionWeight =
@@ -193,8 +222,15 @@ class AttentionCompetitionEngine {
         (focusDuration.inSeconds / 45).clamp(0.0, 1.0) * 0.18;
     final interruptWeight =
         (activeInterruptCount / 3).clamp(0.0, 1.0) * 0.12;
+    final salienceWeight =
+      (salienceCompetitionCount / 5).clamp(0.0, 1.0) * 0.08;
     final consumed =
-        (loadWeight + competitionWeight + ignoredWeight + fixationWeight + interruptWeight)
+      (loadWeight +
+          competitionWeight +
+          ignoredWeight +
+          fixationWeight +
+          interruptWeight +
+          salienceWeight)
             .clamp(0.0, 1.0);
     return (1.0 - consumed).clamp(0.0, 1.0);
   }
@@ -205,6 +241,7 @@ class AttentionCompetitionEngine {
     required String? focusTarget,
     required Iterable<OperationalAlert> alerts,
     required double attentionBudget,
+    required double awarenessSupport,
   }) {
     final activeIds = snapshot.aircraft
         .where((aircraft) => aircraft.active)
@@ -246,8 +283,9 @@ class AttentionCompetitionEngine {
       if (neglect > longest) longest = neglect;
     }
 
+    final thresholdBias = ((awarenessSupport - 0.5) * 10).clamp(0.0, 5.0);
     final dynamicThresholdSeconds =
-        (30 - (1.0 - attentionBudget) * 16).clamp(14.0, 30.0);
+      (30 - (1.0 - attentionBudget) * 16 + thresholdBias).clamp(14.0, 36.0);
     final neglected = neglectByAircraft.entries
         .where((entry) => entry.value.inSeconds >= dynamicThresholdSeconds)
         .map((entry) => entry.key)
@@ -271,6 +309,87 @@ class AttentionCompetitionEngine {
       scanCoverageQuality: coverage,
       activeAircraftCount: activeIds.length,
       scannedAircraftCount: scannedIds.length,
+    );
+  }
+
+  List<String> _recentlyInteractedAircraft({
+    required List<SimulationEvent> events,
+    required Duration elapsed,
+  }) {
+    final ids = <String>[];
+    for (final event in events.reversed) {
+      if (elapsed - event.elapsed > const Duration(seconds: 45)) break;
+      if (event.type != 'commandIssued' || event.aircraftId == null) continue;
+      if (!ids.contains(event.aircraftId)) ids.add(event.aircraftId!);
+      if (ids.length >= 5) break;
+    }
+    return List.unmodifiable(ids);
+  }
+
+  List<String> _visuallySalientAircraft({
+    required SimulationSnapshot snapshot,
+    required Iterable<OperationalAlert> alerts,
+  }) {
+    final salient = <String>{};
+    for (final alert in alerts) {
+      salient.addAll(alert.relatedAircraftIds);
+    }
+    for (final separation in snapshot.separation) {
+      if (!separation.isLossOfSeparation && !separation.isPredictedConflict) {
+        continue;
+      }
+      salient.add(separation.aircraftAId);
+      salient.add(separation.aircraftBId);
+    }
+    for (final aircraft in snapshot.aircraft.where((a) => a.active)) {
+      for (final zone in snapshot.weatherZones) {
+        final dx = aircraft.xNm - zone.xNm;
+        final dy = aircraft.yNm - zone.yNm;
+        final threshold = zone.radiusNm * 1.25;
+        if (dx * dx + dy * dy <= threshold * threshold) {
+          salient.add(aircraft.id);
+          break;
+        }
+      }
+    }
+    final sorted = salient.toList(growable: false)..sort();
+    return List.unmodifiable(sorted);
+  }
+
+  _ScanDecayMetrics _scanDecayModel({
+    required _NeglectSummary neglect,
+    required double attentionBudget,
+    required CognitiveLoadState load,
+    required double awarenessSupport,
+    required int fixationWindowCount,
+  }) {
+    final neglectPressure =
+        (neglect.averageNeglect.inSeconds / 45).clamp(0.0, 1.0) * 0.45;
+    final longNeglectPressure =
+        (neglect.longestNeglect.inSeconds / 75).clamp(0.0, 1.0) * 0.20;
+    final budgetPressure = (1 - attentionBudget).clamp(0.0, 1.0) * 0.20;
+    final loadPressure = (load.totalLoadScore / 10).clamp(0.0, 1.0) * 0.15;
+    final fixationPressure = (fixationWindowCount / 3).clamp(0.0, 1.0) * 0.10;
+    final supportShield = (awarenessSupport.clamp(0.5, 1.0) - 0.5) * 0.35;
+
+    final decay = (neglectPressure +
+            longNeglectPressure +
+            budgetPressure +
+            loadPressure +
+            fixationPressure -
+            supportShield)
+        .clamp(0.0, 1.0);
+
+    final predictionClarity = (1.0 - decay).clamp(0.0, 1.0);
+    final intentConfidence = (1.0 - (decay * 0.9)).clamp(0.0, 1.0);
+    final surpriseRisk =
+        (decay * 0.7 + (1.0 - attentionBudget) * 0.2 + fixationPressure * 0.1)
+            .clamp(0.0, 1.0);
+
+    return _ScanDecayMetrics(
+      predictionClarity: predictionClarity,
+      intentConfidence: intentConfidence,
+      surpriseRisk: surpriseRisk,
     );
   }
 
@@ -486,6 +605,9 @@ class AttentionCompetitionEngine {
     required Duration elapsed,
     required String? focusTarget,
     required Duration focusDuration,
+    required String? selectedAircraftId,
+    required List<String> recentlyInteracted,
+    required List<String> salientAircraft,
     required List<IgnoredAlertSnapshot> ignoredAlerts,
     required int competingHighPriorityAlerts,
     required int focusedCommands,
@@ -497,6 +619,7 @@ class AttentionCompetitionEngine {
     required int delayedAwarenessMoments,
     required List<String> activeInterrupts,
     required int missedSecondaryProblems,
+    required _ScanDecayMetrics scanDecay,
   }) {
     final lines = <String>[];
     final topIgnored = ignoredAlerts.isEmpty ? null : ignoredAlerts.first;
@@ -504,6 +627,15 @@ class AttentionCompetitionEngine {
       lines.add(
         'Attention budget reduced to ${(attentionBudget * 100).round()}% under current load.',
       );
+    }
+    if (selectedAircraftId != null) {
+      lines.add('Selected aircraft focus: $selectedAircraftId.');
+    }
+    if (recentlyInteracted.isNotEmpty) {
+      lines.add('Recent interaction set: ${recentlyInteracted.take(3).join(', ')}.');
+    }
+    if (salientAircraft.length >= 3) {
+      lines.add('Salience competition across ${salientAircraft.length} aircraft.');
     }
     if (neglect.neglectedAircraftIds.isNotEmpty) {
       final examples = neglect.neglectedAircraftIds.take(2).join(', ');
@@ -516,6 +648,15 @@ class AttentionCompetitionEngine {
       lines.add(
         'Scan blind period lasted ${scanBlindDuration.inSeconds}s.',
       );
+    }
+    if (scanDecay.predictionClarity < 0.72 || scanDecay.intentConfidence < 0.74) {
+      lines.add(
+        'Predictive clarity ${_pct(scanDecay.predictionClarity)} and intent confidence '
+        '${_pct(scanDecay.intentConfidence)} reduced by scan decay.',
+      );
+    }
+    if (scanDecay.surpriseRisk >= 0.5) {
+      lines.add('Surprise risk elevated to ${_pct(scanDecay.surpriseRisk)}.');
     }
     if (topIgnored != null &&
         focusTarget != null &&
@@ -557,6 +698,8 @@ class AttentionCompetitionEngine {
     return List<String>.unmodifiable(lines.take(5));
   }
 
+  String _pct(double value) => '${(value * 100).round()}%';
+
   bool _isHighPriority(OperationalAlert alert) {
     return alert.priority == AlertPriority.high ||
         alert.priority == AlertPriority.critical;
@@ -595,6 +738,7 @@ class AttentionReplayAnalytics {
     var peakBlind = Duration.zero;
     var delayedAwareness = 0;
     var missedSecondary = 0;
+    var lowestScanCoverage = 1.0;
 
     for (final state in states) {
       overloadDuration += state.overloadDuration > Duration.zero
@@ -628,6 +772,7 @@ class AttentionReplayAnalytics {
       }
       delayedAwareness = math.max(delayedAwareness, state.delayedAwarenessMoments);
       missedSecondary = math.max(missedSecondary, state.missedSecondaryProblems);
+      lowestScanCoverage = math.min(lowestScanCoverage, state.scanCoverageQuality);
     }
 
     final lines = <String>[];
@@ -656,6 +801,12 @@ class AttentionReplayAnalytics {
     if (peakBlind >= const Duration(seconds: 12)) {
       lines.add('Scan blind period peaked at ${peakBlind.inSeconds}s.');
     }
+    if (lowestScanCoverage <= 0.55) {
+      lines.add(
+        'Scan imbalance observed with minimum coverage '
+        '${(lowestScanCoverage * 100).round()}%.',
+      );
+    }
     if (delayedAwareness > 0) {
       lines.add('Delayed awareness moments: $delayedAwareness.');
     }
@@ -674,6 +825,18 @@ class AttentionReplayAnalytics {
       reportLines: List.unmodifiable(lines),
     );
   }
+}
+
+class _ScanDecayMetrics {
+  final double predictionClarity;
+  final double intentConfidence;
+  final double surpriseRisk;
+
+  const _ScanDecayMetrics({
+    required this.predictionClarity,
+    required this.intentConfidence,
+    required this.surpriseRisk,
+  });
 }
 
 class AttentionReplaySummary {

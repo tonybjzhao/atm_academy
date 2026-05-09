@@ -5,8 +5,11 @@ import 'package:atm_flutter/features/radar_v2/core/attention/attention_focus_sta
 import 'package:atm_flutter/features/radar_v2/core/attention/ignored_alert_tracker.dart';
 import 'package:atm_flutter/features/radar_v2/core/cognitive_load/cognitive_load_level.dart';
 import 'package:atm_flutter/features/radar_v2/core/cognitive_load/cognitive_load_state.dart';
+import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
 import 'package:atm_flutter/features/radar_v2/models/simulation_event.dart';
+import 'package:atm_flutter/features/radar_v2/models/separation_result.dart';
 import 'package:atm_flutter/features/radar_v2/models/simulation_snapshot.dart';
+import 'package:atm_flutter/features/radar_v2/models/weather_zone.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 OperationalAlert _alert(
@@ -29,6 +32,9 @@ OperationalAlert _alert(
 
 SimulationSnapshot _snapshot({
   Duration elapsed = Duration.zero,
+  List<AircraftState> aircraft = const [],
+  List<SeparationResult> separation = const [],
+  List<WeatherZone> weatherZones = const [],
   List<OperationalAlert> alerts = const [],
   List<SimulationEvent> events = const [],
   CognitiveLoadLevel level = CognitiveLoadLevel.calm,
@@ -36,8 +42,9 @@ SimulationSnapshot _snapshot({
   return SimulationSnapshot(
     tick: elapsed.inSeconds,
     elapsed: elapsed,
-    aircraft: const [],
-    separation: const [],
+    aircraft: aircraft,
+    separation: separation,
+    weatherZones: weatherZones,
     events: events,
     operationalAlerts: alerts,
     cognitiveLoad: CognitiveLoadState(
@@ -51,6 +58,18 @@ SimulationSnapshot _snapshot({
       activeStressors: const [],
       recentSpikes: const [],
     ),
+  );
+}
+
+AircraftState _aircraft(String id, {double x = 0, double y = 0}) {
+  return AircraftState(
+    id: id,
+    callsign: id.toUpperCase(),
+    xNm: x,
+    yNm: y,
+    altitudeFt: 9000,
+    headingDeg: 90,
+    groundSpeedKt: 240,
   );
 }
 
@@ -79,6 +98,36 @@ void main() {
   });
 
   group('AttentionCompetitionEngine', () {
+    test('tracks selected and recently interacted aircraft', () {
+      final engine = AttentionCompetitionEngine();
+      final events = [
+        SimulationEvent(
+          elapsed: const Duration(seconds: 5),
+          type: 'commandIssued',
+          label: 'Issued heading',
+          aircraftId: 'b',
+        ),
+        SimulationEvent(
+          elapsed: const Duration(seconds: 15),
+          type: 'commandIssued',
+          label: 'Issued speed',
+          aircraftId: 'c',
+        ),
+      ];
+
+      final state = engine.evaluate(
+        snapshot: _snapshot(
+          elapsed: const Duration(seconds: 30),
+          aircraft: [_aircraft('a'), _aircraft('b'), _aircraft('c')],
+          events: events,
+        ),
+        selectedAircraftId: 'a',
+      );
+
+      expect(state.selectedAircraftId, 'a');
+      expect(state.recentlyInteractedAircraftIds, containsAll(['b', 'c']));
+    });
+
     test('focus target changes when selected aircraft changes', () {
       final engine = AttentionCompetitionEngine();
 
@@ -164,6 +213,58 @@ void main() {
       expect(state.recentFocusedCommandCount, 4);
       expect(state.riskLevel, AttentionRiskLevel.tunnelVision);
     });
+
+    test('neglected aircraft degrade prediction clarity and confidence', () {
+      final engine = AttentionCompetitionEngine();
+      final traffic = [_aircraft('a'), _aircraft('b', x: 5), _aircraft('c', y: 6)];
+
+      engine.evaluate(
+        snapshot: _snapshot(
+          elapsed: Duration.zero,
+          aircraft: traffic,
+        ),
+        selectedAircraftId: 'a',
+      );
+      final state = engine.evaluate(
+        snapshot: _snapshot(
+          elapsed: const Duration(seconds: 42),
+          aircraft: traffic,
+          level: CognitiveLoadLevel.overloaded,
+        ),
+        selectedAircraftId: 'a',
+      );
+
+      expect(state.neglectedAircraftIds, containsAll(['b', 'c']));
+      expect(state.predictionClarity, lessThan(0.75));
+      expect(state.intentConfidence, lessThan(0.78));
+      expect(state.surpriseRisk, greaterThan(0.35));
+    });
+
+    test('high salience competition can trigger tunnel-vision risk', () {
+      final engine = AttentionCompetitionEngine();
+      final alerts = [
+        _alert('crit', priority: AlertPriority.critical, aircraft: const ['b']),
+        _alert('high2', priority: AlertPriority.high, aircraft: const ['c']),
+      ];
+      final state = engine.evaluate(
+        snapshot: _snapshot(
+          elapsed: const Duration(seconds: 40),
+          aircraft: [_aircraft('a'), _aircraft('b'), _aircraft('c')],
+          alerts: alerts,
+          weatherZones: const [
+            WeatherZone(id: 'w1', xNm: 0, yNm: 0, radiusNm: 10, severity: 3),
+          ],
+          level: CognitiveLoadLevel.overloaded,
+        ),
+        selectedAircraftId: 'a',
+      );
+
+      expect(state.visuallySalientAircraftIds.length, greaterThanOrEqualTo(3));
+      expect(
+        state.riskLevel.index,
+        greaterThanOrEqualTo(AttentionRiskLevel.fixationRisk.index),
+      );
+    });
   });
 
   group('AttentionReplayAnalytics', () {
@@ -191,6 +292,22 @@ void main() {
       expect(report.longestIgnoredAlert?.alertId, 'crit');
       expect(report.tunnelVisionEpisodes, isNotEmpty);
       expect(report.reportLines.join(' '), contains('Tunnel vision detected'));
+    });
+
+    test('reports scan imbalance and late rediscovery cues', () {
+      const degraded = AttentionFocusState(
+        scanCoverageQuality: 0.42,
+        longestNeglect: Duration(seconds: 37),
+        delayedAwarenessMoments: 2,
+      );
+
+      final report = const AttentionReplayAnalytics(states: [degraded]).generate();
+
+      expect(
+        report.reportLines.join(' '),
+        contains('Scan imbalance observed'),
+      );
+      expect(report.reportLines.join(' '), contains('Delayed awareness moments'));
     });
   });
 }
