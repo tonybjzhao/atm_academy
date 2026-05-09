@@ -1718,6 +1718,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get scenarioBonuses => 'Bonus';
 
   @override
+  String get scorePenaltyLossOfSeparation => 'Perte de séparation';
+
+  @override
+  String get scorePenaltyWarningZone => 'Zone d\'avertissement atteinte';
+
+  @override
+  String get scorePenaltyNoCommand => 'Aucune instruction émise';
+
+  @override
+  String get scorePenaltyLateCommand => 'Instruction retardée';
+
+  @override
+  String get scorePenaltyWrongAircraft => 'Mauvais aéronef sélectionné';
+
+  @override
+  String get scorePenaltyIneffective => 'Instruction inefficace';
+
+  @override
+  String get scorePenaltyUnnecessary => 'Instructions inutiles';
+
+  @override
+  String get scoreBonusSeparationMaintained => 'Séparation maintenue';
+
+  @override
+  String get scoreBonusCorrectAircraft => 'Aéronef correctement sélectionné';
+
+  @override
+  String get scoreBonusEarlyAction => 'Action efficace précoce';
+
+  @override
   String get scenarioLOSResult => 'PERTE DE SÉPARATION';
 
   @override

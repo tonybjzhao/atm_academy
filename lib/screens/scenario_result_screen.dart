@@ -42,6 +42,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   // ── Replay state ───────────────────────────────────────────────────────────
   late final ValueNotifier<double> _progress; // 0→1
   late final AnimationController _replayCtr;
+  late DetailedScenarioResult _localizedResult;
 
   bool _playing = false;
   int _speedMultiplier = 1;
@@ -53,12 +54,17 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   @override
   void initState() {
     super.initState();
+    
+    // Localize penalty and bonus titles based on current locale
+    final l10n = AppLocalizations.of(context);
+    _localizedResult = l10n != null ? widget.result.localized(l10n) : widget.result;
+    
     _progress = ValueNotifier(0.0);
     _replayCtr = AnimationController(
       vsync: this,
       duration: Duration(
         milliseconds:
-            (widget.result.totalDurationSeconds * 1000 / _speedMultiplier)
+            (_localizedResult.totalDurationSeconds * 1000 / _speedMultiplier)
                 .round(),
       ),
     )
@@ -84,7 +90,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   void _play() {
     _replayCtr.duration = Duration(
       milliseconds:
-          (widget.result.totalDurationSeconds * 1000 / _speedMultiplier)
+          (_localizedResult.totalDurationSeconds * 1000 / _speedMultiplier)
               .round(),
     );
     _replayCtr.forward(from: _replayCtr.value);
@@ -127,7 +133,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final result = widget.result;
+    final result = _localizedResult;
 
     return Scaffold(
       backgroundColor: AppTheme.background,

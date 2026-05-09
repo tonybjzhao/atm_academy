@@ -1541,6 +1541,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scenarioBonuses => '加分项';
 
   @override
+  String get scorePenaltyLossOfSeparation => '间隔丢失';
+
+  @override
+  String get scorePenaltyWarningZone => '进入警告区域';
+
+  @override
+  String get scorePenaltyNoCommand => '未发出指令';
+
+  @override
+  String get scorePenaltyLateCommand => '指令延迟';
+
+  @override
+  String get scorePenaltyWrongAircraft => '选错航空器';
+
+  @override
+  String get scorePenaltyIneffective => '无效指令';
+
+  @override
+  String get scorePenaltyUnnecessary => '多余指令';
+
+  @override
+  String get scoreBonusSeparationMaintained => '保持间隔';
+
+  @override
+  String get scoreBonusCorrectAircraft => '航空器选择正确';
+
+  @override
+  String get scoreBonusEarlyAction => '及时有效行动';
+
+  @override
   String get scenarioLOSResult => '间隔丢失';
 
   @override

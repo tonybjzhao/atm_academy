@@ -1,6 +1,8 @@
 import 'projected_outcome.dart';
 import 'replay_event.dart';
 import 'score_penalty.dart';
+import '../l10n/app_localizations.dart';
+import '../services/score_localizer.dart';
 
 enum ScenarioGrade { excellent, good, needsPractice, reviewRequired }
 
@@ -94,4 +96,32 @@ class DetailedScenarioResult {
 
   double get totalDurationSeconds =>
       replayFrames.isEmpty ? 6.0 : replayFrames.last.timestampSeconds;
+}
+
+/// Extension to localize penalty and bonus titles in a DetailedScenarioResult.
+extension DetailedScenarioResultLocalization on DetailedScenarioResult {
+  /// Return a copy of this result with localized penalty and bonus titles.
+  DetailedScenarioResult localized(AppLocalizations l10n) {
+    final localizer = ScoreLocalizer(l10n);
+    return DetailedScenarioResult(
+      scenarioId: scenarioId,
+      scenarioTitle: scenarioTitle,
+      finalScore: finalScore,
+      maxScore: maxScore,
+      grade: grade,
+      startedAt: startedAt,
+      completedAt: completedAt,
+      replayEvents: replayEvents,
+      replayFrames: replayFrames,
+      userActions: userActions,
+      penalties: localizer.localizePenalties(penalties),
+      bonuses: localizer.localizeBonuses(bonuses),
+      summaryText: summaryText,
+      improvementTips: improvementTips,
+      projectedOutcomes: projectedOutcomes,
+      idealFrames: idealFrames,
+      hadLOS: hadLOS,
+      minHorizDistPx: minHorizDistPx,
+    );
+  }
 }

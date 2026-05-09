@@ -3088,6 +3088,66 @@ abstract class AppLocalizations {
   /// **'Bonuses'**
   String get scenarioBonuses;
 
+  /// No description provided for @scorePenaltyLossOfSeparation.
+  ///
+  /// In en, this message translates to:
+  /// **'Loss of Separation'**
+  String get scorePenaltyLossOfSeparation;
+
+  /// No description provided for @scorePenaltyWarningZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning Zone Reached'**
+  String get scorePenaltyWarningZone;
+
+  /// No description provided for @scorePenaltyNoCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'No Command Issued'**
+  String get scorePenaltyNoCommand;
+
+  /// No description provided for @scorePenaltyLateCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Late Command'**
+  String get scorePenaltyLateCommand;
+
+  /// No description provided for @scorePenaltyWrongAircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong Aircraft Selected'**
+  String get scorePenaltyWrongAircraft;
+
+  /// No description provided for @scorePenaltyIneffective.
+  ///
+  /// In en, this message translates to:
+  /// **'Ineffective Command'**
+  String get scorePenaltyIneffective;
+
+  /// No description provided for @scorePenaltyUnnecessary.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnecessary Commands'**
+  String get scorePenaltyUnnecessary;
+
+  /// No description provided for @scoreBonusSeparationMaintained.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation Maintained'**
+  String get scoreBonusSeparationMaintained;
+
+  /// No description provided for @scoreBonusCorrectAircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct Aircraft Selected'**
+  String get scoreBonusCorrectAircraft;
+
+  /// No description provided for @scoreBonusEarlyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Early Effective Action'**
+  String get scoreBonusEarlyAction;
+
   /// No description provided for @scenarioLOSResult.
   ///
   /// In en, this message translates to:
