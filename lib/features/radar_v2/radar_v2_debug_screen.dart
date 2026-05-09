@@ -106,6 +106,21 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   Future<void> _initializeAudio() async {
     try {
       await _audioController.initialize();
+      await _cuePlayer.setAudioContext(
+        AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: {},
+          ),
+          android: AudioContextAndroid(
+            contentType: AndroidContentType.sonification,
+            usageType: AndroidUsageType.media,
+            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+            isSpeakerphoneOn: true,
+          ),
+        ),
+      );
+      await _cuePlayer.setVolume(1.0);
       await _cuePlayer.setReleaseMode(ReleaseMode.stop);
       await _cuePlayer.setPlayerMode(PlayerMode.lowLatency);
     } catch (e) {
@@ -645,8 +660,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   }
 
   void _playCue(String assetPath) {
+    unawaited(_playCueInternal(assetPath));
+  }
+
+  Future<void> _playCueInternal(String assetPath) async {
     try {
-      _cuePlayer.play(AssetSource(assetPath));
+      await _cuePlayer.play(AssetSource(assetPath), volume: 1.0);
     } catch (e) {
       assert(() {
         print('RadarV2DebugScreen: Failed to play $assetPath: $e');

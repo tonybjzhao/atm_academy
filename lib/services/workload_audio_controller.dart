@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 
 import '../features/radar_v2/core/audio/workload_audio_state.dart';
@@ -29,6 +31,21 @@ class WorkloadAudioController {
   Future<void> initialize() async {
     if (_initialized) return;
     try {
+      await _player.setAudioContext(
+        AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: {},
+          ),
+          android: AudioContextAndroid(
+            contentType: AndroidContentType.sonification,
+            usageType: AndroidUsageType.media,
+            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+            isSpeakerphoneOn: true,
+          ),
+        ),
+      );
+      await _player.setVolume(1.0);
       await _player.setReleaseMode(ReleaseMode.stop);
       await _player.setPlayerMode(PlayerMode.lowLatency);
       _initialized = true;
@@ -81,8 +98,12 @@ class WorkloadAudioController {
 
   void _playAsset(String assetPath) {
     if (!_initialized) return;
+    unawaited(_playAssetInternal(assetPath));
+  }
+
+  Future<void> _playAssetInternal(String assetPath) async {
     try {
-      _player.play(AssetSource(assetPath));
+      await _player.play(AssetSource(assetPath), volume: 1.0);
     } catch (e) {
       assert(() {
         print('WorkloadAudioController: Failed to play $assetPath: $e');
