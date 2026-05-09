@@ -140,6 +140,109 @@ void main() {
       );
     });
 
+    test('beginner crossing conflict remains playable with aircraft realism',
+        () {
+      const loader = ScenarioLoader();
+      final scenario = RadarTrainingCatalog.byId('beginner_crossing_conflict');
+      final definition =
+          loader.parse(File(scenario.assetPath).readAsStringSync());
+      final runtime = ScenarioRuntime(definition: definition);
+
+      SimulationSnapshot snapshot = runtime.tick();
+      for (var i = 0; i < 90; i++) {
+        snapshot = runtime.tick();
+      }
+      final result = RadarTrainingResultBuilder.build(
+        scenarioTitle: scenario.title,
+        scenarioId: scenario.id,
+        score: const RadarV2ScoreSnapshot(
+          score: 80,
+          commandCount: 4,
+          separationLossCount: 0,
+          lateResolutionCount: 0,
+          spacingStability: 82,
+          throughputEfficiency: 78,
+          weatherManagement: 90,
+          commandEfficiency: 84,
+          anticipationScore: 70,
+          lastDelta: 0,
+          lastReason: null,
+          penalties: [],
+        ),
+        snapshot: snapshot,
+      );
+
+      expect(snapshot.aircraft, isNotEmpty);
+      expect(result.replayExplanation, isNotEmpty);
+      expect(
+          result.debriefSalience.primaryInsights.length, lessThanOrEqualTo(3));
+    });
+
+    test('false recovery tunnel vision remains playable with aircraft realism',
+        () {
+      const loader = ScenarioLoader();
+      final scenario =
+          RadarTrainingCatalog.byId('false_recovery_tunnel_vision');
+      final definition =
+          loader.parse(File(scenario.assetPath).readAsStringSync());
+      final runtime = ScenarioRuntime(definition: definition);
+
+      SimulationSnapshot snapshot = runtime.tick();
+      for (var i = 0; i < 150; i++) {
+        snapshot = runtime.tick();
+      }
+      final result = RadarTrainingResultBuilder.build(
+        scenarioTitle: scenario.title,
+        scenarioId: scenario.id,
+        score: const RadarV2ScoreSnapshot(
+          score: 74,
+          commandCount: 6,
+          separationLossCount: 0,
+          lateResolutionCount: 1,
+          spacingStability: 70,
+          throughputEfficiency: 72,
+          weatherManagement: 68,
+          commandEfficiency: 76,
+          anticipationScore: 66,
+          lastDelta: -5,
+          lastReason: 'Late resolution',
+          penalties: ['Late resolution'],
+          totalOverloadDuration: Duration(seconds: 12),
+        ),
+        snapshot: snapshot,
+      );
+
+      expect(snapshot.aircraft, isNotEmpty);
+      expect(result.replayExplanation, isNotEmpty);
+      expect(result.timelineSummary, isNotEmpty);
+    });
+
+    test('Storm Arrival Rush produces meaningful operational replay lines', () {
+      const loader = ScenarioLoader();
+      final scenario =
+          RadarTrainingCatalog.byId('melbourne_storm_arrival_rush');
+      final definition =
+          loader.parse(File(scenario.assetPath).readAsStringSync());
+      final runtime = ScenarioRuntime(definition: definition);
+      SimulationSnapshot snapshot = runtime.tick();
+      for (var i = 0; i < 260; i++) {
+        snapshot = runtime.tick();
+      }
+
+      final explanation =
+          RadarTrainingResultBuilder.buildReplayExplanation(snapshot).join(' ');
+
+      expect(
+        explanation,
+        anyOf(
+          contains('Weather compression'),
+          contains('Late speed control'),
+          contains('Runway occupancy extended'),
+          contains('Pilot response delay'),
+        ),
+      );
+    });
+
     test('result summary is generated from final score and snapshot', () {
       final result = RadarTrainingResultBuilder.build(
         scenarioTitle: 'Test Scenario',

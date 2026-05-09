@@ -426,6 +426,92 @@ void main() {
     expect(first.groundSpeedKt, inInclusiveRange(253, 267));
   });
 
+  test('repeated weather ticks do not create unbounded speed drift', () {
+    final engine = SimulationEngine(
+      aircraft: [
+        const AircraftState(
+          id: 'wx',
+          callsign: 'VOZ841',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 90,
+          groundSpeedKt: 260,
+        ),
+      ],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 14, severity: 3),
+      ],
+    );
+
+    final aircraft = engine.tick(steps: 90).aircraftById('wx')!;
+
+    expect(aircraft.groundSpeedKt, closeTo(260, 0.0001));
+  });
+
+  test('pilot acknowledgement delay remains within expected bounds', () {
+    final engine = SimulationEngine(
+      aircraft: [
+        const AircraftState(
+          id: 'a',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 240,
+          performanceType: AircraftPerformanceType.jet,
+        ),
+      ],
+    );
+
+    engine.applyCommand(
+      const AssignHeading(
+        aircraftId: 'a',
+        issuedAt: Duration.zero,
+        headingDeg: 90,
+      ),
+    );
+    final snapshot = engine.tick(steps: 8);
+    final ack = snapshot.events.singleWhere(
+      (event) => event.type == 'commandAcknowledged',
+    );
+
+    expect(ack.elapsed, greaterThanOrEqualTo(const Duration(seconds: 3)));
+    expect(ack.elapsed, lessThanOrEqualTo(const Duration(seconds: 5)));
+  });
+
+  test('weather behavior event is sustained and does not spam', () {
+    final engine = SimulationEngine(
+      aircraft: [
+        const AircraftState(
+          id: 'wx',
+          callsign: 'VOZ841',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 90,
+          groundSpeedKt: 260,
+        ),
+      ],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 14, severity: 3),
+      ],
+    );
+
+    final early = engine.tick(steps: 4);
+    expect(
+      early.events.where((event) => event.type == 'weatherInteraction'),
+      isEmpty,
+    );
+
+    final later = engine.tick(steps: 20);
+    expect(
+      later.events.where((event) => event.type == 'weatherInteraction'),
+      hasLength(1),
+    );
+  });
+
   test('approach capture stabilizes speed and altitude near final', () {
     final engine = SimulationEngine(
       waypoints: const {

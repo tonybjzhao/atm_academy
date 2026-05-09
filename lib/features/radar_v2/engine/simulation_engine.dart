@@ -39,6 +39,7 @@ class SimulationEngine {
   final List<_PendingCommand> _pendingCommands = <_PendingCommand>[];
   final List<SimulationEvent> _events = <SimulationEvent>[];
   final Set<String> _recordedBehaviorEvents = <String>{};
+  final Map<String, int> _weatherInfluenceTicks = <String, int>{};
   int _dynamicControllerLoad;
   double _sectorPressureIndex = 0;
   int _tick;
@@ -447,7 +448,9 @@ class SimulationEngine {
       speedTarget +=
           (_noise01('${aircraft.id}:approach:${_elapsed.inSeconds}') - 0.5) *
               2.8;
-      if (_weatherInfluenceFor(aircraft) > 0.2) {
+      if (_weatherInfluenceTicks[aircraft.id] != null &&
+          _weatherInfluenceTicks[aircraft.id]! >= 6 &&
+          _weatherInfluenceFor(aircraft) > 0.2) {
         speedTarget +=
             (_noise01('${aircraft.id}:merge:${_elapsed.inSeconds ~/ 3}') -
                     0.5) *
@@ -745,14 +748,19 @@ class SimulationEngine {
 
   _EnvironmentEffect _environmentEffectFor(AircraftState aircraft) {
     final influence = _weatherInfluenceFor(aircraft);
-    if (influence <= 0) return const _EnvironmentEffect.none();
+    if (influence <= 0) {
+      _weatherInfluenceTicks.remove(aircraft.id);
+      return const _EnvironmentEffect.none();
+    }
+    _weatherInfluenceTicks[aircraft.id] =
+        (_weatherInfluenceTicks[aircraft.id] ?? 0) + 1;
     final phase = _elapsed.inSeconds ~/ 2;
     final wobbleNoise = _noise01('${aircraft.id}:wx_track:$phase') - 0.5;
     final speedNoise = _noise01('${aircraft.id}:wx_speed:$phase') - 0.5;
     final pressure = (0.65 + _sectorPressureIndex * 0.16).clamp(0.65, 1.35);
     final wobble = wobbleNoise * 2 * influence * pressure * 1.4;
     final speed = speedNoise * 2 * influence * pressure * 4.5;
-    if (influence > 0.28) {
+    if (influence > 0.28 && _weatherInfluenceTicks[aircraft.id]! >= 6) {
       _recordBehaviorEvent(
         key: 'weather_wobble:${aircraft.id}',
         type: 'weatherInteraction',

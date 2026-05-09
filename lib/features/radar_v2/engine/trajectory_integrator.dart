@@ -66,10 +66,10 @@ class TrajectoryIntegrator {
     );
 
     final movementHeading = _normalizeHeading(turn.headingDeg + trackWobbleDeg);
-    final reportedSpeed =
+    final movementSpeed =
         (speed.speedKt + groundSpeedVariationKt).clamp(80.0, 520.0);
     final headingRad = movementHeading * math.pi / 180;
-    final distanceNm = reportedSpeed * seconds / 3600;
+    final distanceNm = movementSpeed * seconds / 3600;
     final dx = math.sin(headingRad) * distanceNm;
     final dy = math.cos(headingRad) * distanceNm;
 
@@ -78,7 +78,7 @@ class TrajectoryIntegrator {
       yNm: aircraft.yNm + dy,
       altitudeFt: nextAltitude.$1,
       headingDeg: _normalizeHeading(turn.headingDeg),
-      groundSpeedKt: reportedSpeed,
+      groundSpeedKt: speed.speedKt,
       verticalSpeedFpm: nextAltitude.$2,
       turnRateDegPerSecond: turn.turnRateDegPerSecond,
       speedTrendKtPerSecond: speed.speedTrendKtPerSecond,
