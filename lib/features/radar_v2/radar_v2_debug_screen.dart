@@ -780,6 +780,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'radar-audio-self-test',
+        onPressed: () => _runAudioSelfTest(l10n),
+        icon: const Icon(Icons.hearing),
+        label: Text(l10n.radarTrainingAudioSelfTestTooltip),
+      ),
       body: Column(
         children: [
           Expanded(
