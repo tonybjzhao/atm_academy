@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../core/models/scenario.dart';
 import '../core/models/scenario_result.dart';
 import '../core/theme/app_theme.dart';
@@ -264,9 +263,9 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   }
 
   void _playImmediateCommandCue() {
-    // Immediate fallback beep so command actions are always audible on Android.
-    SystemSound.play(SystemSoundType.alert);
-    // Also queue the regular warning cue path for consistent app audio behavior.
+    // Immediate cue bypasses queue/TTS so command taps are always audible.
+    _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
+    // Keep queue path too for continuity in replay/cadence.
     _radioAudio.enqueueWarning(
       RadioWarningType.runwayPressure,
       interrupt: false,
@@ -278,12 +277,8 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
 
   Future<void> _runAudioSelfTest() async {
     final l10n = AppLocalizations.of(context)!;
-    var systemOk = true;
-    try {
-      SystemSound.play(SystemSoundType.alert);
-    } catch (_) {
-      systemOk = false;
-    }
+    final immediateOk =
+        await _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
     await _radioAudio.enqueueWarning(
       RadioWarningType.runwayPressure,
       interrupt: true,
@@ -294,14 +289,14 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(systemOk
+          content: Text(immediateOk
               ? l10n.radarTrainingAudioSelfTestStarted
               : l10n.radarTrainingAudioSelfTestFailed),
           duration: const Duration(milliseconds: 1200),
           behavior: SnackBarBehavior.floating,
         ),
       );
-    developer.log('AUDIO_PROBE_SCENARIO self-test system=$systemOk',
+    developer.log('AUDIO_PROBE_SCENARIO self-test immediate=$immediateOk',
         name: 'ScenarioTrainingScreen');
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -193,6 +194,9 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
   void _issueCommand(String type) {
     final a = _selected;
     if (a == null) return;
+    _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
+    developer.log('AUDIO_PROBE_PRACTICE command cue fired',
+        name: 'RadarSimulationScreen');
     setState(() {
       _score = max(0, _score - 2);
       switch (type) {
@@ -211,6 +215,25 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
       }
     });
     _enqueuePilotAck(a, type);
+  }
+
+  Future<void> _runAudioSelfTest() async {
+    final l10n = AppLocalizations.of(context)!;
+    final ok = await _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(ok
+              ? l10n.radarTrainingAudioSelfTestStarted
+              : l10n.radarTrainingAudioSelfTestFailed),
+          duration: const Duration(milliseconds: 1200),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    developer.log('AUDIO_PROBE_PRACTICE self-test immediate=$ok',
+        name: 'RadarSimulationScreen');
   }
 
   void _enqueuePilotAck(Aircraft a, String command) {
@@ -431,6 +454,11 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
             tooltip: l10n.radioSettingsTooltip,
             onPressed: _openAudioSettings,
             icon: const Icon(Icons.tune),
+          ),
+          IconButton(
+            tooltip: l10n.radarTrainingAudioSelfTestTooltip,
+            onPressed: _runAudioSelfTest,
+            icon: const Icon(Icons.hearing),
           ),
         ],
       ),

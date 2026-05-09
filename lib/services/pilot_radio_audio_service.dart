@@ -42,6 +42,8 @@ class PilotRadioAudioService {
       RadioAudioSettingsService.instance;
   final FlutterTts _tts = FlutterTts();
   final AudioPlayer _warningPlayer = AudioPlayer(playerId: 'radio_warning_sfx');
+  final AudioPlayer _immediateCuePlayer =
+      AudioPlayer(playerId: 'radio_immediate_cue');
   final ListQueue<_QueuedRadioItem> _queue = ListQueue<_QueuedRadioItem>();
   final ValueNotifier<String?> subtitle = ValueNotifier<String?>(null);
 
@@ -65,9 +67,27 @@ class PilotRadioAudioService {
     await _tts.setSpeechRate(0.46);
     await _tts.setPitch(1.0);
     await _tts.setVolume(_settings.settings.value.voiceVolume);
+    final context = AudioContext(
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: {},
+      ),
+      android: AudioContextAndroid(
+        contentType: AndroidContentType.sonification,
+        usageType: AndroidUsageType.media,
+        audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+        isSpeakerphoneOn: true,
+      ),
+    );
+    await _warningPlayer.setAudioContext(context);
+    await _immediateCuePlayer.setAudioContext(context);
     await _warningPlayer.setReleaseMode(ReleaseMode.stop);
-    await _warningPlayer.setPlayerMode(PlayerMode.lowLatency);
+    await _warningPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+    await _immediateCuePlayer.setReleaseMode(ReleaseMode.stop);
+    await _immediateCuePlayer.setPlayerMode(PlayerMode.mediaPlayer);
     await _warningPlayer
+        .setVolume(_warningVolumeFrom(_settings.settings.value));
+    await _immediateCuePlayer
         .setVolume(_warningVolumeFrom(_settings.settings.value));
 
     _settings.settings.addListener(_onSettingsChanged);
@@ -78,8 +98,31 @@ class PilotRadioAudioService {
     final s = _settings.settings.value;
     _tts.setVolume(s.voiceVolume);
     _warningPlayer.setVolume(_warningVolumeFrom(s));
+    _immediateCuePlayer.setVolume(_warningVolumeFrom(s));
     if (!s.subtitlesEnabled) {
       subtitle.value = null;
+    }
+  }
+
+  /// Play a cue immediately without waiting for queue/TTS state.
+  /// This is used by interactive command taps to guarantee audible feedback.
+  Future<bool> playImmediateCue(RadioWarningType type) async {
+    await initialize();
+    final asset = _warningAsset[type];
+    if (asset == null) {
+      SystemSound.play(SystemSoundType.alert);
+      return true;
+    }
+    try {
+      await _immediateCuePlayer.stop();
+      await _immediateCuePlayer.play(
+        AssetSource(asset),
+        volume: _warningVolumeFrom(_settings.settings.value),
+      );
+      return true;
+    } catch (_) {
+      SystemSound.play(SystemSoundType.alert);
+      return false;
     }
   }
 
@@ -146,6 +189,8 @@ class PilotRadioAudioService {
     await _tts.stop();
     await _warningPlayer.stop();
     await _warningPlayer.dispose();
+    await _immediateCuePlayer.stop();
+    await _immediateCuePlayer.dispose();
     subtitle.dispose();
   }
 
