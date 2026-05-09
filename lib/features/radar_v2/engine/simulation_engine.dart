@@ -37,6 +37,8 @@ class SimulationEngine {
   final Map<String, List<TrailPoint>> _trailHistory =
       <String, List<TrailPoint>>{};
   final List<_PendingCommand> _pendingCommands = <_PendingCommand>[];
+  final List<_PendingExecution> _pendingExecutions = <_PendingExecution>[];
+  final List<_PendingRadioEvent> _pendingRadioEvents = <_PendingRadioEvent>[];
   final List<SimulationEvent> _events = <SimulationEvent>[];
   final Set<String> _recordedBehaviorEvents = <String>{};
   final Map<String, int> _weatherInfluenceTicks = <String, int>{};
@@ -77,6 +79,8 @@ class SimulationEngine {
     if (steps < 1) return snapshot;
     for (var i = 0; i < steps; i++) {
       _applyDueCommands(_elapsed + fixedStep);
+      _applyDueExecutions(_elapsed + fixedStep);
+      _applyDueRadioEvents(_elapsed + fixedStep);
       for (var index = 0; index < _aircraft.length; index++) {
         if (!_aircraft[index].active) continue;
         final original = _aircraft[index];
@@ -142,17 +146,44 @@ class SimulationEngine {
 
   void applyCommand(ControllerCommand command) {
     final aircraft = _aircraftById(command.aircraftId);
+    final weatherInfluence = _weatherInfluenceFor(aircraft);
+    final profileFactor = _pilotResponseProfileFactor(aircraft);
     var effectiveDelay = _getEffectiveAckDelay();
     effectiveDelay += _pilotResponseJitter(aircraft, command);
+    effectiveDelay = Duration(
+      milliseconds:
+          (effectiveDelay.inMilliseconds * profileFactor).round().clamp(600, 11000),
+    );
+
+    if (_sectorPressureIndex >= 1.0) {
+      effectiveDelay += Duration(
+        milliseconds: ((_sectorPressureIndex - 0.9) * 520).round().clamp(0, 2300),
+      );
+    }
+    if (weatherInfluence > 0.22) {
+      effectiveDelay += Duration(
+        milliseconds: (weatherInfluence * 950).round().clamp(0, 1300),
+      );
+    }
 
     // Under higher pressure, occasional delayed acknowledgements add
     // operational imperfection without introducing a new gameplay system.
-    final delayedAckChance = (_sectorPressureIndex * 0.08).clamp(0.0, 0.24);
+    final delayedAckChance =
+        (0.04 + _sectorPressureIndex * 0.09 + weatherInfluence * 0.16)
+            .clamp(0.0, 0.42);
     if (_sectorPressureIndex >= 1.0 &&
         _noise01('${aircraft.id}:${command.runtimeType}:delay:${_tick}') <
             delayedAckChance) {
-      effectiveDelay += const Duration(milliseconds: 900);
+      effectiveDelay += Duration(
+        milliseconds: 900 +
+            (_noise01('${aircraft.id}:${command.runtimeType}:delay_mag:${_tick}') *
+                    1300)
+                .round(),
+      );
     }
+    effectiveDelay = Duration(
+      milliseconds: effectiveDelay.inMilliseconds.clamp(700, 12000),
+    );
     if (effectiveDelay < const Duration(milliseconds: 700)) {
       effectiveDelay = const Duration(milliseconds: 700);
     }
@@ -210,16 +241,67 @@ class SimulationEngine {
     _pendingCommands
         .removeWhere((pending) => pending.applyAt <= effectiveElapsed);
     for (final pending in due) {
-      _applyAcknowledgedCommand(pending.command);
+      final command = pending.command;
+      final aircraft = _aircraftById(command.aircraftId);
+      _recordAcknowledgement(command, aircraft);
+      final executionDelay = _executionDelayFor(aircraft, command);
+      if (executionDelay > Duration.zero) {
+        _pendingExecutions.add(
+          _PendingExecution(
+            command: command,
+            applyAt: _elapsed + executionDelay,
+          ),
+        );
+        _recordBehaviorEvent(
+          key: 'pilot_exec_delay:${aircraft.id}:${command.runtimeType}:${_tick}',
+          type: 'pilotExecutionDelay',
+          label: 'Pilot began execution after acknowledgement due workload/weather.',
+          aircraftId: aircraft.id,
+        );
+      } else {
+        _applyCommandIntent(command);
+      }
     }
   }
 
-  void _applyAcknowledgedCommand(ControllerCommand command) {
+  void _applyDueExecutions(Duration effectiveElapsed) {
+    final due = _pendingExecutions
+        .where((pending) => pending.applyAt <= effectiveElapsed)
+        .toList(growable: false);
+    _pendingExecutions
+        .removeWhere((pending) => pending.applyAt <= effectiveElapsed);
+    for (final pending in due) {
+      _applyCommandIntent(pending.command);
+    }
+  }
+
+  void _applyDueRadioEvents(Duration effectiveElapsed) {
+    final due = _pendingRadioEvents
+        .where((pending) => pending.emitAt <= effectiveElapsed)
+        .toList(growable: false);
+    _pendingRadioEvents
+        .removeWhere((pending) => pending.emitAt <= effectiveElapsed);
+    for (final pending in due) {
+      _events.add(SimulationEvent(
+        elapsed: _elapsed,
+        type: pending.type,
+        label: pending.label,
+        aircraftId: pending.aircraftId,
+      ));
+    }
+  }
+
+  void _applyCommandIntent(ControllerCommand command) {
     final aircraft = _aircraftById(command.aircraftId);
+    final variability = _executionVariabilityScale(aircraft);
     if (command is AssignHeading) {
       final commandedHeading = _normalizeHeading(command.headingDeg);
       final headingOffset = _sectorPressureIndex >= 0.9
-          ? _headingComplianceOffsetDeg(aircraft, command)
+          ? _headingComplianceOffsetDeg(
+              aircraft,
+              command,
+              variability: variability,
+            )
           : 0.0;
       updateAircraft(
         aircraft.copyWith(
@@ -230,13 +312,23 @@ class SimulationEngine {
           ),
         ),
       );
-      _recordAcknowledgement(
-          command, 'ACK heading ${command.headingDeg.round()}');
+      if (headingOffset.abs() >= 3.2) {
+        _recordBehaviorEvent(
+          key: 'pilot_late_capture:${aircraft.id}:${_tick}',
+          type: 'pilotLateCapture',
+          label: 'Heading capture was late and required additional settling.',
+          aircraftId: aircraft.id,
+        );
+      }
       return;
     }
     if (command is AssignAltitude) {
       final altitudeOffset = _sectorPressureIndex >= 0.9
-          ? _altitudeComplianceOffsetFt(aircraft, command)
+          ? _altitudeComplianceOffsetFt(
+              aircraft,
+              command,
+              variability: variability,
+            )
           : 0;
       updateAircraft(
         aircraft.copyWith(
@@ -246,13 +338,15 @@ class SimulationEngine {
           ),
         ),
       );
-      _recordAcknowledgement(
-          command, 'ACK altitude ${command.altitudeFt ~/ 100}');
       return;
     }
     if (command is AssignSpeed) {
       final speedOffset = _sectorPressureIndex >= 0.9
-          ? _speedComplianceOffsetKt(aircraft, command)
+              ? _speedComplianceOffsetKt(
+                  aircraft,
+                  command,
+                  variability: variability,
+                )
           : 0.0;
       updateAircraft(
         aircraft.copyWith(
@@ -262,7 +356,14 @@ class SimulationEngine {
           ),
         ),
       );
-      _recordAcknowledgement(command, 'ACK speed ${command.speedKt.round()}');
+          if (speedOffset.abs() >= 6.6) {
+            _recordBehaviorEvent(
+              key: 'pilot_speed_instability:${aircraft.id}:${_tick}',
+              type: 'pilotSpeedInstability',
+              label: 'Speed control was unstable before settling to target.',
+              aircraftId: aircraft.id,
+            );
+          }
       return;
     }
     if (command is DirectToWaypoint) {
@@ -274,7 +375,6 @@ class SimulationEngine {
           ),
         ),
       );
-      _recordAcknowledgement(command, 'ACK direct ${command.waypointId}');
       return;
     }
     if (command is EnterHold) {
@@ -289,7 +389,6 @@ class SimulationEngine {
           ),
         ),
       );
-      _recordAcknowledgement(command, 'ACK hold ${command.holdPatternId}');
       return;
     }
     if (command is ExitHold) {
@@ -303,7 +402,6 @@ class SimulationEngine {
           ),
         ),
       );
-      _recordAcknowledgement(command, 'ACK exit hold');
       return;
     }
   }
@@ -635,13 +733,49 @@ class SimulationEngine {
     return null;
   }
 
-  void _recordAcknowledgement(ControllerCommand command, String label) {
+  void _recordAcknowledgement(
+    ControllerCommand command,
+    AircraftState aircraft,
+  ) {
+    final readback = _readbackFor(command, aircraft);
     _events.add(SimulationEvent(
       elapsed: _elapsed,
       type: 'commandAcknowledged',
-      label: label,
+      label: readback.primary,
       aircraftId: command.aircraftId,
     ));
+    if (readback.style == _ReadbackStyle.concise) {
+      _recordBehaviorEvent(
+        key: 'pilot_readback_concise:${aircraft.id}:${_tick}',
+        type: 'pilotReadbackConcise',
+        label: 'Pilot used a concise acknowledgement readback.',
+        aircraftId: aircraft.id,
+      );
+    }
+    if (readback.style == _ReadbackStyle.partial) {
+      _recordBehaviorEvent(
+        key: 'pilot_readback_partial:${aircraft.id}:${_tick}',
+        type: 'pilotReadbackPartial',
+        label: 'Pilot provided a partial readback before full execution.',
+        aircraftId: aircraft.id,
+      );
+    }
+    if (readback.delayedConfirmation != null) {
+      _pendingRadioEvents.add(
+        _PendingRadioEvent(
+          emitAt: _elapsed + readback.confirmationDelay,
+          type: 'pilotReadbackConfirm',
+          label: readback.delayedConfirmation!,
+          aircraftId: aircraft.id,
+        ),
+      );
+      _recordBehaviorEvent(
+        key: 'pilot_readback_confirm_delay:${aircraft.id}:${_tick}',
+        type: 'pilotReadbackConfirmDelay',
+        label: 'Pilot confirmation arrived slightly after the initial readback.',
+        aircraftId: aircraft.id,
+      );
+    }
   }
 
   String _commandIssuedLabel(ControllerCommand command) {
@@ -686,16 +820,24 @@ class SimulationEngine {
     final noise = _noise01(
       '${aircraft.id}:${command.runtimeType}:${_elapsed.inSeconds}:${_tick}',
     );
-    final pressureExtra =
-        _sectorPressureIndex >= 0.8 ? (_sectorPressureIndex * 180).round() : 0;
+    final pressureExtra = _sectorPressureIndex >= 0.8
+        ? (_sectorPressureIndex * 230).round()
+        : 0;
+    final weatherExtra = _weatherInfluenceFor(aircraft) >= 0.2
+        ? (_weatherInfluenceFor(aircraft) * 260).round()
+        : 0;
     return Duration(
-      milliseconds: (baseMilliseconds + noise * 700 + pressureExtra).round(),
+      milliseconds:
+          (baseMilliseconds + noise * 700 + pressureExtra + weatherExtra)
+              .round(),
     );
   }
 
   double _headingComplianceOffsetDeg(
     AircraftState aircraft,
-    ControllerCommand command,
+    ControllerCommand command, {
+    required double variability,
+  }
   ) {
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
     final maxOffset = switch (profile.type) {
@@ -706,23 +848,27 @@ class SimulationEngine {
     final noise = _noise01(
       '${aircraft.id}:hdg:${command.runtimeType}:${_elapsed.inSeconds}',
     );
-    return (noise - 0.5) * 2 * maxOffset;
+    return (noise - 0.5) * 2 * maxOffset * variability;
   }
 
   int _altitudeComplianceOffsetFt(
     AircraftState aircraft,
-    ControllerCommand command,
+    ControllerCommand command, {
+    required double variability,
+  }
   ) {
     final noise = _noise01(
       '${aircraft.id}:alt:${command.runtimeType}:${_elapsed.inSeconds}',
     );
     // Keep deviation small enough to remain operationally plausible.
-    return ((noise - 0.5) * 2 * 120).round();
+    return ((noise - 0.5) * 2 * 120 * variability).round();
   }
 
   double _speedComplianceOffsetKt(
     AircraftState aircraft,
-    ControllerCommand command,
+    ControllerCommand command, {
+    required double variability,
+  }
   ) {
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
     final maxOffset = switch (profile.type) {
@@ -733,7 +879,164 @@ class SimulationEngine {
     final noise = _noise01(
       '${aircraft.id}:spd:${command.runtimeType}:${_elapsed.inSeconds}',
     );
-    return (noise - 0.5) * 2 * maxOffset;
+    return (noise - 0.5) * 2 * maxOffset * variability;
+  }
+
+  Duration _executionDelayFor(
+    AircraftState aircraft,
+    ControllerCommand command,
+  ) {
+    final weather = _weatherInfluenceFor(aircraft);
+    final workload = (_sectorPressureIndex - 0.7).clamp(0.0, 2.5);
+    var chance = 0.02 + workload * 0.06 + weather * 0.14;
+    var minMs = 700;
+    var maxMs = 2000;
+
+    if (command is AssignAltitude && command.altitudeFt < aircraft.altitudeFt) {
+      chance += 0.12;
+      minMs = 1300;
+      maxMs = 4200;
+      if (_sectorPressureIndex >= 1.8 && weather > 0.45) {
+        final magNoise = _noise01(
+          '${aircraft.id}:${command.runtimeType}:forced_descent_delay:${_tick}:${_elapsed.inSeconds}',
+        );
+        final lagMs = 1800 + (magNoise * 2400).round();
+        return Duration(milliseconds: lagMs.clamp(1600, 4600));
+      }
+    } else if (command is AssignHeading || command is DirectToWaypoint) {
+      chance += 0.08;
+      minMs = 900;
+      maxMs = 2800;
+    } else if (command is AssignSpeed) {
+      chance += 0.06;
+      minMs = 800;
+      maxMs = 2400;
+    }
+
+    if (weather > 0.48 && (command is AssignHeading || command is DirectToWaypoint)) {
+      chance = chance.clamp(0.0, 0.9).toDouble();
+      minMs = math.max(minMs, 1800);
+      maxMs = math.max(maxMs, 3400);
+      _recordBehaviorEvent(
+        key: 'weather_compliance_delay:${aircraft.id}:${_tick}',
+        type: 'weatherComplianceDelay',
+        label: 'Weather deviation delayed turn/direct compliance.',
+        aircraftId: aircraft.id,
+      );
+    }
+
+    chance = chance.clamp(0.0, 0.58);
+    final triggerNoise = _noise01(
+      '${aircraft.id}:${command.runtimeType}:exec_trigger:${_tick}:${_elapsed.inSeconds}',
+    );
+    if (triggerNoise >= chance) return Duration.zero;
+    final magNoise = _noise01(
+      '${aircraft.id}:${command.runtimeType}:exec_delay:${_tick}:${_elapsed.inSeconds}',
+    );
+    final lagMs = minMs + ((maxMs - minMs) * magNoise).round();
+    return Duration(milliseconds: lagMs.clamp(600, 5200));
+  }
+
+  _ReadbackResult _readbackFor(
+    ControllerCommand command,
+    AircraftState aircraft,
+  ) {
+    final pressure = _sectorPressureIndex.clamp(0.0, 3.0);
+    final weather = _weatherInfluenceFor(aircraft);
+    final conciseChance = (0.18 + pressure * 0.05).clamp(0.12, 0.38);
+    final partialChance = (0.06 + pressure * 0.06 + weather * 0.12)
+        .clamp(0.04, 0.32);
+    final styleNoise = _noise01(
+      '${aircraft.id}:${command.runtimeType}:readback_style:${_tick}:${_elapsed.inSeconds}',
+    );
+    var style = _ReadbackStyle.standard;
+    if (styleNoise < partialChance) {
+      style = _ReadbackStyle.partial;
+    } else if (styleNoise < partialChance + conciseChance) {
+      style = _ReadbackStyle.concise;
+    }
+
+    final payload = _commandReadbackPayload(command);
+    final callsign = aircraft.callsign;
+    final base = switch (style) {
+      _ReadbackStyle.standard => 'ACK ${payload.long}',
+      _ReadbackStyle.concise => '$callsign ${payload.long}.',
+      _ReadbackStyle.partial => '$callsign ${payload.short}.',
+    };
+
+    final confirmationChance =
+        (0.08 + pressure * 0.05 + weather * 0.1).clamp(0.04, 0.36);
+    final confirmationNoise = _noise01(
+      '${aircraft.id}:${command.runtimeType}:readback_confirm:${_tick}:${_elapsed.inSeconds}',
+    );
+    if (style == _ReadbackStyle.partial && confirmationNoise < confirmationChance) {
+      final delay = Duration(
+        milliseconds: 900 +
+            (_noise01('${aircraft.id}:${command.runtimeType}:confirm_delay:${_tick}') *
+                    1300)
+                .round(),
+      );
+      return _ReadbackResult(
+        style: style,
+        primary: base,
+        delayedConfirmation: '$callsign confirming ${payload.long}.',
+        confirmationDelay: delay,
+      );
+    }
+    return _ReadbackResult(
+      style: style,
+      primary: base,
+      delayedConfirmation: null,
+      confirmationDelay: Duration.zero,
+    );
+  }
+
+  _ReadbackPayload _commandReadbackPayload(ControllerCommand command) {
+    if (command is AssignHeading) {
+      final heading = command.headingDeg.round();
+      return _ReadbackPayload(long: 'heading $heading', short: 'heading');
+    }
+    if (command is AssignAltitude) {
+      return _ReadbackPayload(
+        long: 'altitude ${command.altitudeFt ~/ 100}',
+        short: 'altitude',
+      );
+    }
+    if (command is AssignSpeed) {
+      return _ReadbackPayload(
+        long: 'speed ${command.speedKt.round()}',
+        short: 'speed',
+      );
+    }
+    if (command is DirectToWaypoint) {
+      return _ReadbackPayload(long: 'direct ${command.waypointId}', short: 'direct');
+    }
+    if (command is EnterHold) {
+      return _ReadbackPayload(long: 'hold ${command.holdPatternId}', short: 'hold');
+    }
+    if (command is ExitHold) {
+      return const _ReadbackPayload(long: 'exit hold', short: 'hold');
+    }
+    return const _ReadbackPayload(long: 'received', short: 'received');
+  }
+
+  double _pilotResponseProfileFactor(AircraftState aircraft) {
+    final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
+    final typeBias = switch (profile.type) {
+      AircraftPerformanceType.jet => 1.04,
+      AircraftPerformanceType.regional => 0.98,
+      AircraftPerformanceType.turboprop => 0.92,
+    };
+    final personal =
+        0.84 + _noise01('${aircraft.id}:pilot_profile') * 0.34; // 0.84..1.18
+    return (typeBias * personal).clamp(0.78, 1.24);
+  }
+
+  double _executionVariabilityScale(AircraftState aircraft) {
+    final weather = _weatherInfluenceFor(aircraft);
+    final workload = (_sectorPressureIndex / 3.0).clamp(0.0, 1.0);
+    final pilot = 0.92 + _noise01('${aircraft.id}:pilot_variability') * 0.26;
+    return (pilot + workload * 0.2 + weather * 0.24).clamp(0.85, 1.42);
   }
 
   double _noise01(String seed) {
@@ -837,6 +1140,60 @@ class _PendingCommand {
   const _PendingCommand({
     required this.command,
     required this.applyAt,
+  });
+}
+
+class _PendingExecution {
+  final ControllerCommand command;
+  final Duration applyAt;
+
+  const _PendingExecution({
+    required this.command,
+    required this.applyAt,
+  });
+}
+
+class _PendingRadioEvent {
+  final Duration emitAt;
+  final String type;
+  final String label;
+  final String aircraftId;
+
+  const _PendingRadioEvent({
+    required this.emitAt,
+    required this.type,
+    required this.label,
+    required this.aircraftId,
+  });
+}
+
+enum _ReadbackStyle {
+  standard,
+  concise,
+  partial,
+}
+
+class _ReadbackPayload {
+  final String long;
+  final String short;
+
+  const _ReadbackPayload({
+    required this.long,
+    required this.short,
+  });
+}
+
+class _ReadbackResult {
+  final _ReadbackStyle style;
+  final String primary;
+  final String? delayedConfirmation;
+  final Duration confirmationDelay;
+
+  const _ReadbackResult({
+    required this.style,
+    required this.primary,
+    required this.delayedConfirmation,
+    required this.confirmationDelay,
   });
 }
 

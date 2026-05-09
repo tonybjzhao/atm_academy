@@ -3541,17 +3541,38 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
           for (final insight in visible)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '${insight.aircraftId} ${insight.commandType.toUpperCase()} '
-                'delay ${insight.acknowledgementDelay.inSeconds}s '
-                '${insight.delayed ? 'DELAYED' : 'ON-TIME'} '
-                '${insight.interrupted ? 'INTERRUPTED' : 'CLEAR'}',
-                style: TextStyle(
-                  color: insight.interrupted
-                      ? AppTheme.warning
-                      : AppTheme.textSecondary,
-                  fontSize: 10,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${insight.aircraftId} ${insight.commandType.toUpperCase()} '
+                    'delay ${insight.acknowledgementDelay.inSeconds}s '
+                    '${insight.delayed ? 'DELAYED' : 'ON-TIME'} '
+                    '${insight.interrupted ? 'INTERRUPTED' : 'CLEAR'}',
+                    style: TextStyle(
+                      color: insight.interrupted
+                          ? AppTheme.warning
+                          : AppTheme.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                  if (insight.causes.isNotEmpty)
+                    Text(
+                      'Cause: ${insight.causes.join(', ')}',
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 9,
+                      ),
+                    ),
+                  if (insight.spacingImpact != null)
+                    Text(
+                      insight.spacingImpact!,
+                      style: const TextStyle(
+                        color: AppTheme.warning,
+                        fontSize: 9,
+                      ),
+                    ),
+                ],
               ),
             ),
         ],

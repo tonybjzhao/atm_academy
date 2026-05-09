@@ -481,6 +481,150 @@ void main() {
     expect(ack.elapsed, lessThanOrEqualTo(const Duration(seconds: 5)));
   });
 
+  test('acknowledgement variability increases under workload and pilot profile', () {
+    final baseline = SimulationEngine(
+      aircraft: const [
+        AircraftState(
+          id: 'jet1',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 250,
+          performanceType: AircraftPerformanceType.jet,
+        ),
+        AircraftState(
+          id: 'tp1',
+          callsign: 'REX412',
+          xNm: 8,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 220,
+          performanceType: AircraftPerformanceType.turboprop,
+        ),
+      ],
+    );
+
+    baseline
+      ..applyCommand(
+        const AssignHeading(
+          aircraftId: 'jet1',
+          issuedAt: Duration.zero,
+          headingDeg: 40,
+        ),
+      )
+      ..applyCommand(
+        const AssignHeading(
+          aircraftId: 'tp1',
+          issuedAt: Duration.zero,
+          headingDeg: 40,
+        ),
+      );
+    final baselineSnapshot = baseline.tick(steps: 12);
+    final baselineEvents = baselineSnapshot.events
+        .where((event) => event.type == 'commandAcknowledged')
+        .toList(growable: false);
+    final jetAck = baselineEvents.firstWhere((event) => event.aircraftId == 'jet1');
+    final tpAck = baselineEvents.firstWhere((event) => event.aircraftId == 'tp1');
+
+    expect(jetAck.elapsed, greaterThanOrEqualTo(const Duration(seconds: 2)));
+    expect(jetAck.elapsed, lessThanOrEqualTo(const Duration(seconds: 6)));
+    expect(tpAck.elapsed, greaterThanOrEqualTo(const Duration(seconds: 2)));
+    expect(tpAck.elapsed, lessThanOrEqualTo(const Duration(seconds: 6)));
+    expect(jetAck.elapsed, isNot(tpAck.elapsed));
+
+    final highWorkload = SimulationEngine(
+      aircraft: const [
+        AircraftState(
+          id: 'jet1',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 250,
+          performanceType: AircraftPerformanceType.jet,
+        ),
+      ],
+    )..updateWorkloadState(dynamicControllerLoad: 9, sectorPressureIndex: 2.2);
+
+    highWorkload.applyCommand(
+      const AssignHeading(
+        aircraftId: 'jet1',
+        issuedAt: Duration.zero,
+        headingDeg: 40,
+      ),
+    );
+    final highWorkloadAck = highWorkload
+        .tick(steps: 14)
+        .events
+        .where((event) => event.type == 'commandAcknowledged')
+        .single;
+
+    expect(highWorkloadAck.elapsed, greaterThan(jetAck.elapsed));
+  });
+
+  test('descent command can acknowledge before delayed execution starts', () {
+    final engine = SimulationEngine(
+      aircraft: const [
+        AircraftState(
+          id: 'wx1',
+          callsign: 'UAE551',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 12000,
+          headingDeg: 90,
+          groundSpeedKt: 250,
+        ),
+      ],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 12, severity: 3),
+      ],
+    )..updateWorkloadState(dynamicControllerLoad: 9, sectorPressureIndex: 2.1);
+
+    engine.applyCommand(
+      const AssignAltitude(
+        aircraftId: 'wx1',
+        issuedAt: Duration.zero,
+        altitudeFt: 9000,
+      ),
+    );
+
+    var observed = engine.snapshot;
+    for (var i = 0; i < 16; i++) {
+      observed = engine.tick();
+      final ackSeen = observed.events.any(
+        (event) =>
+            event.type == 'commandAcknowledged' && event.aircraftId == 'wx1',
+      );
+      if (ackSeen) {
+        break;
+      }
+    }
+
+    final ackSeen = observed.events.any(
+      (event) =>
+          event.type == 'commandAcknowledged' && event.aircraftId == 'wx1',
+    );
+    expect(ackSeen, isTrue);
+    final midAircraft = observed.aircraftById('wx1')!;
+    expect(midAircraft.intent.assignedAltitudeFt, isNull);
+
+    final laterSnapshot = engine.tick(steps: 6);
+    final laterAircraft = laterSnapshot.aircraftById('wx1')!;
+    expect(laterAircraft.intent.assignedAltitudeFt, isNotNull);
+    expect(laterAircraft.intent.assignedAltitudeFt!, inInclusiveRange(8800, 9200));
+    expect(
+      laterSnapshot.events.where(
+        (event) =>
+            event.type == 'pilotExecutionDelay' && event.aircraftId == 'wx1',
+      ),
+      isNotEmpty,
+    );
+  });
+
   test('weather behavior event is sustained and does not spam', () {
     final engine = SimulationEngine(
       aircraft: [

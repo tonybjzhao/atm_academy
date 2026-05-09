@@ -75,6 +75,8 @@ class ReplayCommandInsight {
   final Duration acknowledgementDelay;
   final bool delayed;
   final bool interrupted;
+  final List<String> causes;
+  final String? spacingImpact;
 
   const ReplayCommandInsight({
     required this.aircraftId,
@@ -84,6 +86,8 @@ class ReplayCommandInsight {
     required this.acknowledgementDelay,
     required this.delayed,
     required this.interrupted,
+    required this.causes,
+    required this.spacingImpact,
   });
 }
 
@@ -206,6 +210,13 @@ class CommandWorkflowTracker {
         }
         return event.type != 'commandIssued' && event.type != 'commandAcknowledged';
       });
+      final contextEvents = events.where((event) {
+        if (event.aircraftId != issue.aircraftId) return false;
+        return event.elapsed >= issue.elapsed &&
+            event.elapsed <= ack.elapsed + const Duration(seconds: 14);
+      }).toList(growable: false);
+      final causes = _causesForEvents(contextEvents);
+      final spacingImpact = _spacingImpactForEvents(contextEvents, delay);
       insights.add(
         ReplayCommandInsight(
           aircraftId: issue.aircraftId!,
@@ -215,10 +226,71 @@ class CommandWorkflowTracker {
           acknowledgementDelay: delay,
           delayed: delay >= const Duration(seconds: 4),
           interrupted: interrupted,
+          causes: causes,
+          spacingImpact: spacingImpact,
         ),
       );
     }
     return insights;
+  }
+
+  List<String> _causesForEvents(List<SimulationEvent> events) {
+    final causes = <String>[];
+    void add(String cause) {
+      if (!causes.contains(cause)) {
+        causes.add(cause);
+      }
+    }
+
+    for (final event in events) {
+      switch (event.type) {
+        case 'pilotResponseDelay':
+          add('pilot response delay');
+        case 'pilotExecutionDelay':
+          add('execution start lag');
+        case 'pilotReadbackPartial':
+          add('partial readback');
+        case 'pilotReadbackConfirmDelay':
+          add('delayed confirmation');
+        case 'weatherInteraction':
+        case 'weatherCompression':
+        case 'weatherComplianceDelay':
+          add('weather-driven deviation');
+        case 'pilotLateCapture':
+          add('late capture after acknowledgement');
+        case 'pilotSpeedInstability':
+          add('speed instability during follow-through');
+      }
+    }
+    return causes;
+  }
+
+  String? _spacingImpactForEvents(
+    List<SimulationEvent> events,
+    Duration ackDelay,
+  ) {
+    final sawCompression = events.any((event) {
+      return event.type == 'weatherCompression' ||
+          event.label.toLowerCase().contains('spacing compressed');
+    });
+    final sawConflictPressure = events.any((event) {
+      final normalizedType = event.type.toLowerCase();
+      final normalizedLabel = event.label.toLowerCase();
+      return normalizedType.contains('conflict') ||
+          normalizedType.contains('separation') ||
+          normalizedLabel.contains('conflict') ||
+          normalizedLabel.contains('separation');
+    });
+    if (sawConflictPressure && ackDelay >= const Duration(seconds: 4)) {
+      return 'Pilot delay overlapped with conflict/separation pressure.';
+    }
+    if (sawCompression) {
+      return 'Spacing compressed during pilot response and execution.';
+    }
+    if (ackDelay >= const Duration(seconds: 6)) {
+      return 'Long acknowledgement window reduced spacing recovery margin.';
+    }
+    return null;
   }
 
   void _updateAwaitingState() {
