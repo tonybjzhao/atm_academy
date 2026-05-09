@@ -63,6 +63,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
   final WorkloadAudioController _audioController = WorkloadAudioController();
   late final AudioPlayer _cuePlayer = AudioPlayer(playerId: 'radar_cues');
+  Future<void> _cuePlaybackChain = Future<void>.value();
   Ticker? _ticker;
   Duration? _lastFrameTime;
   Duration _lastIdlePaint = Duration.zero;
@@ -122,7 +123,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       );
       await _cuePlayer.setVolume(1.0);
       await _cuePlayer.setReleaseMode(ReleaseMode.stop);
-      await _cuePlayer.setPlayerMode(PlayerMode.lowLatency);
+      await _cuePlayer.setPlayerMode(PlayerMode.mediaPlayer);
     } catch (e) {
       assert(() {
         print('RadarV2DebugScreen: Failed to initialize audio: $e');
@@ -667,7 +668,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       );
       return;
     }
-    final ok = await _playCueInternal('audio/radio/runway_pressure_warning.wav');
+    final ok = await _enqueueCue('audio/radio/runway_pressure_warning.wav');
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -682,11 +683,26 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   }
 
   void _playCue(String assetPath) {
-    unawaited(_playCueInternal(assetPath));
+    unawaited(_enqueueCue(assetPath));
+  }
+
+  Future<bool> _enqueueCue(String assetPath) {
+    final completer = Completer<bool>();
+    _cuePlaybackChain = _cuePlaybackChain.then((_) async {
+      if (!mounted) {
+        completer.complete(false);
+        return;
+      }
+      final ok = await _playCueInternal(assetPath);
+      completer.complete(ok);
+    });
+    return completer.future;
   }
 
   Future<bool> _playCueInternal(String assetPath) async {
     try {
+      // Android can miss repeated cues unless the previous state is fully reset.
+      await _cuePlayer.stop();
       await _cuePlayer.play(AssetSource(assetPath), volume: 1.0);
       return true;
     } catch (e) {

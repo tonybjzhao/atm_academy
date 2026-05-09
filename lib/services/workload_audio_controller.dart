@@ -21,6 +21,7 @@ import '../features/radar_v2/core/cognitive_load/cognitive_load_level.dart';
 class WorkloadAudioController {
   final WorkloadAudioStateMachine _machine = WorkloadAudioStateMachine();
   late final AudioPlayer _player;
+  Future<void> _playbackChain = Future<void>.value();
   bool _initialized = false;
 
   WorkloadAudioController() {
@@ -47,7 +48,7 @@ class WorkloadAudioController {
       );
       await _player.setVolume(1.0);
       await _player.setReleaseMode(ReleaseMode.stop);
-      await _player.setPlayerMode(PlayerMode.lowLatency);
+      await _player.setPlayerMode(PlayerMode.mediaPlayer);
       _initialized = true;
     } catch (e) {
       assert(() {
@@ -98,11 +99,13 @@ class WorkloadAudioController {
 
   void _playAsset(String assetPath) {
     if (!_initialized) return;
-    unawaited(_playAssetInternal(assetPath));
+    _playbackChain = _playbackChain.then((_) => _playAssetInternal(assetPath));
   }
 
   Future<void> _playAssetInternal(String assetPath) async {
     try {
+      // Reset before each cue to keep Android replaying the same asset reliably.
+      await _player.stop();
       await _player.play(AssetSource(assetPath), volume: 1.0);
     } catch (e) {
       assert(() {
