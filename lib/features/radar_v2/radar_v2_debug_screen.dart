@@ -659,18 +659,42 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     _playCue('audio/radio/runway_pressure_warning.wav');
   }
 
+  Future<void> _runAudioSelfTest(AppLocalizations l10n) async {
+    if (_muted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.radarTrainingAudioSelfTestMuted)),
+      );
+      return;
+    }
+    final ok = await _playCueInternal('audio/radio/runway_pressure_warning.wav');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? l10n.radarTrainingAudioSelfTestStarted
+              : l10n.radarTrainingAudioSelfTestFailed,
+        ),
+        duration: const Duration(milliseconds: 1400),
+      ),
+    );
+  }
+
   void _playCue(String assetPath) {
     unawaited(_playCueInternal(assetPath));
   }
 
-  Future<void> _playCueInternal(String assetPath) async {
+  Future<bool> _playCueInternal(String assetPath) async {
     try {
       await _cuePlayer.play(AssetSource(assetPath), volume: 1.0);
+      return true;
     } catch (e) {
       assert(() {
         print('RadarV2DebugScreen: Failed to play $assetPath: $e');
         return true;
       }());
+      return false;
     }
   }
 
@@ -697,6 +721,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                   : l10n.radarTrainingMuteAudioCues,
               icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
               onPressed: () => setState(() => _muted = !_muted),
+            ),
+          if (widget.betaMode)
+            IconButton(
+              tooltip: l10n.radarTrainingAudioSelfTestTooltip,
+              icon: const Icon(Icons.hearing),
+              onPressed: () => _runAudioSelfTest(l10n),
             ),
           IconButton(
             tooltip: l10n.radarTrainingRestartScenario,

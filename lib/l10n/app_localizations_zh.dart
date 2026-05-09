@@ -2338,6 +2338,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get radarTrainingUnmuteAudioCues => '恢复提示音';
 
   @override
+  String get radarTrainingAudioSelfTestTooltip => '播放音频自检';
+
+  @override
+  String get radarTrainingAudioSelfTestStarted => '正在播放测试音';
+
+  @override
+  String get radarTrainingAudioSelfTestFailed => '音频自检失败';
+
+  @override
+  String get radarTrainingAudioSelfTestMuted => '当前已静音，请先恢复提示音';
+
+  @override
   String get radarTrainingRestartScenario => '重新开始场景';
 
   @override

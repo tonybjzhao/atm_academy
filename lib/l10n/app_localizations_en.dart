@@ -2540,6 +2540,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radarTrainingUnmuteAudioCues => 'Unmute audio cues';
 
   @override
+  String get radarTrainingAudioSelfTestTooltip => 'Play audio self-test';
+
+  @override
+  String get radarTrainingAudioSelfTestStarted => 'Playing test tone';
+
+  @override
+  String get radarTrainingAudioSelfTestFailed => 'Audio self-test failed';
+
+  @override
+  String get radarTrainingAudioSelfTestMuted => 'Audio is muted. Unmute first.';
+
+  @override
   String get radarTrainingRestartScenario => 'Restart scenario';
 
   @override

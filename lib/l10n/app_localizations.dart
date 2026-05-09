@@ -4559,6 +4559,30 @@ abstract class AppLocalizations {
   /// **'Unmute audio cues'**
   String get radarTrainingUnmuteAudioCues;
 
+  /// No description provided for @radarTrainingAudioSelfTestTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Play audio self-test'**
+  String get radarTrainingAudioSelfTestTooltip;
+
+  /// No description provided for @radarTrainingAudioSelfTestStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing test tone'**
+  String get radarTrainingAudioSelfTestStarted;
+
+  /// No description provided for @radarTrainingAudioSelfTestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio self-test failed'**
+  String get radarTrainingAudioSelfTestFailed;
+
+  /// No description provided for @radarTrainingAudioSelfTestMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio is muted. Unmute first.'**
+  String get radarTrainingAudioSelfTestMuted;
+
   /// No description provided for @radarTrainingRestartScenario.
   ///
   /// In en, this message translates to:

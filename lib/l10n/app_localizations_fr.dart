@@ -2578,6 +2578,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radarTrainingUnmuteAudioCues => 'Réactiver les signaux audio';
 
   @override
+  String get radarTrainingAudioSelfTestTooltip => 'Lancer le test audio';
+
+  @override
+  String get radarTrainingAudioSelfTestStarted =>
+      'Lecture de la tonalité de test';
+
+  @override
+  String get radarTrainingAudioSelfTestFailed => 'Échec du test audio';
+
+  @override
+  String get radarTrainingAudioSelfTestMuted =>
+      'Audio coupé. Réactivez-le d\'abord.';
+
+  @override
   String get radarTrainingRestartScenario => 'Redémarrer le scénario';
 
   @override
