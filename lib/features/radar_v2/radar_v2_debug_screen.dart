@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -62,6 +62,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   final List<SimulationSnapshot> _replayHistory = <SimulationSnapshot>[];
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
   final WorkloadAudioController _audioController = WorkloadAudioController();
+  late final AudioPlayer _cuePlayer = AudioPlayer(playerId: 'radar_cues');
   Ticker? _ticker;
   Duration? _lastFrameTime;
   Duration _lastIdlePaint = Duration.zero;
@@ -97,11 +98,22 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   @override
   void initState() {
     super.initState();
-    assert(() {
-      _loadScenario(_scenarioName);
-      _ticker = createTicker(_onFrame)..start();
-      return true;
-    }());
+    _initializeAudio();
+    _loadScenario(_scenarioName);
+    _ticker = createTicker(_onFrame)..start();
+  }
+
+  Future<void> _initializeAudio() async {
+    try {
+      await _audioController.initialize();
+      await _cuePlayer.setReleaseMode(ReleaseMode.stop);
+      await _cuePlayer.setPlayerMode(PlayerMode.lowLatency);
+    } catch (e) {
+      assert(() {
+        print('RadarV2DebugScreen: Failed to initialize audio: $e');
+        return true;
+      }());
+    }
   }
 
   Future<void> _loadScenario(String scenarioName) async {
@@ -606,17 +618,17 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     if (now.difference(_lastAudioCue).inMilliseconds < cooldownMs) return;
     _lastAudioCue = now;
     if (level == 3) {
-      SystemSound.play(SystemSoundType.alert);
+      _playCue('audio/radio/conflict_warning.wav');
       Future.delayed(const Duration(milliseconds: 160), () {
-        if (!_muted) SystemSound.play(SystemSoundType.alert);
+        if (!_muted) _playCue('audio/radio/conflict_warning.wav');
       });
       return;
     }
     if (level == 2) {
-      SystemSound.play(SystemSoundType.alert);
+      _playCue('audio/radio/runway_pressure_warning.wav');
       return;
     }
-    SystemSound.play(SystemSoundType.click);
+    _playCue('audio/radio/conflict_warning.wav');
   }
 
   void _playSweepCue() {
@@ -624,12 +636,23 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final now = DateTime.now();
     if (now.difference(_lastSweepCue).inMilliseconds < 2600) return;
     _lastSweepCue = now;
-    SystemSound.play(SystemSoundType.click);
+    _playCue('audio/radio/conflict_warning.wav');
   }
 
   void _playButtonCue() {
     if (_muted) return;
-    SystemSound.play(SystemSoundType.click);
+    _playCue('audio/radio/runway_pressure_warning.wav');
+  }
+
+  void _playCue(String assetPath) {
+    try {
+      _cuePlayer.play(AssetSource(assetPath));
+    } catch (e) {
+      assert(() {
+        print('RadarV2DebugScreen: Failed to play $assetPath: $e');
+        return true;
+      }());
+    }
   }
 
   @override
@@ -908,6 +931,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     _commandHighlightTimer?.cancel();
     _ackHighlightTimer?.cancel();
     _audioController.dispose();
+    _cuePlayer.dispose();
     super.dispose();
   }
 }
