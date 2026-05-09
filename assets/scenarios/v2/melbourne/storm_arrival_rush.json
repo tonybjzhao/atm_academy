@@ -1,0 +1,236 @@
+{
+  "id": "melbourne_storm_arrival_rush_001",
+  "title": "Melbourne Storm Arrival Rush",
+  "sectorId": "melbourne_approach",
+  "sectorPersonality": "weather_disruption",
+  "durationSeconds": 330,
+  "difficulty": 4,
+  "radarRangeNm": 44,
+  "maxControllerLoad": 5,
+  "weatherMode": "low_visibility",
+  "lowVisibilitySpacingMultiplier": 1.22,
+  "lowVisibilityRunwayOccupancyMultiplier": 1.35,
+  "workloadPressureMultiplier": 1.32,
+  "runwayOccupancySeconds": 58,
+  "trafficDescription": "A calm Melbourne arrival stream compresses as storm cells force reroutes, runway pressure builds, and a salient aircraft competes with a quieter developing conflict.",
+  "objectives": [
+    "Maintain safe arrival spacing through the storm reroute",
+    "Avoid fixation on the salient aircraft during the attention trap",
+    "Protect runway flow when departure and arrival timing becomes tight",
+    "Recover the sector without losing separation"
+  ],
+  "expectedTechniques": [
+    "Use early speed control before the merge point",
+    "Vector the weather-deviating aircraft decisively, then return to a broad scan",
+    "Prioritize the lower-salience converging threat before it becomes urgent",
+    "Stabilize the final approach stream before releasing more runway pressure"
+  ],
+  "waypoints": [
+    { "id": "MLB_WEST", "xNm": -30, "yNm": 4 },
+    { "id": "MLB_NORTH", "xNm": -8, "yNm": 30 },
+    { "id": "MLB_EAST", "xNm": 34, "yNm": 8 },
+    { "id": "MLB_SOUTH", "xNm": 4, "yNm": -32 },
+    { "id": "MLB_MERGE", "xNm": 2, "yNm": 6 },
+    { "id": "MLB_DOWNWIND", "xNm": -6, "yNm": 12 },
+    { "id": "MLB_FINAL", "xNm": 13, "yNm": 4 },
+    { "id": "MLB_MISSED", "xNm": 4, "yNm": 14 },
+    { "id": "RWY09", "xNm": 28, "yNm": 4 },
+    { "id": "SID_EAST", "xNm": 36, "yNm": 12 },
+    { "id": "SID_COAST", "xNm": 38, "yNm": -4 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_WEST09_STORM",
+      "name": "LIZZI STORM ARRIVAL",
+      "type": "star",
+      "waypoints": ["MLB_WEST", "MLB_DOWNWIND", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_DOWNWIND"
+    },
+    {
+      "id": "STAR_NORTH09_STORM",
+      "name": "BOLIN NORTH ARRIVAL",
+      "type": "star",
+      "waypoints": ["MLB_NORTH", "MLB_MERGE", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_MERGE"
+    },
+    {
+      "id": "STAR_EAST09_STORM",
+      "name": "LAVERTON EAST ARRIVAL",
+      "type": "star",
+      "waypoints": ["MLB_EAST", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_FINAL"
+    },
+    {
+      "id": "STAR_SOUTH09_STORM",
+      "name": "SOUTH BAY RECOVERY",
+      "type": "star",
+      "waypoints": ["MLB_SOUTH", "MLB_MERGE", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_MERGE"
+    },
+    {
+      "id": "SID_STORM09E",
+      "name": "EAST STORM DEPARTURE",
+      "type": "sid",
+      "waypoints": ["RWY09", "MLB_FINAL", "SID_EAST"]
+    }
+  ],
+  "weatherZones": [
+    { "id": "WX_STORM_CORE", "xNm": -5, "yNm": 10, "radiusNm": 7.5, "severity": 3 },
+    { "id": "WX_RAIN_BAND", "xNm": 8, "yNm": -4, "radiusNm": 5.5, "severity": 2 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "mlb_storm_rwy09_arrivals",
+      "runwayId": "RWY09",
+      "mergeWaypointId": "MLB_FINAL",
+      "finalFixWaypointId": "MLB_FINAL",
+      "thresholdWaypointId": "RWY09",
+      "procedureId": "STAR_WEST09_STORM",
+      "goAroundMergeWaypointId": "MLB_MISSED",
+      "goAroundRoute": ["MLB_MISSED", "MLB_MERGE", "MLB_FINAL", "RWY09"],
+      "spacingTargetNm": 7,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "mlb_storm_dep_09",
+      "runwayId": "RWY09",
+      "sidProcedureId": "SID_STORM09E",
+      "releaseIntervalSeconds": 54,
+      "crossingRunwayIds": [],
+      "initialClimbFt": 5000
+    }
+  ],
+  "holdPatterns": [
+    {
+      "id": "MLB_MERGE_HOLD",
+      "fixWaypointId": "MLB_MERGE",
+      "inboundHeadingDeg": 180,
+      "legSeconds": 45,
+      "stackAltitudeFt": 8000
+    }
+  ],
+  "altitudeRestrictions": [
+    { "waypointId": "MLB_DOWNWIND", "altitudeFt": 7000, "type": "atOrBelow" },
+    { "waypointId": "MLB_MERGE", "altitudeFt": 6000, "type": "atOrBelow" },
+    { "waypointId": "MLB_FINAL", "altitudeFt": 3000, "type": "at" }
+  ],
+  "attentionManagementEvents": [
+    {
+      "id": "salient_weather_deviation",
+      "type": "distraction",
+      "scheduledAtSeconds": 118,
+      "durationSeconds": 24,
+      "description": "QFA214 becomes salient while avoiding the storm core."
+    },
+    {
+      "id": "storm_chain_escalation",
+      "type": "weather_escalation",
+      "scheduledAtSeconds": 146,
+      "severityIncrease": 1,
+      "description": "Storm cell expands toward the final approach stream."
+    },
+    {
+      "id": "simultaneous_pressure_window",
+      "type": "simultaneous_alerts",
+      "scheduledAtSeconds": 196,
+      "durationSeconds": 28,
+      "description": "Conflict warning, runway pressure, and weather reroute compete for attention."
+    }
+  ],
+  "densityScale": 1.2,
+  "speedOptions": [1, 2, 4],
+  "aircraft": [
+    {
+      "id": "qfa214",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": -36, "yNm": 5 },
+      "altitudeFt": 9000,
+      "headingDeg": 86,
+      "groundSpeedKt": 265,
+      "performanceType": "jet",
+      "procedureId": "STAR_WEST09_STORM",
+      "runwayId": "RWY09",
+      "route": ["MLB_WEST", "MLB_DOWNWIND", "MLB_FINAL", "RWY09"]
+    },
+    {
+      "id": "vja612",
+      "callsign": "VJA612",
+      "spawnAtSeconds": 26,
+      "position": { "xNm": -10, "yNm": 38 },
+      "altitudeFt": 9000,
+      "headingDeg": 170,
+      "groundSpeedKt": 250,
+      "performanceType": "jet",
+      "procedureId": "STAR_NORTH09_STORM",
+      "runwayId": "RWY09",
+      "route": ["MLB_NORTH", "MLB_MERGE", "MLB_FINAL", "RWY09"]
+    },
+    {
+      "id": "rex438",
+      "callsign": "REX438",
+      "spawnAtSeconds": 92,
+      "position": { "xNm": 38, "yNm": 9 },
+      "altitudeFt": 8000,
+      "headingDeg": 268,
+      "groundSpeedKt": 225,
+      "performanceType": "turboprop",
+      "procedureId": "STAR_EAST09_STORM",
+      "runwayId": "RWY09",
+      "route": ["MLB_EAST", "MLB_FINAL", "RWY09"]
+    },
+    {
+      "id": "jst771",
+      "callsign": "JST771",
+      "spawnAtSeconds": 136,
+      "position": { "xNm": -40, "yNm": 8 },
+      "altitudeFt": 9000,
+      "headingDeg": 84,
+      "groundSpeedKt": 325,
+      "performanceType": "jet",
+      "procedureId": "STAR_WEST09_STORM",
+      "runwayId": "RWY09",
+      "route": ["MLB_WEST", "MLB_DOWNWIND", "MLB_FINAL", "RWY09"]
+    },
+    {
+      "id": "rxa903",
+      "callsign": "RXA903",
+      "spawnAtSeconds": 166,
+      "position": { "xNm": 2, "yNm": -38 },
+      "altitudeFt": 7500,
+      "headingDeg": 4,
+      "groundSpeedKt": 230,
+      "performanceType": "regional",
+      "procedureId": "STAR_SOUTH09_STORM",
+      "runwayId": "RWY09",
+      "route": ["MLB_SOUTH", "MLB_MERGE", "MLB_FINAL", "RWY09"]
+    },
+    {
+      "id": "qfa901",
+      "callsign": "QFA901",
+      "spawnAtSeconds": 208,
+      "isDeparture": true,
+      "departureFlowId": "mlb_storm_dep_09",
+      "procedureId": "SID_STORM09E",
+      "position": { "xNm": 27.8, "yNm": 3.8 },
+      "altitudeFt": 3000,
+      "headingDeg": 80,
+      "groundSpeedKt": 165,
+      "performanceType": "jet",
+      "runwayId": "RWY09",
+      "route": ["RWY09", "MLB_FINAL", "SID_EAST"]
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "durationReached" },
+    { "type": "allAircraftExitedSafely" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}

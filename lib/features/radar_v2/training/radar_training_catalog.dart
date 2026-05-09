@@ -28,28 +28,32 @@ class RadarTrainingCatalog {
       scenarioName: 'Crossing Arrivals',
     ),
     RadarTrainingScenario(
-      id: 'arrival_spacing_under_weather',
-      title: 'Arrival Spacing Under Weather',
-      difficulty: RadarTrainingDifficulty.approach,
-      estimatedTime: Duration(minutes: 4),
-      learningGoal: 'Sequencing and workload management',
-      objective: 'Manage arrival spacing during weather-driven compression.',
+      id: 'melbourne_storm_arrival_rush',
+      title: 'Melbourne Storm Arrival Rush',
+      difficulty: RadarTrainingDifficulty.supervisor,
+      estimatedTime: Duration(minutes: 6),
+      learningGoal:
+          'Arrival compression, weather pressure, runway timing, and attention control',
+      objective:
+          'Manage arrival compression, weather deviation, runway pressure, and attention traps without losing situational awareness.',
       trafficSituation:
-          'A faster jet closes on slower traffic while weather and runway pressure compress the flow.',
+          'A calm Melbourne arrival stream compresses as storm cells force reroutes, a departure creates runway pressure, and a quiet conflict develops away from the salient aircraft.',
       expectedTechnique:
-          'Slow or vector the faster aircraft early, then protect the merge point.',
+          'Use early speed control, vector weather-affected traffic decisively, then return to a broad scan before the overload window.',
       riskFactors: [
-        'Low visibility increases runway occupancy time',
-        'Closure rate is more important than current distance',
-        'Weather can make spacing appear stable before it tightens',
+        'Storm cells narrow vector options and compress final spacing',
+        'QFA214 can pull attention away from the quieter crossing threat',
+        'Runway occupancy and departure timing reduce recovery margin',
+        'Several weak stressors align near the overload window',
       ],
       successCriteria: [
-        'Maintain final spacing',
-        'Avoid weather penetration',
-        'Keep workload below sustained overload',
+        'No separation loss',
+        'Maintain final approach spacing through the storm reroute',
+        'Avoid weather penetration and ignored critical alerts',
+        'Recover the sector after the overload moment',
       ],
-      assetPath: 'assets/scenarios/v2/melbourne/overtaking_traffic.json',
-      scenarioName: 'Overtaking Traffic',
+      assetPath: 'assets/scenarios/v2/melbourne/storm_arrival_rush.json',
+      scenarioName: 'Melbourne Storm Arrival Rush',
     ),
     RadarTrainingScenario(
       id: 'false_recovery_tunnel_vision',

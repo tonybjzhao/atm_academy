@@ -11,6 +11,7 @@ import 'package:atm_flutter/features/radar_v2/models/arrival_flow.dart';
 import 'package:atm_flutter/features/radar_v2/models/departure_flow.dart';
 import 'package:atm_flutter/features/radar_v2/radar_v2_debug_screen.dart';
 import 'package:atm_flutter/features/radar_v2/scenario/scenario_loader.dart';
+import 'package:atm_flutter/features/radar_v2/scenario/scenario_runtime.dart';
 import 'package:atm_flutter/features/radar_v2/scoring/radar_v2_score.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_catalog.dart';
 import 'package:atm_flutter/features/radar_v2/training/cognitive_cascade_propagation.dart';
@@ -39,7 +40,7 @@ void main() {
         scenarios.map((scenario) => scenario.title),
         containsAll([
           'Beginner Crossing Conflict',
-          'Arrival Spacing Under Weather',
+          'Melbourne Storm Arrival Rush',
           'False Recovery / Tunnel Vision',
         ]),
       );
@@ -55,6 +56,18 @@ void main() {
       }
     });
 
+    test('Melbourne Storm Arrival Rush briefing is polished', () {
+      final scenario =
+          RadarTrainingCatalog.byId('melbourne_storm_arrival_rush');
+
+      expect(scenario.title, 'Melbourne Storm Arrival Rush');
+      expect(scenario.objective, contains('arrival compression'));
+      expect(scenario.trafficSituation, contains('storm'));
+      expect(scenario.expectedTechnique, contains('broad scan'));
+      expect(scenario.riskFactors, hasLength(greaterThanOrEqualTo(4)));
+      expect(scenario.successCriteria, contains('No separation loss'));
+    });
+
     test('scenario assets load through the V2 scenario loader', () {
       const loader = ScenarioLoader();
 
@@ -66,6 +79,65 @@ void main() {
         expect(definition.aircraft, isNotEmpty);
         expect(definition.winConditions, isNotEmpty);
       }
+    });
+
+    test('Melbourne Storm Arrival Rush scenario loads with ecology inputs', () {
+      const loader = ScenarioLoader();
+      final scenario =
+          RadarTrainingCatalog.byId('melbourne_storm_arrival_rush');
+      final source = File(scenario.assetPath).readAsStringSync();
+      final definition = loader.parse(source);
+
+      expect(definition.title, 'Melbourne Storm Arrival Rush');
+      expect(definition.weatherZones, isNotEmpty);
+      expect(definition.arrivalFlows, isNotEmpty);
+      expect(definition.departureFlows, isNotEmpty);
+      expect(definition.attentionManagementEvents, isNotEmpty);
+      expect(definition.aircraft, hasLength(greaterThanOrEqualTo(6)));
+    });
+
+    test('Melbourne Storm Arrival Rush result builds with replay systems', () {
+      const loader = ScenarioLoader();
+      final scenario =
+          RadarTrainingCatalog.byId('melbourne_storm_arrival_rush');
+      final definition =
+          loader.parse(File(scenario.assetPath).readAsStringSync());
+      final runtime = ScenarioRuntime(definition: definition);
+      for (var i = 0; i < 230; i++) {
+        runtime.tick();
+      }
+
+      final result = RadarTrainingResultBuilder.build(
+        scenarioTitle: scenario.title,
+        scenarioId: scenario.id,
+        score: const RadarV2ScoreSnapshot(
+          score: 72,
+          commandCount: 8,
+          separationLossCount: 0,
+          lateResolutionCount: 1,
+          spacingStability: 60,
+          throughputEfficiency: 72,
+          weatherManagement: 66,
+          commandEfficiency: 70,
+          anticipationScore: 58,
+          lastDelta: -5,
+          lastReason: 'Late resolution',
+          penalties: ['Late resolution'],
+          totalOverloadDuration: Duration(seconds: 20),
+        ),
+        snapshot: runtime.tick(),
+      );
+
+      expect(result.replayExplanation, isNotEmpty);
+      expect(
+          result.debriefSalience.primaryInsights.length, lessThanOrEqualTo(3));
+      expect(
+        result.environmentalEcology.windows.map((window) => window.source),
+        containsAll([
+          EnvironmentalPressureSource.arrivalWave,
+          EnvironmentalPressureSource.weatherReroute,
+        ]),
+      );
     });
 
     test('result summary is generated from final score and snapshot', () {
