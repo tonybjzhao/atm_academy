@@ -219,20 +219,25 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
 
   Future<void> _runAudioSelfTest() async {
     final l10n = AppLocalizations.of(context)!;
-    final ok = await _radioAudio.playImmediateCue(RadioWarningType.conflict);
+    final result = await _radioAudio.runSelfTest();
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(ok
-              ? l10n.radarTrainingAudioSelfTestStarted
-              : l10n.radarTrainingAudioSelfTestFailed),
-          duration: const Duration(milliseconds: 1200),
+          content: Text(
+            result.ok
+                ? '${l10n.radarTrainingAudioSelfTestStarted} · cue=${result.cueOk ? "ok" : "fail"} voice=${result.voiceOk ? "ok" : "fail"}'
+                : '${l10n.radarTrainingAudioSelfTestFailed} · ${result.detail}',
+          ),
+          duration: const Duration(milliseconds: 2200),
           behavior: SnackBarBehavior.floating,
         ),
       );
-    developer.log('AUDIO_PROBE_PRACTICE self-test immediate=$ok',
+    debugPrint(
+      'AUDIO_PROBE_PRACTICE self-test cue=${result.cueOk} voice=${result.voiceOk} tts=${result.ttsAvailable} detail=${result.detail}',
+    );
+    developer.log('AUDIO_PROBE_PRACTICE self-test result=${result.detail}',
         name: 'RadarSimulationScreen');
   }
 
@@ -833,21 +838,36 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
                       title: Text(AppLocalizations.of(context)!
                           .radioSettingsWarningAudio),
                       value: s.warningsEnabled,
-                      onChanged: (v) => _audioSettings.setWarningsEnabled(v),
+                      onChanged: (v) {
+                        _audioSettings.setWarningsEnabled(v);
+                        if (!v) {
+                          _radioAudio.clearQueue(stopCurrent: true);
+                        }
+                      },
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                           AppLocalizations.of(context)!.radioSettingsSubtitles),
                       value: s.subtitlesEnabled,
-                      onChanged: (v) => _audioSettings.setSubtitlesEnabled(v),
+                      onChanged: (v) {
+                        _audioSettings.setSubtitlesEnabled(v);
+                        if (!v) {
+                          _radioAudio.clearQueue(stopCurrent: true);
+                        }
+                      },
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(AppLocalizations.of(context)!
                           .radioSettingsReplayAudio),
                       value: s.replayAudioEnabled,
-                      onChanged: (v) => _audioSettings.setReplayAudioEnabled(v),
+                      onChanged: (v) {
+                        _audioSettings.setReplayAudioEnabled(v);
+                        if (!v) {
+                          _radioAudio.clearQueue(stopCurrent: true);
+                        }
+                      },
                     ),
                   ],
                 );

@@ -13,6 +13,22 @@ enum RadioWarningType { conflict, runwayPressure, overloadPeak }
 
 enum _RadioItemKind { pilotAck, warning }
 
+class RadioAudioSelfTestResult {
+  final bool cueOk;
+  final bool voiceOk;
+  final bool ttsAvailable;
+  final String detail;
+
+  const RadioAudioSelfTestResult({
+    required this.cueOk,
+    required this.voiceOk,
+    required this.ttsAvailable,
+    required this.detail,
+  });
+
+  bool get ok => cueOk || voiceOk;
+}
+
 class _QueuedRadioItem {
   final _RadioItemKind kind;
   final DateTime earliestPlayAt;
@@ -66,13 +82,19 @@ class PilotRadioAudioService {
     try {
       await _tts.setSharedInstance(true);
       await _tts.awaitSpeakCompletion(true);
+      await _tts.setLanguage('en-US');
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await _tts.setQueueMode(1);
+      }
       await _tts.setSpeechRate(0.46);
       await _tts.setPitch(1.0);
       await _tts.setVolume(_settings.settings.value.voiceVolume);
       _ttsAvailable = true;
-    } catch (_) {
+      debugPrint('AUDIO_PROBE_RADIO tts init ok');
+    } catch (e) {
       // Some Android devices have flaky TTS engines; keep SFX path working.
       _ttsAvailable = false;
+      debugPrint('AUDIO_PROBE_RADIO tts init failed: $e');
     }
     final context = AudioContext(
       iOS: AudioContextIOS(
@@ -80,9 +102,9 @@ class PilotRadioAudioService {
         options: {},
       ),
       android: AudioContextAndroid(
-        contentType: AndroidContentType.sonification,
+        contentType: AndroidContentType.music,
         usageType: AndroidUsageType.media,
-        audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+        audioFocus: AndroidAudioFocus.gain,
         isSpeakerphoneOn: true,
       ),
     );
@@ -98,6 +120,9 @@ class PilotRadioAudioService {
 
     _settings.settings.addListener(_onSettingsChanged);
     _initialized = true;
+    debugPrint(
+      'AUDIO_PROBE_RADIO init done tts=$_ttsAvailable volume=${_settings.settings.value.voiceVolume}',
+    );
   }
 
   void _onSettingsChanged() {
@@ -107,39 +132,115 @@ class PilotRadioAudioService {
     }
     _warningPlayer.setVolume(_warningVolumeFrom(s));
     _immediateCuePlayer.setVolume(1.0);
-    if (!s.subtitlesEnabled) {
+    if (!s.warningsEnabled) {
+      unawaited(clearQueue(stopCurrent: true));
+    }
+    if (!s.subtitlesEnabled || !s.warningsEnabled) {
       subtitle.value = null;
     }
   }
 
   /// Play a cue immediately without waiting for queue/TTS state.
   /// This is used by interactive command taps to guarantee audible feedback.
-  Future<bool> playImmediateCue(RadioWarningType type) async {
+  Future<bool> playImmediateCue(
+    RadioWarningType type, {
+    bool respectSettings = true,
+  }) async {
     await initialize();
+    if (respectSettings && !_settings.settings.value.warningsEnabled) {
+      debugPrint('AUDIO_PROBE_RADIO cue skipped audio muted');
+      return false;
+    }
     final asset = _warningAsset[type];
     if (asset == null) {
       SystemSound.play(SystemSoundType.alert);
       return true;
     }
     try {
-      await _immediateCuePlayer.stop();
-      await _immediateCuePlayer.play(
-        AssetSource(asset),
-        volume: 1.0,
-      );
+      await _immediateCuePlayer.stop().timeout(
+            const Duration(milliseconds: 350),
+            onTimeout: () {},
+          );
+      await _immediateCuePlayer
+          .play(
+            AssetSource(asset),
+            volume: 1.0,
+          )
+          .timeout(const Duration(milliseconds: 900));
+      debugPrint('AUDIO_PROBE_RADIO cue ok asset=$asset');
       return true;
-    } catch (_) {
-      SystemSound.play(SystemSoundType.alert);
+    } catch (e) {
+      debugPrint('AUDIO_PROBE_RADIO cue failed asset=$asset error=$e');
+      try {
+        SystemSound.play(SystemSoundType.alert);
+      } catch (_) {
+        // Ignore fallback failure.
+      }
       return false;
     }
+  }
+
+  Future<RadioAudioSelfTestResult> runSelfTest() async {
+    await initialize();
+    if (!_settings.settings.value.warningsEnabled) {
+      await clearQueue(stopCurrent: true);
+      return const RadioAudioSelfTestResult(
+        cueOk: false,
+        voiceOk: false,
+        ttsAvailable: false,
+        detail: 'audio muted',
+      );
+    }
+    final cueOk = await playImmediateCue(RadioWarningType.conflict);
+    var voiceOk = false;
+    var detail = _ttsAvailable ? 'tts available' : 'tts unavailable';
+
+    if (_ttsAvailable && _settings.settings.value.voiceVolume > 0) {
+      try {
+        await _applyVoiceProfile('QFA214');
+        const text = 'QFA214 radio check';
+        if (_settings.settings.value.subtitlesEnabled) {
+          subtitle.value = text;
+        }
+        await _tts.speak(text).timeout(const Duration(seconds: 4));
+        voiceOk = true;
+        detail = 'voice spoken';
+      } catch (e) {
+        detail = 'voice failed: $e';
+        debugPrint('AUDIO_PROBE_RADIO voice self-test failed: $e');
+      } finally {
+        subtitle.value = null;
+      }
+    } else if (_settings.settings.value.voiceVolume <= 0) {
+      detail = 'voice volume is zero';
+    }
+
+    debugPrint(
+      'AUDIO_PROBE_RADIO selfTest cue=$cueOk voice=$voiceOk tts=$_ttsAvailable detail=$detail',
+    );
+    return RadioAudioSelfTestResult(
+      cueOk: cueOk,
+      voiceOk: voiceOk,
+      ttsAvailable: _ttsAvailable,
+      detail: detail,
+    );
   }
 
   Future<void> enqueuePilotAck({
     required String callsign,
     required String spokenText,
     Duration ackDelay = _defaultAckDelay,
+    bool respectSettings = true,
   }) async {
     await initialize();
+    final settings = _settings.settings.value;
+    if ((respectSettings && !settings.warningsEnabled) ||
+        settings.voiceVolume <= 0) {
+      debugPrint(
+        'AUDIO_PROBE_RADIO pilot ack skipped callsign=$callsign muted=${!settings.warningsEnabled} volume=${settings.voiceVolume}',
+      );
+      return;
+    }
     final now = DateTime.now();
     final jitter = _voiceJitterFor(callsign);
     final item = _QueuedRadioItem(
@@ -149,6 +250,9 @@ class PilotRadioAudioService {
       text: spokenText,
     );
     _queue.add(item);
+    debugPrint(
+      'AUDIO_PROBE_RADIO pilot ack queued callsign=$callsign text=$spokenText',
+    );
     _schedulePump();
   }
 
@@ -237,6 +341,7 @@ class PilotRadioAudioService {
     _isPlaying = true;
     if (item.kind == _RadioItemKind.warning) {
       await _playWarning(item.warningType!);
+      await _speakWarning(item.warningType!);
       _lastPlaybackAt = DateTime.now();
       _isPlaying = false;
       _pumpQueue();
@@ -267,9 +372,14 @@ class PilotRadioAudioService {
 
     try {
       final estimated = _estimateSpeechDuration(text);
+      debugPrint('AUDIO_PROBE_RADIO pilot voice start callsign=$callsign');
       await _tts.speak(text).timeout(estimated + const Duration(seconds: 1));
-    } catch (_) {
+      debugPrint('AUDIO_PROBE_RADIO pilot voice ok callsign=$callsign');
+    } catch (e) {
       // If TTS backend does not report completion consistently, continue queue.
+      debugPrint(
+        'AUDIO_PROBE_RADIO pilot voice failed callsign=$callsign error=$e',
+      );
     } finally {
       subtitle.value = null;
       _lastPlaybackAt = DateTime.now();
@@ -323,6 +433,37 @@ class PilotRadioAudioService {
       SystemSound.play(SystemSoundType.alert);
     } finally {
       await sub.cancel();
+    }
+  }
+
+  Future<void> _speakWarning(RadioWarningType type) async {
+    if (!_ttsAvailable || _settings.settings.value.voiceVolume <= 0) return;
+    final text = _warningText(type);
+    try {
+      await _applyVoiceProfile('RADIO');
+      if (_settings.settings.value.subtitlesEnabled) {
+        subtitle.value = text;
+      }
+      debugPrint('AUDIO_PROBE_RADIO warning voice start type=$type');
+      await _tts
+          .speak(text)
+          .timeout(_estimateSpeechDuration(text) + const Duration(seconds: 1));
+      debugPrint('AUDIO_PROBE_RADIO warning voice ok type=$type');
+    } catch (e) {
+      debugPrint('AUDIO_PROBE_RADIO warning voice failed type=$type error=$e');
+    } finally {
+      subtitle.value = null;
+    }
+  }
+
+  String _warningText(RadioWarningType type) {
+    switch (type) {
+      case RadioWarningType.conflict:
+        return 'Traffic alert. Check separation.';
+      case RadioWarningType.runwayPressure:
+        return 'Runway pressure building. Check arrival spacing.';
+      case RadioWarningType.overloadPeak:
+        return 'Workload critical. Prioritize active conflicts.';
     }
   }
 

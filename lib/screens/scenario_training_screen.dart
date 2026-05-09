@@ -265,38 +265,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   void _playImmediateCommandCue() {
     // Immediate cue bypasses queue/TTS so command taps are always audible.
     _radioAudio.playImmediateCue(RadioWarningType.conflict);
-    // Keep queue path too for continuity in replay/cadence.
-    _radioAudio.enqueueWarning(
-      RadioWarningType.conflict,
-      interrupt: false,
-      delay: Duration.zero,
-    );
     developer.log('AUDIO_PROBE_SCENARIO command cue fired',
-        name: 'ScenarioTrainingScreen');
-  }
-
-  Future<void> _runAudioSelfTest() async {
-    final l10n = AppLocalizations.of(context)!;
-    final immediateOk =
-        await _radioAudio.playImmediateCue(RadioWarningType.conflict);
-    await _radioAudio.enqueueWarning(
-      RadioWarningType.conflict,
-      interrupt: true,
-      delay: Duration.zero,
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(immediateOk
-              ? l10n.radarTrainingAudioSelfTestStarted
-              : l10n.radarTrainingAudioSelfTestFailed),
-          duration: const Duration(milliseconds: 1200),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    developer.log('AUDIO_PROBE_SCENARIO self-test immediate=$immediateOk',
         name: 'ScenarioTrainingScreen');
   }
 
@@ -449,21 +418,36 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                       title: Text(AppLocalizations.of(context)!
                           .radioSettingsWarningAudio),
                       value: s.warningsEnabled,
-                      onChanged: (v) => _audioSettings.setWarningsEnabled(v),
+                      onChanged: (v) {
+                        _audioSettings.setWarningsEnabled(v);
+                        if (!v) {
+                          _radioAudio.clearQueue(stopCurrent: true);
+                        }
+                      },
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                           AppLocalizations.of(context)!.radioSettingsSubtitles),
                       value: s.subtitlesEnabled,
-                      onChanged: (v) => _audioSettings.setSubtitlesEnabled(v),
+                      onChanged: (v) {
+                        _audioSettings.setSubtitlesEnabled(v);
+                        if (!v) {
+                          _radioAudio.clearQueue(stopCurrent: true);
+                        }
+                      },
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(AppLocalizations.of(context)!
                           .radioSettingsReplayAudio),
                       value: s.replayAudioEnabled,
-                      onChanged: (v) => _audioSettings.setReplayAudioEnabled(v),
+                      onChanged: (v) {
+                        _audioSettings.setReplayAudioEnabled(v);
+                        if (!v) {
+                          _radioAudio.clearQueue(stopCurrent: true);
+                        }
+                      },
                     ),
                   ],
                 );
@@ -550,11 +534,6 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
             tooltip: l10n.radioSettingsTooltip,
             onPressed: _openAudioSettings,
             icon: const Icon(Icons.tune),
-          ),
-          IconButton(
-            tooltip: l10n.radarTrainingAudioSelfTestTooltip,
-            onPressed: _runAudioSelfTest,
-            icon: const Icon(Icons.hearing),
           ),
         ],
       ),

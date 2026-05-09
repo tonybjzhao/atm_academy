@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/pilot_radio_audio_service.dart';
 import '../../services/workload_audio_controller.dart';
 import 'commands/controller_command.dart';
 import 'core/alerts/operational_alert.dart';
@@ -64,8 +65,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   final List<SimulationSnapshot> _replayHistory = <SimulationSnapshot>[];
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
   final WorkloadAudioController _audioController = WorkloadAudioController();
+  final PilotRadioAudioService _radioAudio = PilotRadioAudioService.instance;
   late final AudioPlayer _cuePlayer = AudioPlayer(playerId: 'radar_cues');
-  late final AudioPlayer _cuePlayerAlt = AudioPlayer(playerId: 'radar_cues_alt');
+  late final AudioPlayer _cuePlayerAlt =
+      AudioPlayer(playerId: 'radar_cues_alt');
   Future<void> _cuePlaybackChain = Future<void>.value();
   bool _useAltCuePlayer = false;
   Ticker? _ticker;
@@ -102,6 +105,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   int _audioProbeCount = 0;
   String _audioProbeStatus = '';
 
+  bool get _showAudioSelfTestControls => kDebugMode && !widget.betaMode;
+
   @override
   void initState() {
     super.initState();
@@ -110,6 +115,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       name: 'RadarV2DebugScreen',
     );
     _initializeAudio();
+    _radioAudio.initialize();
     _loadScenario(_scenarioName);
     _ticker = createTicker(_onFrame)..start();
   }
@@ -121,7 +127,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       await _configureCuePlayer(_cuePlayerAlt);
     } catch (e) {
       assert(() {
-        print('RadarV2DebugScreen: Failed to initialize audio: $e');
+        debugPrint('RadarV2DebugScreen: Failed to initialize audio: $e');
         return true;
       }());
     }
@@ -135,9 +141,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
           options: {},
         ),
         android: AudioContextAndroid(
-          contentType: AndroidContentType.sonification,
+          contentType: AndroidContentType.music,
           usageType: AndroidUsageType.media,
-          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+          audioFocus: AndroidAudioFocus.gain,
           isSpeakerphoneOn: true,
         ),
       ),
@@ -367,6 +373,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         now.add(const Duration(milliseconds: 450));
     runtime.engine.applyCommand(command);
     _playButtonCue();
+    if (!_muted) {
+      _enqueuePilotAck(command, snapshot);
+    }
     runtime.recordCommandTimestamp(snapshot.elapsed,
         aircraftId: command.aircraftId);
     _scoreTracker.recordCommand(command, snapshot);
@@ -390,6 +399,50 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
           behavior: SnackBarBehavior.floating,
         ),
       );
+  }
+
+  void _enqueuePilotAck(
+      ControllerCommand command, SimulationSnapshot snapshot) {
+    final aircraft = _aircraftForId(snapshot, command.aircraftId);
+    if (aircraft == null) return;
+    final text = _pilotAckText(command, aircraft);
+    _radioAudio.enqueuePilotAck(
+      callsign: aircraft.callsign,
+      spokenText: text,
+      respectSettings: !widget.betaMode,
+    );
+  }
+
+  AircraftState? _aircraftForId(SimulationSnapshot snapshot, String id) {
+    for (final aircraft in snapshot.aircraft) {
+      if (aircraft.id == id) return aircraft;
+    }
+    return null;
+  }
+
+  String _pilotAckText(ControllerCommand command, AircraftState aircraft) {
+    final callsign = aircraft.callsign;
+    switch (command) {
+      case AssignHeading(:final headingDeg):
+        final heading =
+            _normalizeHeading(headingDeg).round().toString().padLeft(3, '0');
+        return '$callsign, turning heading $heading.';
+      case AssignAltitude(:final altitudeFt):
+        final level = altitudeFt ~/ 100;
+        final verb =
+            altitudeFt >= aircraft.altitudeFt ? 'climbing' : 'descending';
+        return '$callsign, $verb flight level $level.';
+      case AssignSpeed(:final speedKt):
+        final verb =
+            speedKt >= aircraft.groundSpeedKt ? 'increasing' : 'reducing';
+        return '$callsign, $verb speed ${speedKt.round()} knots.';
+      case DirectToWaypoint(:final waypointId):
+        return '$callsign, direct $waypointId.';
+      case EnterHold():
+        return '$callsign, entering hold.';
+      case ExitHold():
+        return '$callsign, exiting hold.';
+    }
   }
 
   void _commandHeading(AircraftState aircraft, int deltaDeg) {
@@ -642,47 +695,67 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     if (level == 0) return;
     final now = DateTime.now();
     final cooldownMs = switch (level) {
-      3 => 520,
+      3 => 900,
       2 => 900,
       _ => 2600,
     };
     if (now.difference(_lastAudioCue).inMilliseconds < cooldownMs) return;
     _lastAudioCue = now;
     if (level == 3) {
-      _playCue('audio/radio/conflict_warning.wav');
-      Future.delayed(const Duration(milliseconds: 160), () {
-        if (!_muted) _playCue('audio/radio/conflict_warning.wav');
-      });
+      _playRadioCue(RadioWarningType.conflict);
       return;
     }
     if (level == 2) {
-      _playCue('audio/radio/runway_pressure_warning.wav');
+      _playRadioCue(RadioWarningType.runwayPressure);
       return;
     }
-    _playCue('audio/radio/conflict_warning.wav');
+    _playRadioCue(RadioWarningType.conflict);
   }
 
   void _playSweepCue() {
     if (_muted || !_sweepEnabled || !widget.betaMode) return;
     final now = DateTime.now();
-    if (now.difference(_lastSweepCue).inMilliseconds < 2600) return;
+    if (now.difference(_lastSweepCue).inMilliseconds < 3600) return;
+    if (now.difference(_lastAudioCue).inMilliseconds < 1600) return;
     _lastSweepCue = now;
-    _playCue('audio/radio/conflict_warning.wav');
+    developer.log(
+      'AUDIO_PROBE sweepCue asset=radar_sweep_tick',
+      name: 'RadarV2DebugScreen',
+    );
+    unawaited(_enqueueCue('audio/radio/radar_sweep_tick.wav'));
   }
 
   void _playButtonCue() {
     if (_muted) return;
-    // Keep an always-audible diagnostic cue on Android command actions.
-    final fallbackOk = _playSystemFallbackCue();
+    _lastAudioCue = DateTime.now();
+    unawaited(_radioAudio.playImmediateCue(
+      RadioWarningType.runwayPressure,
+      respectSettings: !widget.betaMode,
+    ));
     developer.log(
-      'AUDIO_PROBE commandCue fallback=$fallbackOk',
+      'AUDIO_PROBE commandCue asset=runwayPressure',
       name: 'RadarV2DebugScreen',
     );
     _audioProbeCount++;
-    _audioProbeStatus = fallbackOk
-        ? 'command cue: system beep ok (#$_audioProbeCount)'
-        : 'command cue: system beep failed (#$_audioProbeCount)';
-    _playCue('audio/radio/runway_pressure_warning.wav');
+    _audioProbeStatus = 'command cue: asset requested (#$_audioProbeCount)';
+  }
+
+  void _playRadioCue(RadioWarningType type) {
+    if (_muted) return;
+    unawaited(_radioAudio.playImmediateCue(
+      type,
+      respectSettings: !widget.betaMode,
+    ));
+  }
+
+  void _toggleMute() {
+    final next = !_muted;
+    setState(() => _muted = next);
+    if (next) {
+      unawaited(_radioAudio.clearQueue(stopCurrent: true));
+      unawaited(_cuePlayer.stop());
+      unawaited(_cuePlayerAlt.stop());
+    }
   }
 
   Future<void> _runAudioSelfTest(AppLocalizations l10n) async {
@@ -694,7 +767,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       return;
     }
     final fallbackOk = _playSystemFallbackCue();
-    final assetOk = await _enqueueCue('audio/radio/runway_pressure_warning.wav');
+    final assetOk =
+        await _enqueueCue('audio/radio/runway_pressure_warning.wav');
     final ok = fallbackOk || assetOk;
     developer.log(
       'AUDIO_PROBE selfTest system=$fallbackOk asset=$assetOk overall=$ok',
@@ -720,10 +794,6 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     );
   }
 
-  void _playCue(String assetPath) {
-    unawaited(_enqueueCue(assetPath));
-  }
-
   Future<bool> _enqueueCue(String assetPath) {
     final completer = Completer<bool>();
     _cuePlaybackChain = _cuePlaybackChain.then((_) async {
@@ -732,6 +802,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         return;
       }
       final ok = await _playCueInternal(assetPath);
+      developer.log(
+        'AUDIO_PROBE localCue asset=$assetPath ok=$ok',
+        name: 'RadarV2DebugScreen',
+      );
       completer.complete(ok);
     });
     return completer.future;
@@ -754,7 +828,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         return true;
       } catch (_) {
         assert(() {
-          print('RadarV2DebugScreen: Failed to play $assetPath: $e');
+          debugPrint('RadarV2DebugScreen: Failed to play $assetPath: $e');
           return true;
         }());
         return _playSystemFallbackCue();
@@ -797,13 +871,14 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                 ? l10n.radarTrainingUnmuteAudioCues
                 : l10n.radarTrainingMuteAudioCues,
             icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
-            onPressed: () => setState(() => _muted = !_muted),
+            onPressed: _toggleMute,
           ),
-          IconButton(
-            tooltip: l10n.radarTrainingAudioSelfTestTooltip,
-            icon: const Icon(Icons.hearing),
-            onPressed: () => _runAudioSelfTest(l10n),
-          ),
+          if (_showAudioSelfTestControls)
+            IconButton(
+              tooltip: l10n.radarTrainingAudioSelfTestTooltip,
+              icon: const Icon(Icons.hearing),
+              onPressed: () => _runAudioSelfTest(l10n),
+            ),
           IconButton(
             tooltip: l10n.radarTrainingRestartScenario,
             icon: const Icon(Icons.restart_alt),
@@ -811,42 +886,46 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          color: const Color(0xCC0A1A28),
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _audioProbeStatus.isEmpty
-                      ? 'Audio probe ready'
-                      : _audioProbeStatus,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 11,
-                  ),
+      bottomNavigationBar: _showAudioSelfTestControls
+          ? SafeArea(
+              top: false,
+              child: Container(
+                color: const Color(0xCC0A1A28),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _audioProbeStatus.isEmpty
+                            ? 'Audio probe ready'
+                            : _audioProbeStatus,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: () => _runAudioSelfTest(l10n),
+                      icon: const Icon(Icons.hearing, size: 16),
+                      label: Text(l10n.radarTrainingAudioSelfTestTooltip),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: () => _runAudioSelfTest(l10n),
-                icon: const Icon(Icons.hearing, size: 16),
-                label: Text(l10n.radarTrainingAudioSelfTestTooltip),
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'radar-audio-self-test',
-        onPressed: () => _runAudioSelfTest(l10n),
-        icon: const Icon(Icons.hearing),
-        label: Text(l10n.radarTrainingAudioSelfTestTooltip),
-      ),
+            )
+          : null,
+      floatingActionButton: _showAudioSelfTestControls
+          ? FloatingActionButton.extended(
+              heroTag: 'radar-audio-self-test',
+              onPressed: () => _runAudioSelfTest(l10n),
+              icon: const Icon(Icons.hearing),
+              label: Text(l10n.radarTrainingAudioSelfTestTooltip),
+            )
+          : null,
       body: Column(
         children: [
           Expanded(
@@ -950,51 +1029,56 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                             runtime.definition.weatherMode,
                                       ),
                                     ),
-                                    Positioned(
-                                      right: 10,
-                                      bottom: 10,
-                                      child: Container(
-                                        width: 210,
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xCC0A1A28),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: const Color(0x6646F5A7),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            FilledButton.icon(
-                                              onPressed: () =>
-                                                  _runAudioSelfTest(l10n),
-                                              icon: const Icon(Icons.hearing,
-                                                  size: 16),
-                                              label: Text(
-                                                l10n.radarTrainingAudioSelfTestTooltip,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                    if (_showAudioSelfTestControls)
+                                      Positioned(
+                                        right: 10,
+                                        bottom: 10,
+                                        child: Container(
+                                          width: 210,
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xCC0A1A28),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: const Color(0x6646F5A7),
                                             ),
-                                            if (_audioProbeStatus.isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    top: 6),
-                                                child: Text(
-                                                  _audioProbeStatus,
-                                                  style: const TextStyle(
-                                                    color: AppTheme.textSecondary,
-                                                    fontSize: 11,
-                                                  ),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              FilledButton.icon(
+                                                onPressed: () =>
+                                                    _runAudioSelfTest(l10n),
+                                                icon: const Icon(Icons.hearing,
+                                                    size: 16),
+                                                label: Text(
+                                                  l10n.radarTrainingAudioSelfTestTooltip,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                          ],
+                                              if (_audioProbeStatus.isNotEmpty)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 6),
+                                                  child: Text(
+                                                    _audioProbeStatus,
+                                                    style: const TextStyle(
+                                                      color: AppTheme
+                                                          .textSecondary,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
                                     if (_commandFlashUntil != null &&
                                         DateTime.now()
                                             .isBefore(_commandFlashUntil!))

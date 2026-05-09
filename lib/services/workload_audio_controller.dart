@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../features/radar_v2/core/audio/workload_audio_state.dart';
@@ -41,7 +42,7 @@ class WorkloadAudioController {
           ),
           android: AudioContextAndroid(
             contentType: AndroidContentType.sonification,
-            usageType: AndroidUsageType.media,
+            usageType: AndroidUsageType.assistanceSonification,
             audioFocus: AndroidAudioFocus.gainTransientMayDuck,
             isSpeakerphoneOn: true,
           ),
@@ -53,7 +54,7 @@ class WorkloadAudioController {
       _initialized = true;
     } catch (e) {
       assert(() {
-        print('WorkloadAudioController: Failed to initialize: $e');
+        debugPrint('WorkloadAudioController: Failed to initialize: $e');
         return true;
       }());
     }
@@ -110,7 +111,7 @@ class WorkloadAudioController {
       await _player.play(AssetSource(assetPath), volume: 1.0);
     } catch (e) {
       assert(() {
-        print('WorkloadAudioController: Failed to play $assetPath: $e');
+        debugPrint('WorkloadAudioController: Failed to play $assetPath: $e');
         return true;
       }());
       try {
