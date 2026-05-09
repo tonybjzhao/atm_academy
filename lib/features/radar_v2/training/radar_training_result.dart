@@ -749,6 +749,7 @@ class RadarTrainingResultBuilder {
 
   static List<String> buildReplayExplanation(SimulationSnapshot snapshot) {
     final lines = <String>[
+      ..._operationalBehaviorLines(snapshot),
       ...snapshot.attentionReportLines,
       ...snapshot.predictiveMentalModelReportLines,
       ...snapshot.cognitiveCascadeReportLines,
@@ -769,6 +770,25 @@ class RadarTrainingResultBuilder {
           .add('Traffic flow remained stable with no major cognitive events.');
     }
     return List.unmodifiable(cleaned);
+  }
+
+  static List<String> _operationalBehaviorLines(SimulationSnapshot snapshot) {
+    const behaviorTypes = <String>{
+      'weatherCompression',
+      'weatherInteraction',
+      'lateSpeedControl',
+      'runwayRecoveryExtended',
+      'pilotResponseDelay',
+    };
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (!behaviorTypes.contains(event.type)) continue;
+      final line = event.label.trim();
+      if (line.isEmpty || lines.contains(line)) continue;
+      lines.add(line);
+      if (lines.length == 4) break;
+    }
+    return List.unmodifiable(lines);
   }
 
   static List<String> buildTimelineSummary(

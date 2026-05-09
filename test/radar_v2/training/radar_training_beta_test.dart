@@ -225,6 +225,33 @@ void main() {
       expect(explanation.join(' '), contains('Expectation drift'));
     });
 
+    test('replay explanation includes operational behavior lines', () {
+      final explanation = RadarTrainingResultBuilder.buildReplayExplanation(
+        const SimulationSnapshot(
+          tick: 1,
+          elapsed: Duration(seconds: 120),
+          aircraft: [],
+          separation: [],
+          events: [
+            SimulationEvent(
+              elapsed: Duration(seconds: 80),
+              type: 'weatherCompression',
+              label:
+                  'Weather compression reduced spacing stability near the merge.',
+            ),
+            SimulationEvent(
+              elapsed: Duration(seconds: 96),
+              type: 'lateSpeedControl',
+              label: 'Late speed control allowed closure rate to build.',
+            ),
+          ],
+        ),
+      );
+
+      expect(explanation.join(' '), contains('Weather compression'));
+      expect(explanation.join(' '), contains('Late speed control'));
+    });
+
     test('debug overlays are hidden by default in beta play mode', () {
       const screen = RadarV2DebugScreen(betaMode: true);
 

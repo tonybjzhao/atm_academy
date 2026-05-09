@@ -38,6 +38,7 @@ class SimulationEngine {
       <String, List<TrailPoint>>{};
   final List<_PendingCommand> _pendingCommands = <_PendingCommand>[];
   final List<SimulationEvent> _events = <SimulationEvent>[];
+  final Set<String> _recordedBehaviorEvents = <String>{};
   int _dynamicControllerLoad;
   double _sectorPressureIndex = 0;
   int _tick;
@@ -79,6 +80,7 @@ class SimulationEngine {
         if (!_aircraft[index].active) continue;
         final original = _aircraft[index];
         final guided = _applyRouteGuidance(original);
+        final environment = _environmentEffectFor(guided);
         var advanced = trajectoryIntegrator.advance(
           guided,
           fixedStep,
@@ -86,6 +88,8 @@ class SimulationEngine {
             guided.performanceType,
           ),
           pressureIndex: _sectorPressureIndex,
+          trackWobbleDeg: environment.trackWobbleDeg,
+          groundSpeedVariationKt: environment.groundSpeedVariationKt,
         );
         if (original.intent.assignedHeadingDeg == null &&
             guided.intent.assignedHeadingDeg != null &&
@@ -138,9 +142,7 @@ class SimulationEngine {
   void applyCommand(ControllerCommand command) {
     final aircraft = _aircraftById(command.aircraftId);
     var effectiveDelay = _getEffectiveAckDelay();
-    if (_sectorPressureIndex >= 0.8) {
-      effectiveDelay += _pilotResponseJitter(aircraft, command);
-    }
+    effectiveDelay += _pilotResponseJitter(aircraft, command);
 
     // Under higher pressure, occasional delayed acknowledgements add
     // operational imperfection without introducing a new gameplay system.
@@ -165,6 +167,15 @@ class SimulationEngine {
       label: _commandIssuedLabel(command),
       aircraftId: command.aircraftId,
     ));
+    if (effectiveDelay - commandAcknowledgementDelay >=
+        const Duration(milliseconds: 800)) {
+      _recordBehaviorEvent(
+        key: 'pilot_delay:${aircraft.id}',
+        type: 'pilotResponseDelay',
+        label: 'Pilot response delay increased command follow-through time.',
+        aircraftId: aircraft.id,
+      );
+    }
   }
 
   /// Calculates effective acknowledgement delay based on current sector pressure.
@@ -206,8 +217,9 @@ class SimulationEngine {
     final aircraft = _aircraftById(command.aircraftId);
     if (command is AssignHeading) {
       final commandedHeading = _normalizeHeading(command.headingDeg);
-      final headingOffset =
-          _sectorPressureIndex >= 0.9 ? _headingComplianceOffsetDeg(aircraft, command) : 0.0;
+      final headingOffset = _sectorPressureIndex >= 0.9
+          ? _headingComplianceOffsetDeg(aircraft, command)
+          : 0.0;
       updateAircraft(
         aircraft.copyWith(
           intent: aircraft.intent.copyWith(
@@ -238,8 +250,9 @@ class SimulationEngine {
       return;
     }
     if (command is AssignSpeed) {
-      final speedOffset =
-          _sectorPressureIndex >= 0.9 ? _speedComplianceOffsetKt(aircraft, command) : 0.0;
+      final speedOffset = _sectorPressureIndex >= 0.9
+          ? _speedComplianceOffsetKt(aircraft, command)
+          : 0.0;
       updateAircraft(
         aircraft.copyWith(
           intent: aircraft.intent.copyWith(
@@ -344,9 +357,13 @@ class SimulationEngine {
     required Duration duration,
     required String aircraftId,
   }) {
+    final effectiveDuration = _effectiveRunwayOccupancyDuration(
+      duration,
+      aircraftId,
+    );
     _runwayStates[runwayId] = RunwayState(
       runwayId: runwayId,
-      occupiedUntil: _elapsed + duration,
+      occupiedUntil: _elapsed + effectiveDuration,
       occupiedByAircraftId: aircraftId,
     );
     recordEvent(SimulationEvent(
@@ -355,6 +372,15 @@ class SimulationEngine {
       label: '$runwayId occupied',
       aircraftId: aircraftId,
     ));
+    if (effectiveDuration.inMilliseconds >
+        (duration.inMilliseconds * 1.08).round()) {
+      _recordBehaviorEvent(
+        key: 'runway_extended:$runwayId',
+        type: 'runwayRecoveryExtended',
+        label: 'Runway occupancy extended the recovery window.',
+        aircraftId: aircraftId,
+      );
+    }
   }
 
   AircraftState _applyRouteGuidance(AircraftState aircraft) {
@@ -419,8 +445,30 @@ class SimulationEngine {
 
       // Small deterministic variation avoids mathematically perfect spacing.
       speedTarget +=
-        (_noise01('${aircraft.id}:approach:${_elapsed.inSeconds}') - 0.5) *
-          2.8;
+          (_noise01('${aircraft.id}:approach:${_elapsed.inSeconds}') - 0.5) *
+              2.8;
+      if (_weatherInfluenceFor(aircraft) > 0.2) {
+        speedTarget +=
+            (_noise01('${aircraft.id}:merge:${_elapsed.inSeconds ~/ 3}') -
+                    0.5) *
+                5.5;
+        _recordBehaviorEvent(
+          key: 'weather_compression:${aircraft.id}',
+          type: 'weatherCompression',
+          label:
+              'Weather compression reduced spacing stability near the merge.',
+          aircraftId: aircraft.id,
+        );
+      }
+      if (aircraft.groundSpeedKt - speedTarget > 22 &&
+          distanceToThreshold < 18) {
+        _recordBehaviorEvent(
+          key: 'late_speed:${aircraft.id}',
+          type: 'lateSpeedControl',
+          label: 'Late speed control allowed closure rate to build.',
+          aircraftId: aircraft.id,
+        );
+      }
     }
     speedTarget = speedTarget.clamp(profile.approachSpeedKt - 5, 330);
     return (speedTarget, flow.stabilizedAltitudeFt);
@@ -628,16 +676,19 @@ class SimulationEngine {
     ControllerCommand command,
   ) {
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
-    final baseSeconds = switch (profile.type) {
-      AircraftPerformanceType.jet => 0.45,
-      AircraftPerformanceType.regional => 0.35,
-      AircraftPerformanceType.turboprop => 0.30,
+    final baseMilliseconds = switch (profile.type) {
+      AircraftPerformanceType.jet => 650,
+      AircraftPerformanceType.regional => 470,
+      AircraftPerformanceType.turboprop => 340,
     };
     final noise = _noise01(
       '${aircraft.id}:${command.runtimeType}:${_elapsed.inSeconds}:${_tick}',
     );
-    final jitterSeconds = (noise - 0.5) * 2 * baseSeconds;
-    return Duration(milliseconds: (jitterSeconds * 1000).round());
+    final pressureExtra =
+        _sectorPressureIndex >= 0.8 ? (_sectorPressureIndex * 180).round() : 0;
+    return Duration(
+      milliseconds: (baseMilliseconds + noise * 700 + pressureExtra).round(),
+    );
   }
 
   double _headingComplianceOffsetDeg(
@@ -684,8 +735,91 @@ class SimulationEngine {
   }
 
   double _noise01(String seed) {
-    final hash = seed.hashCode & 0x7fffffff;
+    var hash = 2166136261;
+    for (var i = 0; i < seed.length; i++) {
+      hash ^= seed.codeUnitAt(i);
+      hash = (hash * 16777619) & 0xffffffff;
+    }
     return (hash % 10000) / 10000.0;
+  }
+
+  _EnvironmentEffect _environmentEffectFor(AircraftState aircraft) {
+    final influence = _weatherInfluenceFor(aircraft);
+    if (influence <= 0) return const _EnvironmentEffect.none();
+    final phase = _elapsed.inSeconds ~/ 2;
+    final wobbleNoise = _noise01('${aircraft.id}:wx_track:$phase') - 0.5;
+    final speedNoise = _noise01('${aircraft.id}:wx_speed:$phase') - 0.5;
+    final pressure = (0.65 + _sectorPressureIndex * 0.16).clamp(0.65, 1.35);
+    final wobble = wobbleNoise * 2 * influence * pressure * 1.4;
+    final speed = speedNoise * 2 * influence * pressure * 4.5;
+    if (influence > 0.28) {
+      _recordBehaviorEvent(
+        key: 'weather_wobble:${aircraft.id}',
+        type: 'weatherInteraction',
+        label: 'Weather compression reduced spacing stability near the merge.',
+        aircraftId: aircraft.id,
+      );
+    }
+    return _EnvironmentEffect(
+      trackWobbleDeg: wobble.clamp(-2.2, 2.2),
+      groundSpeedVariationKt: speed.clamp(-7.0, 7.0),
+    );
+  }
+
+  double _weatherInfluenceFor(AircraftState aircraft) {
+    var influence = 0.0;
+    for (final zone in weatherZones) {
+      final distance =
+          _distance(aircraft.xNm, aircraft.yNm, zone.xNm, zone.yNm);
+      final edge = zone.radiusNm + 4;
+      if (distance > edge) continue;
+      final proximity = 1 - (distance / edge).clamp(0.0, 1.0);
+      influence =
+          math.max(influence, proximity * (0.45 + zone.severity * 0.18));
+    }
+    return influence.clamp(0.0, 1.0);
+  }
+
+  Duration _effectiveRunwayOccupancyDuration(
+    Duration baseDuration,
+    String aircraftId,
+  ) {
+    AircraftState? aircraft;
+    for (final candidate in _aircraft) {
+      if (candidate.id == aircraftId) {
+        aircraft = candidate;
+        break;
+      }
+    }
+    final typeFactor = switch (aircraft?.performanceType) {
+      AircraftPerformanceType.jet => 1.08,
+      AircraftPerformanceType.regional => 1.0,
+      AircraftPerformanceType.turboprop => 0.92,
+      null => 1.0,
+    };
+    final weatherFactor =
+        weatherZones.isEmpty ? 1.0 : 1.0 + (0.03 * _sectorPressureIndex);
+    final noise =
+        (_noise01('$aircraftId:runway:${_elapsed.inSeconds}') - 0.5) * 0.08;
+    final factor = (typeFactor * weatherFactor + noise).clamp(0.84, 1.28);
+    return Duration(
+      milliseconds: (baseDuration.inMilliseconds * factor).round(),
+    );
+  }
+
+  void _recordBehaviorEvent({
+    required String key,
+    required String type,
+    required String label,
+    String? aircraftId,
+  }) {
+    if (!_recordedBehaviorEvents.add(key)) return;
+    _events.add(SimulationEvent(
+      elapsed: _elapsed,
+      type: type,
+      label: label,
+      aircraftId: aircraftId,
+    ));
   }
 }
 
@@ -697,4 +831,18 @@ class _PendingCommand {
     required this.command,
     required this.applyAt,
   });
+}
+
+class _EnvironmentEffect {
+  final double trackWobbleDeg;
+  final double groundSpeedVariationKt;
+
+  const _EnvironmentEffect({
+    required this.trackWobbleDeg,
+    required this.groundSpeedVariationKt,
+  });
+
+  const _EnvironmentEffect.none()
+      : trackWobbleDeg = 0,
+        groundSpeedVariationKt = 0;
 }

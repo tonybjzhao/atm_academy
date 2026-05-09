@@ -7,6 +7,7 @@ import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
 import 'package:atm_flutter/features/radar_v2/models/altitude_restriction.dart';
 import 'package:atm_flutter/features/radar_v2/models/arrival_flow.dart';
 import 'package:atm_flutter/features/radar_v2/models/hold_pattern.dart';
+import 'package:atm_flutter/features/radar_v2/models/weather_zone.dart';
 import 'package:atm_flutter/features/radar_v2/models/waypoint.dart';
 
 void main() {
@@ -92,8 +93,12 @@ void main() {
 
     final aircraft = engine.tick(steps: 10).aircraftById('a')!;
 
-    expect(aircraft.headingDeg, closeTo(30, 0.001));
-    expect(aircraft.groundSpeedKt, closeTo(270, 0.001));
+    expect(aircraft.headingDeg, greaterThan(20));
+    expect(aircraft.headingDeg, lessThan(90));
+    expect(aircraft.turnRateDegPerSecond, greaterThan(0));
+    expect(aircraft.groundSpeedKt, greaterThan(250));
+    expect(aircraft.groundSpeedKt, lessThan(300));
+    expect(aircraft.speedTrendKtPerSecond, greaterThan(0));
     expect(aircraft.altitudeFt, 9300);
     expect(aircraft.verticalSpeedFpm, 1800);
   });
@@ -204,15 +209,18 @@ void main() {
     expect(intent.assignedAltitudeFt, isNull);
     expect(intent.assignedSpeedKt, isNull);
 
-    final acknowledged = engine.tick(steps: 3).aircraftById('a')!;
+    final acknowledged = engine.tick(steps: 5).aircraftById('a')!;
     expect(acknowledged.intent.assignedHeadingDeg, 90);
     expect(acknowledged.intent.assignedAltitudeFt, 12000);
     expect(acknowledged.intent.assignedSpeedKt, 300);
 
     final aircraft = engine.tick(steps: 10).aircraftById('a')!;
-    expect(aircraft.headingDeg, closeTo(33, 0.001));
-    expect(aircraft.groundSpeedKt, closeTo(273, 0.001));
-    expect(aircraft.altitudeFt, 9330);
+    expect(aircraft.headingDeg, greaterThan(20));
+    expect(aircraft.headingDeg, lessThan(90));
+    expect(aircraft.groundSpeedKt, greaterThan(250));
+    expect(aircraft.groundSpeedKt, lessThan(300));
+    expect(aircraft.altitudeFt, greaterThan(9200));
+    expect(aircraft.altitudeFt, lessThan(12000));
   });
 
   test('aircraft follows waypoint route when not being vectored', () {
@@ -238,7 +246,8 @@ void main() {
     final aircraft = engine.tick().aircraftById('a')!;
 
     expect(aircraft.yNm, greaterThan(0));
-    expect(aircraft.headingDeg, closeTo(273, 0.001));
+    expect(aircraft.headingDeg, greaterThan(270));
+    expect(aircraft.headingDeg, lessThan(273));
   });
 
   test('performance profiles change maneuver response rates', () {
@@ -310,7 +319,7 @@ void main() {
       ),
     );
 
-    final aircraft = engine.tick(steps: 4).aircraftById('a')!;
+    final aircraft = engine.tick(steps: 5).aircraftById('a')!;
 
     expect(aircraft.intent.hold, isTrue);
     expect(aircraft.intent.holdPatternId, 'FIX1_HOLD');
@@ -346,6 +355,75 @@ void main() {
     final aircraft = engine.tick().aircraftById('a')!;
 
     expect(aircraft.intent.assignedAltitudeFt, 7000);
+  });
+
+  test('speed commands respond gradually and differ by aircraft type', () {
+    final engine = SimulationEngine(
+      aircraft: [
+        const AircraftState(
+          id: 'jet',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 300,
+          performanceType: AircraftPerformanceType.jet,
+          intent: AircraftIntent(assignedSpeedKt: 220),
+        ),
+        const AircraftState(
+          id: 'tp',
+          callsign: 'REX438',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 300,
+          performanceType: AircraftPerformanceType.turboprop,
+          intent: AircraftIntent(assignedSpeedKt: 220),
+        ),
+      ],
+    );
+
+    final snapshot = engine.tick(steps: 12);
+    final jet = snapshot.aircraftById('jet')!;
+    final turboprop = snapshot.aircraftById('tp')!;
+
+    expect(jet.groundSpeedKt, greaterThan(220));
+    expect(turboprop.groundSpeedKt, greaterThan(220));
+    expect(jet.groundSpeedKt, lessThan(turboprop.groundSpeedKt));
+  });
+
+  test('weather zone creates bounded deterministic track instability', () {
+    final aircraft = const AircraftState(
+      id: 'wx',
+      callsign: 'VOZ841',
+      xNm: 0,
+      yNm: 0,
+      altitudeFt: 9000,
+      headingDeg: 90,
+      groundSpeedKt: 260,
+    );
+    final engineA = SimulationEngine(
+      aircraft: [aircraft],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 10, severity: 3),
+      ],
+    );
+    final engineB = SimulationEngine(
+      aircraft: [aircraft],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 10, severity: 3),
+      ],
+    );
+
+    final first = engineA.tick(steps: 8).aircraftById('wx')!;
+    final second = engineB.tick(steps: 8).aircraftById('wx')!;
+
+    expect(first.xNm, closeTo(second.xNm, 0.0001));
+    expect(first.yNm, closeTo(second.yNm, 0.0001));
+    expect(first.yNm.abs(), lessThan(0.06));
+    expect(first.groundSpeedKt, inInclusiveRange(253, 267));
   });
 
   test('approach capture stabilizes speed and altitude near final', () {

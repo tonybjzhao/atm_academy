@@ -20,11 +20,17 @@ class TrajectoryIntegrator {
     int descentRateFpm = defaultDescentRateFpm,
     AircraftPerformanceProfile? performance,
     double pressureIndex = 0,
+    double trackWobbleDeg = 0,
+    double groundSpeedVariationKt = 0,
   }) {
     final effectiveTurnRate =
         performance?.turnRateDegPerSecond ?? turnRateDegPerSecond;
+    final effectiveTurnAcceleration =
+        performance?.turnAccelerationDegPerSecond2 ?? effectiveTurnRate;
     final effectiveAcceleration =
         performance?.accelerationKtPerSecond ?? accelerationKtPerSecond;
+    final effectiveSpeedAcceleration =
+        performance?.speedAccelerationKtPerSecond2 ?? effectiveAcceleration;
     final effectiveClimbRate = performance?.climbRateFpm ?? climbRateFpm;
     final effectiveDescentRate = performance?.descentRateFpm ?? descentRateFpm;
 
@@ -34,18 +40,23 @@ class TrajectoryIntegrator {
     final degradedAcceleration = effectiveAcceleration * pressureDegradation;
 
     final seconds = step.inMicroseconds / Duration.microsecondsPerSecond;
-    final nextHeading = _approachAngle(
+    final turn = _approachAngle(
       aircraft.headingDeg,
       aircraft.intent.assignedHeadingDeg ?? aircraft.headingDeg,
       degradedTurnRate * seconds,
-      pressureIndex: pressureIndex,
+      currentTurnRateDegPerSecond: aircraft.turnRateDegPerSecond,
+      turnAccelerationDegPerSecond2:
+          effectiveTurnAcceleration * pressureDegradation,
+      stepSeconds: seconds,
     );
-    final nextSpeed = _approachSpeed(
+    final speed = _approachSpeed(
       aircraft.groundSpeedKt,
       aircraft.intent.assignedSpeedKt ?? aircraft.groundSpeedKt,
       accelerationKtPerSecond: degradedAcceleration,
+      speedAccelerationKtPerSecond2:
+          effectiveSpeedAcceleration * pressureDegradation,
+      currentSpeedTrendKtPerSecond: aircraft.speedTrendKtPerSecond,
       stepSeconds: seconds,
-      pressureIndex: pressureIndex,
     );
     final nextAltitude = _advanceAltitude(
       aircraft,
@@ -54,8 +65,11 @@ class TrajectoryIntegrator {
       descentRateFpm: effectiveDescentRate,
     );
 
-    final headingRad = nextHeading * math.pi / 180;
-    final distanceNm = nextSpeed * seconds / 3600;
+    final movementHeading = _normalizeHeading(turn.headingDeg + trackWobbleDeg);
+    final reportedSpeed =
+        (speed.speedKt + groundSpeedVariationKt).clamp(80.0, 520.0);
+    final headingRad = movementHeading * math.pi / 180;
+    final distanceNm = reportedSpeed * seconds / 3600;
     final dx = math.sin(headingRad) * distanceNm;
     final dy = math.cos(headingRad) * distanceNm;
 
@@ -63,9 +77,11 @@ class TrajectoryIntegrator {
       xNm: aircraft.xNm + dx,
       yNm: aircraft.yNm + dy,
       altitudeFt: nextAltitude.$1,
-      headingDeg: _normalizeHeading(nextHeading),
-      groundSpeedKt: nextSpeed,
+      headingDeg: _normalizeHeading(turn.headingDeg),
+      groundSpeedKt: reportedSpeed,
       verticalSpeedFpm: nextAltitude.$2,
+      turnRateDegPerSecond: turn.turnRateDegPerSecond,
+      speedTrendKtPerSecond: speed.speedTrendKtPerSecond,
     );
   }
 
@@ -100,51 +116,59 @@ class TrajectoryIntegrator {
     return ((aircraft.altitudeFt + stepFeet).round(), rate);
   }
 
-  double _approachSpeed(
+  _SpeedStep _approachSpeed(
     double current,
     double target, {
     required double accelerationKtPerSecond,
+    required double speedAccelerationKtPerSecond2,
+    required double currentSpeedTrendKtPerSecond,
     required double stepSeconds,
-    required double pressureIndex,
   }) {
     final delta = target - current;
-    if (delta.abs() < 0.05) return target;
-
-    // Preserve baseline deterministic speed response at low pressure.
-    if (pressureIndex < 0.8) {
-      final maxStep = accelerationKtPerSecond * stepSeconds;
-      if (delta.abs() <= maxStep) return target;
-      return current + maxStep * delta.sign;
+    if (delta.abs() < 0.05 && currentSpeedTrendKtPerSecond.abs() < 0.05) {
+      return _SpeedStep(target, 0);
     }
 
     // Deceleration is intentionally a bit slower than acceleration to avoid
     // robotic speed snaps and create inertia for heavier aircraft behavior.
     final accelRate = accelerationKtPerSecond;
     final decelRate = accelerationKtPerSecond * 0.72;
-    final rate = delta > 0 ? accelRate : decelRate;
-    final maxStep = rate * stepSeconds;
+    final maxRate = delta > 0 ? accelRate : decelRate;
+    var desiredTrend = delta.sign * maxRate;
 
     // Near target, ease in to avoid abrupt final locking.
-    final damping = delta.abs() < 10 ? (0.45 + delta.abs() / 20) : 1.0;
-    final easedStep = maxStep * damping;
+    if (delta.abs() < 12) {
+      desiredTrend *= (0.25 + delta.abs() / 16).clamp(0.25, 1.0);
+    }
 
-    if (delta.abs() <= easedStep) return target;
-    return current + easedStep * delta.sign;
+    final trendStep = speedAccelerationKtPerSecond2 * stepSeconds;
+    var nextTrend =
+        _approachScalar(currentSpeedTrendKtPerSecond, desiredTrend, trendStep);
+    var nextSpeed = current + nextTrend * stepSeconds;
+
+    if (_crossed(current, target, nextSpeed)) {
+      final overshoot = (nextSpeed - target).abs();
+      if (overshoot < 0.45 && nextTrend.abs() < 0.35) {
+        return _SpeedStep(target, 0);
+      }
+      nextTrend *= -0.35;
+      nextSpeed = target + (nextSpeed - target) * 0.28;
+    }
+    return _SpeedStep(nextSpeed, nextTrend);
   }
 
-  double _approachAngle(
+  _TurnStep _approachAngle(
     double current,
     double target,
     double maxStep, {
-    required double pressureIndex,
+    required double currentTurnRateDegPerSecond,
+    required double turnAccelerationDegPerSecond2,
+    required double stepSeconds,
   }) {
     final delta = _shortestAngleDelta(current, target);
     final absDelta = delta.abs();
-
-    // Preserve baseline deterministic turn response at low pressure.
-    if (pressureIndex < 0.8) {
-      if (absDelta <= maxStep) return target;
-      return current + maxStep * delta.sign;
+    if (absDelta < 0.08 && currentTurnRateDegPerSecond.abs() < 0.08) {
+      return _TurnStep(target, 0);
     }
 
     // Large heading changes begin assertively (anticipation), then taper near
@@ -154,13 +178,44 @@ class TrajectoryIntegrator {
         : absDelta > 20
             ? 1.0
             : 0.72;
-    final rolloutFactor = absDelta < 8
-        ? (0.35 + (absDelta / 8) * 0.65)
-        : 1.0;
-    final dynamicStep = maxStep * anticipationFactor * rolloutFactor;
+    final rolloutFactor = absDelta < 8 ? (0.35 + (absDelta / 8) * 0.65) : 1.0;
+    final maxTurnRate = maxStep / stepSeconds;
+    final desiredRate =
+        delta.sign * maxTurnRate * anticipationFactor * rolloutFactor;
+    var nextRate = _approachScalar(
+      currentTurnRateDegPerSecond,
+      desiredRate,
+      turnAccelerationDegPerSecond2 * stepSeconds,
+    );
+    var nextHeading = current + nextRate * stepSeconds;
 
-    if (absDelta <= dynamicStep) return target;
-    return current + dynamicStep * delta.sign;
+    if (_headingCrossed(current, target, nextHeading)) {
+      final overshoot = _shortestAngleDelta(target, nextHeading).abs();
+      if (overshoot < 0.25 && nextRate.abs() < 0.35) {
+        return _TurnStep(target, 0);
+      }
+      // Keep a small overshoot/settle feel, but damp the reversal quickly so
+      // aircraft remain predictable and controller-safe.
+      nextRate *= -0.42;
+      nextHeading = target + _shortestAngleDelta(target, nextHeading) * 0.35;
+    }
+    return _TurnStep(nextHeading, nextRate);
+  }
+
+  double _approachScalar(double current, double target, double maxStep) {
+    final delta = target - current;
+    if (delta.abs() <= maxStep) return target;
+    return current + maxStep * delta.sign;
+  }
+
+  bool _crossed(double from, double target, double to) {
+    return (target - from).sign != (target - to).sign && target != from;
+  }
+
+  bool _headingCrossed(double from, double target, double to) {
+    final before = _shortestAngleDelta(from, target);
+    final after = _shortestAngleDelta(to, target);
+    return before != 0 && before.sign != after.sign;
   }
 
   double _shortestAngleDelta(double fromDeg, double toDeg) {
@@ -171,4 +226,18 @@ class TrajectoryIntegrator {
     final normalized = headingDeg % 360;
     return normalized < 0 ? normalized + 360 : normalized;
   }
+}
+
+class _TurnStep {
+  final double headingDeg;
+  final double turnRateDegPerSecond;
+
+  const _TurnStep(this.headingDeg, this.turnRateDegPerSecond);
+}
+
+class _SpeedStep {
+  final double speedKt;
+  final double speedTrendKtPerSecond;
+
+  const _SpeedStep(this.speedKt, this.speedTrendKtPerSecond);
 }

@@ -7,7 +7,9 @@ enum AircraftPerformanceType {
 class AircraftPerformanceProfile {
   final AircraftPerformanceType type;
   final double turnRateDegPerSecond;
+  final double turnAccelerationDegPerSecond2;
   final double accelerationKtPerSecond;
+  final double speedAccelerationKtPerSecond2;
   final int climbRateFpm;
   final int descentRateFpm;
   final double approachSpeedKt;
@@ -15,7 +17,9 @@ class AircraftPerformanceProfile {
   const AircraftPerformanceProfile({
     required this.type,
     required this.turnRateDegPerSecond,
+    required this.turnAccelerationDegPerSecond2,
     required this.accelerationKtPerSecond,
+    required this.speedAccelerationKtPerSecond2,
     required this.climbRateFpm,
     required this.descentRateFpm,
     required this.approachSpeedKt,
@@ -23,8 +27,10 @@ class AircraftPerformanceProfile {
 
   static const AircraftPerformanceProfile jet = AircraftPerformanceProfile(
     type: AircraftPerformanceType.jet,
-    turnRateDegPerSecond: 3,
-    accelerationKtPerSecond: 3,
+    turnRateDegPerSecond: 3.0,
+    turnAccelerationDegPerSecond2: 0.8,
+    accelerationKtPerSecond: 3.0,
+    speedAccelerationKtPerSecond2: 0.8,
     climbRateFpm: 1800,
     descentRateFpm: 2200,
     approachSpeedKt: 145,
@@ -33,7 +39,9 @@ class AircraftPerformanceProfile {
   static const AircraftPerformanceProfile regional = AircraftPerformanceProfile(
     type: AircraftPerformanceType.regional,
     turnRateDegPerSecond: 3.4,
+    turnAccelerationDegPerSecond2: 1.05,
     accelerationKtPerSecond: 2.4,
+    speedAccelerationKtPerSecond2: 0.7,
     climbRateFpm: 1600,
     descentRateFpm: 1900,
     approachSpeedKt: 135,
@@ -43,7 +51,9 @@ class AircraftPerformanceProfile {
       AircraftPerformanceProfile(
     type: AircraftPerformanceType.turboprop,
     turnRateDegPerSecond: 3.8,
+    turnAccelerationDegPerSecond2: 1.35,
     accelerationKtPerSecond: 1.8,
+    speedAccelerationKtPerSecond2: 0.55,
     climbRateFpm: 1300,
     descentRateFpm: 1500,
     approachSpeedKt: 120,

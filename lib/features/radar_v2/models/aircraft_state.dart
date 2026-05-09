@@ -11,6 +11,8 @@ class AircraftState {
   final double headingDeg;
   final double groundSpeedKt;
   final int verticalSpeedFpm;
+  final double turnRateDegPerSecond;
+  final double speedTrendKtPerSecond;
   final AircraftIntent intent;
   final int routeWaypointIndex;
   final AircraftPerformanceType performanceType;
@@ -30,6 +32,8 @@ class AircraftState {
     required this.headingDeg,
     required this.groundSpeedKt,
     this.verticalSpeedFpm = 0,
+    this.turnRateDegPerSecond = 0,
+    this.speedTrendKtPerSecond = 0,
     this.intent = const AircraftIntent.empty(),
     this.routeWaypointIndex = 0,
     this.performanceType = AircraftPerformanceType.jet,
@@ -50,6 +54,8 @@ class AircraftState {
     double? headingDeg,
     double? groundSpeedKt,
     int? verticalSpeedFpm,
+    double? turnRateDegPerSecond,
+    double? speedTrendKtPerSecond,
     AircraftIntent? intent,
     int? routeWaypointIndex,
     AircraftPerformanceType? performanceType,
@@ -69,6 +75,9 @@ class AircraftState {
       headingDeg: headingDeg ?? this.headingDeg,
       groundSpeedKt: groundSpeedKt ?? this.groundSpeedKt,
       verticalSpeedFpm: verticalSpeedFpm ?? this.verticalSpeedFpm,
+      turnRateDegPerSecond: turnRateDegPerSecond ?? this.turnRateDegPerSecond,
+      speedTrendKtPerSecond:
+          speedTrendKtPerSecond ?? this.speedTrendKtPerSecond,
       intent: intent ?? this.intent,
       routeWaypointIndex: routeWaypointIndex ?? this.routeWaypointIndex,
       performanceType: performanceType ?? this.performanceType,
