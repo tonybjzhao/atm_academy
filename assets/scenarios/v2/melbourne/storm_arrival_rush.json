@@ -150,7 +150,7 @@
       "altitudeFt": 9000,
       "headingDeg": 86,
       "groundSpeedKt": 265,
-      "performanceType": "jet",
+      "performanceType": "heavy_jet",
       "procedureId": "STAR_WEST09_STORM",
       "runwayId": "RWY09",
       "route": ["MLB_WEST", "MLB_DOWNWIND", "MLB_FINAL", "RWY09"]

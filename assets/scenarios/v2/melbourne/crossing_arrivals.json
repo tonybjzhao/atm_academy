@@ -118,7 +118,7 @@
       "altitudeFt": 9000,
       "headingDeg": 105,
       "groundSpeedKt": 270,
-      "performanceType": "jet",
+      "performanceType": "heavy_jet",
       "procedureId": "STAR_WEST27",
       "runwayId": "RWY27",
       "route": ["MLB_WEST", "MLB_BASE", "RWY27"]
