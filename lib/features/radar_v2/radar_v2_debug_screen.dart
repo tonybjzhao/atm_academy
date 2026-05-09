@@ -1845,6 +1845,7 @@ class _DebugControls extends StatelessWidget {
               const SizedBox(height: 10),
               _ReplayCommandInsightPanel(
                 insights: replayCommandInsights,
+                events: snapshot.events,
                 realismAnnotation: _pilotRealismAnnotation(runtime),
               ),
             ],
@@ -3520,10 +3521,12 @@ class _WorkflowChip extends StatelessWidget {
 
 class _ReplayCommandInsightPanel extends StatelessWidget {
   final List<ReplayCommandInsight> insights;
+  final List<SimulationEvent> events;
   final String realismAnnotation;
 
   const _ReplayCommandInsightPanel({
     required this.insights,
+    required this.events,
     required this.realismAnnotation,
   });
 
@@ -3532,6 +3535,25 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
     final visible = insights.length > 5
         ? insights.sublist(insights.length - 5)
         : insights;
+    final wakeEvents = events.where((event) {
+      return event.type == 'wakeSpacingCompression' ||
+          event.type == 'wakeTurnStabilizationDelay' ||
+          event.type == 'wakeSpeedInstability' ||
+          event.type == 'wakeTurbulenceWobble' ||
+          event.type == 'wakeSequencingPressure';
+    }).toList(growable: false);
+    final wakeCompressionCount =
+        wakeEvents.where((event) => event.type == 'wakeSpacingCompression').length;
+    final wakeTurnDelayCount = wakeEvents
+        .where((event) => event.type == 'wakeTurnStabilizationDelay')
+        .length;
+    final wakeSpeedInstabilityCount =
+        wakeEvents.where((event) => event.type == 'wakeSpeedInstability').length;
+    final wakeWobbleCount =
+        wakeEvents.where((event) => event.type == 'wakeTurbulenceWobble').length;
+    final wakeSequencingCount =
+        wakeEvents.where((event) => event.type == 'wakeSequencingPressure').length;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(8),
@@ -3559,6 +3581,21 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
               fontSize: 9,
             ),
           ),
+          if (wakeEvents.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Wake Ecology ${wakeEvents.length} events  '
+              'C$wakeCompressionCount T$wakeTurnDelayCount '
+              'S$wakeSpeedInstabilityCount W$wakeWobbleCount '
+              'P$wakeSequencingCount  '
+              'Peak ${_topWakeWindowsLabel(wakeEvents)}',
+              style: const TextStyle(
+                color: AppTheme.warning,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           for (final insight in visible)
             Padding(
@@ -3600,6 +3637,27 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _topWakeWindowsLabel(List<SimulationEvent> wakeEvents) {
+    const windowSeconds = 20;
+    final buckets = <int, int>{};
+    for (final event in wakeEvents) {
+      final bucket = event.elapsed.inSeconds ~/ windowSeconds;
+      buckets[bucket] = (buckets[bucket] ?? 0) + 1;
+    }
+    final ranked = buckets.entries.toList(growable: false)
+      ..sort((a, b) {
+        final countCompare = b.value.compareTo(a.value);
+        if (countCompare != 0) return countCompare;
+        return a.key.compareTo(b.key);
+      });
+    final top = ranked.take(2);
+    return top.map((entry) {
+      final start = entry.key * windowSeconds;
+      final end = start + windowSeconds - 1;
+      return '${start}s-${end}s (${entry.value})';
+    }).join(', ');
   }
 }
 
