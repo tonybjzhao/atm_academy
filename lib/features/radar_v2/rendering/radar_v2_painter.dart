@@ -7,6 +7,7 @@ import '../models/separation_result.dart';
 import '../models/simulation_snapshot.dart';
 import 'radar_declutter_profile.dart';
 import 'radar_label_stability.dart';
+import 'radar_predictive_visuals.dart';
 import 'radar_view_transform.dart';
 
 class RadarV2Painter extends CustomPainter {
@@ -197,9 +198,13 @@ class RadarV2Painter extends CustomPainter {
     final symbolScale = selected
         ? math.max(1.15, profile.symbolScale + 0.2)
         : profile.symbolScale;
-    final vectorLength =
-        (aircraft.groundSpeedKt * 60 / 3600 * scale).clamp(12.0, 70.0) *
-            symbolScale;
+    final predictive = RadarPredictiveVisuals.vectorStyle(
+      aircraft: aircraft,
+      scalePxPerNm: scale,
+      replayMode: replayMode,
+      selected: selected,
+    );
+    final vectorLength = predictive.projectedLengthPx * symbolScale;
     final vectorEnd = position.translate(
       math.sin(headingRad) * vectorLength,
       -math.cos(headingRad) * vectorLength,
@@ -254,6 +259,15 @@ class RadarV2Painter extends CustomPainter {
     }
 
     canvas.drawLine(position, vectorEnd, vectorPaint);
+    _drawProjectedIntentPath(
+      canvas,
+      position: position,
+      aircraft: aircraft,
+      baseHeadingRad: headingRad,
+      vectorEnd: vectorEnd,
+      predictive: predictive,
+      symbolScale: symbolScale,
+    );
     canvas.drawLine(
       position.translate(7, -12),
       position.translate(31, -24),
@@ -323,6 +337,14 @@ class RadarV2Painter extends CustomPainter {
         position.translate(labelOffset.dx, labelOffset.dy),
       );
     }
+    _drawSpeedTrendCue(
+      canvas,
+      trend: predictive.speedTrend,
+      position: vectorEnd,
+      headingRad: headingRad,
+      conflictAircraft: conflictAircraft,
+      selected: selected,
+    );
   }
 
   void _drawTrail(
@@ -857,10 +879,29 @@ class RadarV2Painter extends CustomPainter {
           : const Color(0xFFFFD166);
     final seconds = conflict.timeToConflict?.inSeconds;
     final anticipatory = seconds != null && seconds > 60 && seconds <= 150;
+    final replayVisual = replayMode
+        ? RadarPredictiveVisuals.replayStyle(
+            currentTtc: conflict.timeToConflict,
+            previousTtc: _previousConflictTtc(conflict),
+          )
+        : const ReplayPredictionStyle(
+            conflictEmphasisOpacity: 0.0,
+            compressionGlow: 0.0,
+          );
     final profile = RadarDeclutterProfile.fromVisibleRange(
       visibleRangeNm: rangeNm,
       sectorRangeNm: sectorRangeNm,
     );
+    if (replayMode && replayVisual.conflictEmphasisOpacity > 0) {
+      canvas.drawCircle(
+        position,
+        28 * profile.conflictRingScale,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color(0xFFFFD166)
+              .withValues(alpha: replayVisual.conflictEmphasisOpacity * 0.3),
+      );
+    }
     canvas.drawCircle(position, 10 * profile.conflictRingScale, paint);
     canvas.drawCircle(
       position,
@@ -892,7 +933,14 @@ class RadarV2Painter extends CustomPainter {
             '${conflict.lateralNm.toStringAsFixed(1)}NM';
     _drawAlertLabel(
         canvas, position.translate(12, -22), label, const Color(0xFFFFD166));
-    _drawClosureArrow(canvas, center, scale, conflict, paint);
+    _drawClosureArrow(
+      canvas,
+      center,
+      scale,
+      conflict,
+      paint,
+      replayVisual: replayVisual,
+    );
   }
 
   void _drawClosureArrow(
@@ -901,17 +949,57 @@ class RadarV2Painter extends CustomPainter {
     double scale,
     SeparationResult conflict,
     Paint paint,
+    {
+      required ReplayPredictionStyle replayVisual,
+    }
   ) {
     final a = snapshot.aircraftById(conflict.aircraftAId);
     final b = snapshot.aircraftById(conflict.aircraftBId);
     final x = conflict.conflictXNm;
     final y = conflict.conflictYNm;
     if (a == null || b == null || x == null || y == null) return;
+    final closureStyle = RadarPredictiveVisuals.closureStyle(
+      a: a,
+      b: b,
+      replayMode: replayMode,
+    );
     final conflictPoint = _toCanvas(center, scale, x, y);
+    final linkPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = closureStyle.strokeWidth
+      ..color = const Color(0xFFFFD166).withValues(
+        alpha: 0.14 + closureStyle.convergenceStrength * 0.24,
+      );
+    _drawDashedLine(
+      canvas,
+      _toCanvas(center, scale, a.xNm, a.yNm),
+      _toCanvas(center, scale, b.xNm, b.yNm),
+      linkPaint,
+    );
+    if (replayMode && replayVisual.compressionGlow > 0 && closureStyle.showCompressionHint) {
+      canvas.drawCircle(
+        conflictPoint,
+        18,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = const Color(0xFFFF4D4D)
+              .withValues(alpha: replayVisual.compressionGlow),
+      );
+    }
     for (final aircraft in [a, b]) {
       final position = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
-      final arrowEnd = Offset.lerp(position, conflictPoint, 0.35)!;
-      canvas.drawLine(position, arrowEnd, paint..strokeWidth = 1.2);
+      final arrowEnd =
+          Offset.lerp(position, conflictPoint, closureStyle.leadFraction)!;
+      canvas.drawLine(
+        position,
+        arrowEnd,
+        paint
+          ..strokeWidth = closureStyle.strokeWidth
+          ..color = const Color(0xFFFFD166).withValues(
+            alpha: 0.64 + closureStyle.convergenceStrength * 0.24,
+          ),
+      );
       final angle =
           math.atan2(arrowEnd.dy - position.dy, arrowEnd.dx - position.dx);
       final left = arrowEnd.translate(
@@ -924,6 +1012,124 @@ class RadarV2Painter extends CustomPainter {
       );
       canvas.drawLine(arrowEnd, left, paint);
       canvas.drawLine(arrowEnd, right, paint);
+    }
+  }
+
+  Duration? _previousConflictTtc(SeparationResult current) {
+    final previous = previousSnapshot;
+    if (previous == null) return null;
+    for (final result in previous.separation) {
+      final samePair =
+          (result.aircraftAId == current.aircraftAId &&
+              result.aircraftBId == current.aircraftBId) ||
+          (result.aircraftAId == current.aircraftBId &&
+              result.aircraftBId == current.aircraftAId);
+      if (!samePair) continue;
+      if (result.isPredictedConflict || result.isLossOfSeparation) {
+        return result.timeToConflict;
+      }
+    }
+    return null;
+  }
+
+  void _drawProjectedIntentPath(
+    Canvas canvas, {
+    required Offset position,
+    required AircraftState aircraft,
+    required double baseHeadingRad,
+    required Offset vectorEnd,
+    required PredictiveVectorStyle predictive,
+    required double symbolScale,
+  }) {
+    final assigned = aircraft.intent.assignedHeadingDeg;
+    if (assigned == null) return;
+    final assignedRad = assigned * math.pi / 180;
+    final assignedEnd = position.translate(
+      math.sin(assignedRad) * predictive.projectedLengthPx * 0.92,
+      -math.cos(assignedRad) * predictive.projectedLengthPx * 0.92,
+    );
+
+    final path = Path();
+    path.moveTo(position.dx, position.dy);
+    final mid = Offset.lerp(vectorEnd, assignedEnd, 0.5)!;
+    path.quadraticBezierTo(mid.dx, mid.dy, assignedEnd.dx, assignedEnd.dy);
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0 * symbolScale
+        ..color = const Color(0xFF62D2FF).withValues(alpha: replayMode ? 0.46 : 0.34),
+    );
+
+    if (predictive.turnArcSweepRad > 0.2) {
+      final sweep = predictive.turnArcSweepRad * predictive.turnDirection;
+      canvas.drawArc(
+        Rect.fromCircle(
+          center: position,
+          radius: predictive.turnArcRadiusPx * symbolScale,
+        ),
+        baseHeadingRad - math.pi / 2,
+        sweep,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.1
+          ..color = const Color(0xFF62D2FF).withValues(alpha: 0.42),
+      );
+    }
+  }
+
+  void _drawSpeedTrendCue(
+    Canvas canvas, {
+    required SpeedTrendIndicator trend,
+    required Offset position,
+    required double headingRad,
+    required bool conflictAircraft,
+    required bool selected,
+  }) {
+    final tangent = Offset(math.cos(headingRad), math.sin(headingRad));
+    final normal = Offset(-tangent.dy, tangent.dx);
+
+    if (trend == SpeedTrendIndicator.stable && !conflictAircraft) return;
+
+    final color = switch (trend) {
+      SpeedTrendIndicator.accelerating => const Color(0xFF62D2FF),
+      SpeedTrendIndicator.decelerating => const Color(0xFFFFD166),
+      SpeedTrendIndicator.stable => const Color(0xFFFFD166),
+    };
+    final alpha = selected ? 0.78 : 0.56;
+    final p1 = position + tangent * 4 + normal * 4;
+    final p2 = position + tangent * 9;
+    final p3 = position + tangent * 4 - normal * 4;
+    canvas.drawLine(
+      p1,
+      p2,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..strokeCap = StrokeCap.round
+        ..color = color.withValues(alpha: alpha),
+    );
+    canvas.drawLine(
+      p2,
+      p3,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..strokeCap = StrokeCap.round
+        ..color = color.withValues(alpha: alpha),
+    );
+
+    if (conflictAircraft) {
+      canvas.drawCircle(
+        position,
+        3.2,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = const Color(0xFFFFD166).withValues(alpha: 0.5),
+      );
     }
   }
 
