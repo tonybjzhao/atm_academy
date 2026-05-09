@@ -1836,7 +1836,10 @@ class _DebugControls extends StatelessWidget {
             ],
             if (!betaMode && replayCommandInsights.isNotEmpty) ...[
               const SizedBox(height: 10),
-              _ReplayCommandInsightPanel(insights: replayCommandInsights),
+              _ReplayCommandInsightPanel(
+                insights: replayCommandInsights,
+                realismAnnotation: _pilotRealismAnnotation(runtime),
+              ),
             ],
             if (!betaMode &&
                 snapshot.events.any((event) =>
@@ -3510,8 +3513,12 @@ class _WorkflowChip extends StatelessWidget {
 
 class _ReplayCommandInsightPanel extends StatelessWidget {
   final List<ReplayCommandInsight> insights;
+  final String realismAnnotation;
 
-  const _ReplayCommandInsightPanel({required this.insights});
+  const _ReplayCommandInsightPanel({
+    required this.insights,
+    required this.realismAnnotation,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -3535,6 +3542,14 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
               color: AppTheme.primary,
               fontSize: 11,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            realismAnnotation,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 9,
             ),
           ),
           const SizedBox(height: 6),
@@ -3578,6 +3593,28 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+extension on _DebugControls {
+  String _pilotRealismAnnotation(ScenarioRuntime runtime) {
+    final profile = runtime.engine.pilotRealismProfile;
+    final definition = runtime.definition;
+    final weatherTag = definition.weatherMode == 'low_visibility' ||
+            definition.weatherZones.length >= 2
+        ? 'weather-heavy'
+        : 'weather-light';
+    final trafficTag = definition.densityScale >= 1.2 ||
+            definition.workloadPressureMultiplier >= 1.15
+        ? 'traffic-dense'
+        : 'traffic-normal';
+    return 'Active Pilot Realism: D${definition.difficulty} '
+        '$weatherTag/$trafficTag '
+        'ACK x${profile.acknowledgementDelayScale.toStringAsFixed(2)} '
+        'EXEC x${profile.executionDelayScale.toStringAsFixed(2)} '
+        'VAR x${profile.variabilityChanceScale.toStringAsFixed(2)} '
+        'WX x${profile.weatherImpactScale.toStringAsFixed(2)} '
+        'WL x${profile.workloadImpactScale.toStringAsFixed(2)}';
   }
 }
 
