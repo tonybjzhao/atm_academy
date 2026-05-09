@@ -54,6 +54,7 @@ class PilotRadioAudioService {
   };
 
   bool _initialized = false;
+  bool _ttsAvailable = false;
   bool _isPlaying = false;
   DateTime _lastPlaybackAt = DateTime.fromMillisecondsSinceEpoch(0);
   Timer? _queueTimer;
@@ -62,11 +63,17 @@ class PilotRadioAudioService {
     if (_initialized) return;
     await _settings.ensureLoaded();
 
-    await _tts.setSharedInstance(true);
-    await _tts.awaitSpeakCompletion(true);
-    await _tts.setSpeechRate(0.46);
-    await _tts.setPitch(1.0);
-    await _tts.setVolume(_settings.settings.value.voiceVolume);
+    try {
+      await _tts.setSharedInstance(true);
+      await _tts.awaitSpeakCompletion(true);
+      await _tts.setSpeechRate(0.46);
+      await _tts.setPitch(1.0);
+      await _tts.setVolume(_settings.settings.value.voiceVolume);
+      _ttsAvailable = true;
+    } catch (_) {
+      // Some Android devices have flaky TTS engines; keep SFX path working.
+      _ttsAvailable = false;
+    }
     final context = AudioContext(
       iOS: AudioContextIOS(
         category: AVAudioSessionCategory.playback,
@@ -96,7 +103,9 @@ class PilotRadioAudioService {
 
   void _onSettingsChanged() {
     final s = _settings.settings.value;
-    _tts.setVolume(s.voiceVolume);
+    if (_ttsAvailable) {
+      _tts.setVolume(s.voiceVolume);
+    }
     _warningPlayer.setVolume(_warningVolumeFrom(s));
     _immediateCuePlayer.setVolume(_warningVolumeFrom(s));
     if (!s.subtitlesEnabled) {
@@ -162,7 +171,9 @@ class PilotRadioAudioService {
     if (interrupt) {
       _queue.removeWhere((e) => e.kind == _RadioItemKind.pilotAck);
       _queue.addFirst(item);
-      await _tts.stop();
+      if (_ttsAvailable) {
+        await _tts.stop();
+      }
       subtitle.value = null;
       _isPlaying = false;
     } else {
@@ -176,7 +187,9 @@ class PilotRadioAudioService {
     _queue.clear();
     _queueTimer?.cancel();
     if (stopCurrent) {
-      await _tts.stop();
+      if (_ttsAvailable) {
+        await _tts.stop();
+      }
       await _warningPlayer.stop();
       _isPlaying = false;
       subtitle.value = null;
@@ -186,7 +199,9 @@ class PilotRadioAudioService {
   Future<void> dispose() async {
     _queueTimer?.cancel();
     _settings.settings.removeListener(_onSettingsChanged);
-    await _tts.stop();
+    if (_ttsAvailable) {
+      await _tts.stop();
+    }
     await _warningPlayer.stop();
     await _warningPlayer.dispose();
     await _immediateCuePlayer.stop();
@@ -237,6 +252,15 @@ class PilotRadioAudioService {
       return;
     }
 
+    if (!_ttsAvailable) {
+      // TTS unavailable: keep queue flowing and still provide an audible cue.
+      await playImmediateCue(RadioWarningType.runwayPressure);
+      _lastPlaybackAt = DateTime.now();
+      _isPlaying = false;
+      _pumpQueue();
+      return;
+    }
+
     await _applyVoiceProfile(callsign);
     if (_settings.settings.value.subtitlesEnabled) {
       subtitle.value = text;
@@ -256,6 +280,7 @@ class PilotRadioAudioService {
   }
 
   Future<void> _applyVoiceProfile(String callsign) async {
+    if (!_ttsAvailable) return;
     final seed = callsign.hashCode.abs() % 3;
     switch (seed) {
       case 0:
