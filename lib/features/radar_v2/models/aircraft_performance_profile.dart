@@ -1,5 +1,6 @@
 enum AircraftPerformanceType {
   jet,
+  heavy,
   regional,
   turboprop,
 }
@@ -36,6 +37,17 @@ class AircraftPerformanceProfile {
     approachSpeedKt: 145,
   );
 
+  static const AircraftPerformanceProfile heavy = AircraftPerformanceProfile(
+    type: AircraftPerformanceType.heavy,
+    turnRateDegPerSecond: 2.5,
+    turnAccelerationDegPerSecond2: 0.58,
+    accelerationKtPerSecond: 2.2,
+    speedAccelerationKtPerSecond2: 0.52,
+    climbRateFpm: 1500,
+    descentRateFpm: 1900,
+    approachSpeedKt: 160,
+  );
+
   static const AircraftPerformanceProfile regional = AircraftPerformanceProfile(
     type: AircraftPerformanceType.regional,
     turnRateDegPerSecond: 3.4,
@@ -63,6 +75,8 @@ class AircraftPerformanceProfile {
     switch (type) {
       case AircraftPerformanceType.jet:
         return jet;
+      case AircraftPerformanceType.heavy:
+        return heavy;
       case AircraftPerformanceType.regional:
         return regional;
       case AircraftPerformanceType.turboprop:
@@ -73,6 +87,10 @@ class AircraftPerformanceProfile {
   static AircraftPerformanceType parseType(Object? value) {
     final text = value?.toString().toLowerCase();
     switch (text) {
+      case 'heavy':
+      case 'heavy_jet':
+      case 'widebody':
+        return AircraftPerformanceType.heavy;
       case 'regional':
         return AircraftPerformanceType.regional;
       case 'turboprop':

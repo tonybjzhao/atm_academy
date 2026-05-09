@@ -297,6 +297,7 @@ class TrajectoryIntegrator {
 
   double _inertiaFactor(AircraftPerformanceType type) {
     return switch (type) {
+      AircraftPerformanceType.heavy => 1.42,
       AircraftPerformanceType.jet => 1.22,
       AircraftPerformanceType.regional => 1.0,
       AircraftPerformanceType.turboprop => 0.86,
@@ -309,6 +310,7 @@ class TrajectoryIntegrator {
     double turbulence,
   ) {
     final base = switch (type) {
+      AircraftPerformanceType.heavy => 21.0,
       AircraftPerformanceType.jet => 24.0,
       AircraftPerformanceType.regional => 27.0,
       AircraftPerformanceType.turboprop => 30.0,

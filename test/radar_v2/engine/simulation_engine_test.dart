@@ -285,6 +285,49 @@ void main() {
         greaterThan(snapshot.aircraftById('jet')!.headingDeg));
   });
 
+  test('heavy aircraft responds slower than standard jet', () {
+    final engine = SimulationEngine(
+      aircraft: [
+        const AircraftState(
+          id: 'jet',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 280,
+          performanceType: AircraftPerformanceType.jet,
+          intent: AircraftIntent(
+            assignedHeadingDeg: 90,
+            assignedSpeedKt: 320,
+          ),
+        ),
+        const AircraftState(
+          id: 'heavy',
+          callsign: 'SIA25',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 280,
+          performanceType: AircraftPerformanceType.heavy,
+          intent: AircraftIntent(
+            assignedHeadingDeg: 90,
+            assignedSpeedKt: 320,
+          ),
+        ),
+      ],
+    );
+
+    final snapshot = engine.tick(steps: 10);
+    final jet = snapshot.aircraftById('jet')!;
+    final heavy = snapshot.aircraftById('heavy')!;
+
+    expect(heavy.headingDeg, lessThan(jet.headingDeg));
+    expect(heavy.groundSpeedKt, lessThan(jet.groundSpeedKt));
+    expect(heavy.turnRateDegPerSecond.abs(), lessThan(jet.turnRateDegPerSecond.abs()));
+  });
+
   test('high-speed turn response is bank-rate-limited', () {
     final engine = SimulationEngine(
       aircraft: const [

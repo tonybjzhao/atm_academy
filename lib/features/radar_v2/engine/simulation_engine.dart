@@ -836,6 +836,7 @@ class SimulationEngine {
   ) {
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
     final baseMilliseconds = switch (profile.type) {
+      AircraftPerformanceType.heavy => 780,
       AircraftPerformanceType.jet => 650,
       AircraftPerformanceType.regional => 470,
       AircraftPerformanceType.turboprop => 340,
@@ -864,6 +865,7 @@ class SimulationEngine {
   ) {
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
     final maxOffset = switch (profile.type) {
+      AircraftPerformanceType.heavy => 2.8,
       AircraftPerformanceType.jet => 2.2,
       AircraftPerformanceType.regional => 1.8,
       AircraftPerformanceType.turboprop => 1.4,
@@ -895,6 +897,7 @@ class SimulationEngine {
   ) {
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
     final maxOffset = switch (profile.type) {
+      AircraftPerformanceType.heavy => 7.2,
       AircraftPerformanceType.jet => 6.0,
       AircraftPerformanceType.regional => 4.5,
       AircraftPerformanceType.turboprop => 3.5,
@@ -1055,6 +1058,7 @@ class SimulationEngine {
   double _pilotResponseProfileFactor(AircraftState aircraft) {
     final profile = AircraftPerformanceProfile.byType(aircraft.performanceType);
     final typeBias = switch (profile.type) {
+      AircraftPerformanceType.heavy => 1.1,
       AircraftPerformanceType.jet => 1.04,
       AircraftPerformanceType.regional => 0.98,
       AircraftPerformanceType.turboprop => 0.92,
@@ -1210,6 +1214,7 @@ class SimulationEngine {
       }
     }
     final typeFactor = switch (aircraft?.performanceType) {
+      AircraftPerformanceType.heavy => 1.14,
       AircraftPerformanceType.jet => 1.08,
       AircraftPerformanceType.regional => 1.0,
       AircraftPerformanceType.turboprop => 0.92,
