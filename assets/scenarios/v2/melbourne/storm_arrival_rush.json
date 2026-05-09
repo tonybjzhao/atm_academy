@@ -12,7 +12,7 @@
   "lowVisibilityRunwayOccupancyMultiplier": 1.35,
   "workloadPressureMultiplier": 1.32,
   "runwayOccupancySeconds": 58,
-  "trafficDescription": "A calm Melbourne arrival stream compresses as storm cells force reroutes, runway pressure builds, and a salient aircraft competes with a quieter developing conflict.",
+  "trafficDescription": "A heavy-leading Melbourne arrival chain compresses as storm cells force reroutes, runway pressure builds, and wake-sensitive merge timing collides with attention traps.",
   "objectives": [
     "Maintain safe arrival spacing through the storm reroute",
     "Avoid fixation on the salient aircraft during the attention trap",
@@ -21,6 +21,7 @@
   ],
   "expectedTechniques": [
     "Use early speed control before the merge point",
+    "Protect wake-sensitive spacing behind the heavy lead before final compression starts",
     "Vector the weather-deviating aircraft decisively, then return to a broad scan",
     "Prioritize the lower-salience converging threat before it becomes urgent",
     "Stabilize the final approach stream before releasing more runway pressure"
@@ -88,7 +89,7 @@
       "procedureId": "STAR_WEST09_STORM",
       "goAroundMergeWaypointId": "MLB_MISSED",
       "goAroundRoute": ["MLB_MISSED", "MLB_MERGE", "MLB_FINAL", "RWY09"],
-      "spacingTargetNm": 7,
+      "spacingTargetNm": 8,
       "stabilizedAltitudeFt": 3000
     }
   ],
@@ -97,7 +98,7 @@
       "id": "mlb_storm_dep_09",
       "runwayId": "RWY09",
       "sidProcedureId": "SID_STORM09E",
-      "releaseIntervalSeconds": 54,
+      "releaseIntervalSeconds": 60,
       "crossingRunwayIds": [],
       "initialClimbFt": 5000
     }
@@ -158,7 +159,7 @@
     {
       "id": "vja612",
       "callsign": "VJA612",
-      "spawnAtSeconds": 26,
+      "spawnAtSeconds": 18,
       "position": { "xNm": -10, "yNm": 38 },
       "altitudeFt": 9000,
       "headingDeg": 170,
@@ -184,7 +185,7 @@
     {
       "id": "jst771",
       "callsign": "JST771",
-      "spawnAtSeconds": 136,
+      "spawnAtSeconds": 112,
       "position": { "xNm": -40, "yNm": 8 },
       "altitudeFt": 9000,
       "headingDeg": 84,

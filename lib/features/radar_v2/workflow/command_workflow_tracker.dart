@@ -268,6 +268,16 @@ class CommandWorkflowTracker {
           add('inertia delay');
         case 'trajectoryWeatherInstability':
           add('weather-driven trajectory instability');
+        case 'wakeSpacingCompression':
+          add('wake spacing compression');
+        case 'wakeTurnStabilizationDelay':
+          add('wake-delayed turn stabilization');
+        case 'wakeSpeedInstability':
+          add('wake-induced speed instability');
+        case 'wakeTurbulenceWobble':
+          add('wake turbulence wobble');
+        case 'wakeSequencingPressure':
+          add('heavy sequencing pressure');
       }
     }
     return causes;
@@ -279,8 +289,14 @@ class CommandWorkflowTracker {
   ) {
     final sawCompression = events.any((event) {
       return event.type == 'weatherCompression' ||
+          event.type == 'wakeSpacingCompression' ||
           event.label.toLowerCase().contains('spacing compressed');
     });
+        final sawWakePressure = events.any((event) {
+      return event.type == 'wakeSequencingPressure' ||
+          event.type == 'wakeTurnStabilizationDelay' ||
+          event.type == 'wakeSpeedInstability';
+        });
     final sawConflictPressure = events.any((event) {
       final normalizedType = event.type.toLowerCase();
       final normalizedLabel = event.label.toLowerCase();
@@ -294,6 +310,9 @@ class CommandWorkflowTracker {
     }
     if (sawCompression) {
       return 'Spacing compressed during pilot response and execution.';
+    }
+    if (sawWakePressure) {
+      return 'Wake effects increased sequencing pressure and reduced recovery margin.';
     }
     final sawTrajectoryInstability = events.any((event) {
       return event.type == 'trajectoryTurnOvershoot' ||

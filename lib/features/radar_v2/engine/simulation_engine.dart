@@ -563,7 +563,8 @@ class SimulationEngine {
         : math.max(profile.approachSpeedKt + 35, 180).toDouble();
 
     if (_sectorPressureIndex >= 0.8) {
-      speedTarget += _mergeSpacingAdjustmentKt(aircraft, flow, threshold);
+      speedTarget +=
+          _mergeSpacingAdjustmentKt(aircraft, flow, threshold, ownDistanceToThreshold: distanceToThreshold);
 
       // Small deterministic variation avoids mathematically perfect spacing.
       speedTarget +=
@@ -601,6 +602,9 @@ class SimulationEngine {
     AircraftState aircraft,
     ArrivalFlow flow,
     Waypoint threshold,
+    {
+    required double ownDistanceToThreshold,
+    }
   ) {
     final sameFlow = _aircraft.where((candidate) {
       return candidate.active &&
@@ -610,8 +614,8 @@ class SimulationEngine {
     }).toList(growable: false);
     if (sameFlow.isEmpty) return 0;
 
-    final ownDistance =
-        _distance(aircraft.xNm, aircraft.yNm, threshold.xNm, threshold.yNm);
+    final ownDistance = ownDistanceToThreshold;
+    AircraftState? nearestLeader;
     double? nearestAhead;
     for (final candidate in sameFlow) {
       final candidateDistance =
@@ -620,15 +624,45 @@ class SimulationEngine {
       final gap = ownDistance - candidateDistance;
       if (nearestAhead == null || gap < nearestAhead) {
         nearestAhead = gap;
+        nearestLeader = candidate;
       }
     }
 
     if (nearestAhead == null) return 0;
 
-    if (nearestAhead < flow.spacingTargetNm * 0.95) {
-      return -10;
+    final requiredSpacing = nearestLeader == null
+        ? flow.spacingTargetNm
+        : flow.spacingTargetNm *
+            AircraftPerformanceProfile.wakeSpacingMultiplier(
+              leaderType: nearestLeader.performanceType,
+              followerType: aircraft.performanceType,
+            );
+
+    final heavySequencingCompression =
+        nearestLeader != null &&
+        nearestLeader.performanceType == AircraftPerformanceType.heavy &&
+        nearestAhead < requiredSpacing * 1.06;
+    if (heavySequencingCompression) {
+      _recordBehaviorEvent(
+        key: 'wake_spacing_compression:${aircraft.id}:${nearestLeader.id}:${_tick}',
+        type: 'wakeSpacingCompression',
+        label: 'Wake spacing compressed behind heavy leader near final.',
+        aircraftId: aircraft.id,
+      );
+      if (ownDistanceToThreshold < 11) {
+        _recordBehaviorEvent(
+          key: 'wake_sequencing_pressure:${aircraft.id}:${nearestLeader.id}:${_tick}',
+          type: 'wakeSequencingPressure',
+          label: 'Sequencing pressure built behind heavy final approach traffic.',
+          aircraftId: aircraft.id,
+        );
+      }
     }
-    if (nearestAhead > flow.spacingTargetNm * 1.9) {
+
+    if (nearestAhead < requiredSpacing * 0.95) {
+      return -12;
+    }
+    if (nearestAhead > requiredSpacing * 1.9) {
       return 6;
     }
     return 0;
@@ -1091,12 +1125,17 @@ class SimulationEngine {
 
   _EnvironmentEffect _environmentEffectFor(AircraftState aircraft) {
     final influence = _weatherInfluenceFor(aircraft);
+    final wake = _wakeInfluenceFor(aircraft);
     if (influence <= 0) {
       _weatherInfluenceTicks.remove(aircraft.id);
-      return const _EnvironmentEffect.none();
+      if (wake.intensity <= 0) {
+        return const _EnvironmentEffect.none();
+      }
     }
-    _weatherInfluenceTicks[aircraft.id] =
-        (_weatherInfluenceTicks[aircraft.id] ?? 0) + 1;
+    if (influence > 0) {
+      _weatherInfluenceTicks[aircraft.id] =
+          (_weatherInfluenceTicks[aircraft.id] ?? 0) + 1;
+    }
     final phase = _elapsed.inSeconds ~/ 2;
     final wobbleNoise = _noise01('${aircraft.id}:wx_track:$phase') - 0.5;
     final speedNoise = _noise01('${aircraft.id}:wx_speed:$phase') - 0.5;
@@ -1104,10 +1143,31 @@ class SimulationEngine {
     final pressure = ((0.65 + _sectorPressureIndex * 0.16) *
         pilotRealismProfile.weatherImpactScale)
       .clamp(0.55, 1.45);
-    final wobble = wobbleNoise * 2 * influence * pressure * 1.2;
-    final speed = speedNoise * 2 * influence * pressure * 4.5;
-    final vertical = verticalNoise * 2 * influence * pressure * 260;
-    final turbulence = (influence * pressure * 0.86).clamp(0.0, 1.0);
+    final weatherWobble = wobbleNoise * 2 * influence * pressure * 1.2;
+    final weatherSpeed = speedNoise * 2 * influence * pressure * 4.5;
+    final weatherVertical = verticalNoise * 2 * influence * pressure * 260;
+    final weatherTurbulence = (influence * pressure * 0.86).clamp(0.0, 1.0);
+
+    final wakePhase = _elapsed.inSeconds;
+    final wakeTrackNoise =
+      _noise01('${aircraft.id}:wake_track:$wakePhase:${wake.leaderId}') -
+        0.5;
+    final wakeSpeedNoise =
+      _noise01('${aircraft.id}:wake_speed:$wakePhase:${wake.leaderId}') -
+        0.5;
+    final wakeVerticalNoise =
+      _noise01('${aircraft.id}:wake_vertical:$wakePhase:${wake.leaderId}') -
+        0.5;
+    final wakeWobble = wakeTrackNoise * 2 * wake.intensity * 1.8;
+    final wakeSpeed = wakeSpeedNoise * 2 * wake.intensity * 5.4;
+    final wakeVertical = wakeVerticalNoise * 2 * wake.intensity * 280;
+    final wakeTurbulence = wake.intensity.clamp(0.0, 1.0);
+
+    final wobble = weatherWobble + wakeWobble;
+    final speed = weatherSpeed + wakeSpeed;
+    final vertical = weatherVertical + wakeVertical;
+    final turbulence =
+      (weatherTurbulence + wakeTurbulence * 0.62).clamp(0.0, 1.0);
     if (influence > 0.28 && _weatherInfluenceTicks[aircraft.id]! >= 6) {
       _recordBehaviorEvent(
         key: 'weather_wobble:${aircraft.id}',
@@ -1116,11 +1176,20 @@ class SimulationEngine {
         aircraftId: aircraft.id,
       );
     }
+    if (wake.intensity > 0.24 && wake.leaderId != null) {
+      _recordBehaviorEvent(
+        key: 'wake_turbulence:${aircraft.id}:${wake.leaderId}:${_tick ~/ 2}',
+        type: 'wakeTurbulenceWobble',
+        label: 'Heavy wake turbulence introduced subtle trajectory wobble.',
+        aircraftId: aircraft.id,
+      );
+    }
     return _EnvironmentEffect(
       trackWobbleDeg: wobble.clamp(-2.2, 2.2),
       groundSpeedVariationKt: speed.clamp(-7.0, 7.0),
       verticalProfileVariationFpm: vertical.clamp(-320.0, 320.0),
       turbulence: turbulence,
+      wakeInfluence: wake.intensity,
     );
   }
 
@@ -1149,6 +1218,16 @@ class SimulationEngine {
           key: 'trajectory_inertia:${after.id}:${_tick}',
           type: 'trajectoryInertiaDelay',
           label: 'Inertia delayed turn response at higher energy state.',
+          aircraftId: after.id,
+        );
+      }
+      if (environment.wakeInfluence > 0.18 &&
+          prevErr < 9.5 &&
+          nextErr > prevErr + 1.1) {
+        _recordBehaviorEvent(
+          key: 'wake_turn_delay:${after.id}:${_tick}',
+          type: 'wakeTurnStabilizationDelay',
+          label: 'Wake turbulence delayed turn stabilization behind lead traffic.',
           aircraftId: after.id,
         );
       }
@@ -1181,6 +1260,16 @@ class SimulationEngine {
         aircraftId: after.id,
       );
     }
+    if (environment.wakeInfluence > 0.2 &&
+        (after.speedTrendKtPerSecond - before.speedTrendKtPerSecond).abs() >
+            0.38) {
+      _recordBehaviorEvent(
+        key: 'wake_speed_instability:${after.id}:${_tick ~/ 2}',
+        type: 'wakeSpeedInstability',
+        label: 'Wake influence caused speed instability during follow-through.',
+        aircraftId: after.id,
+      );
+    }
   }
 
   double _headingDeltaDeg(double a, double b) {
@@ -1202,6 +1291,60 @@ class SimulationEngine {
     return influence.clamp(0.0, 1.0);
   }
 
+  _WakeInfluence _wakeInfluenceFor(AircraftState aircraft) {
+    if (!aircraft.active || aircraft.intent.isDeparture) {
+      return const _WakeInfluence.none();
+    }
+    final ownRunway = aircraft.intent.assignedRunwayId;
+    if (ownRunway == null) {
+      return const _WakeInfluence.none();
+    }
+
+    final headingRad = aircraft.headingDeg * math.pi / 180;
+    final trackX = math.sin(headingRad);
+    final trackY = math.cos(headingRad);
+    var strongest = 0.0;
+    String? leaderId;
+
+    for (final leader in _aircraft) {
+      if (leader.id == aircraft.id || !leader.active) continue;
+      if (leader.intent.isDeparture) continue;
+      if (leader.intent.assignedRunwayId != ownRunway) continue;
+
+      final wakeMultiplier = AircraftPerformanceProfile.wakeSpacingMultiplier(
+        leaderType: leader.performanceType,
+        followerType: aircraft.performanceType,
+      );
+      if (wakeMultiplier <= 1.0) continue;
+
+      final dx = leader.xNm - aircraft.xNm;
+      final dy = leader.yNm - aircraft.yNm;
+      final alongTrack = dx * trackX + dy * trackY;
+      if (alongTrack <= 0.3 || alongTrack > 9.5) continue;
+
+      final crossTrack = (dx * (-trackY) + dy * trackX).abs();
+      final maxCrossTrack = 1.5 + (wakeMultiplier - 1.0) * 1.2;
+      if (crossTrack > maxCrossTrack) continue;
+
+      final altDelta = (leader.altitudeFt - aircraft.altitudeFt).abs();
+      if (altDelta > 1400) continue;
+
+      final headingDelta = _headingDeltaDeg(leader.headingDeg, aircraft.headingDeg);
+      if (headingDelta > 45) continue;
+
+      final distance = math.sqrt(dx * dx + dy * dy);
+      final closeness = (1 - (distance / 9.5)).clamp(0.0, 1.0);
+      final alignment = (1 - (crossTrack / (maxCrossTrack + 0.001))).clamp(0.0, 1.0);
+      final wake = (closeness * alignment * (wakeMultiplier - 1.0) * 2.2)
+          .clamp(0.0, 1.0);
+      if (wake > strongest) {
+        strongest = wake;
+        leaderId = leader.id;
+      }
+    }
+    return _WakeInfluence(intensity: strongest, leaderId: leaderId);
+  }
+
   Duration _effectiveRunwayOccupancyDuration(
     Duration baseDuration,
     String aircraftId,
@@ -1214,17 +1357,22 @@ class SimulationEngine {
       }
     }
     final typeFactor = switch (aircraft?.performanceType) {
-      AircraftPerformanceType.heavy => 1.14,
+      AircraftPerformanceType.heavy => 1.18,
       AircraftPerformanceType.jet => 1.08,
       AircraftPerformanceType.regional => 1.0,
       AircraftPerformanceType.turboprop => 0.92,
       null => 1.0,
     };
+    final heavyStormFactor = aircraft?.performanceType == AircraftPerformanceType.heavy &&
+        weatherZones.isNotEmpty
+      ? 1.06 + (_sectorPressureIndex * 0.02).clamp(0.0, 0.08)
+      : 1.0;
     final weatherFactor =
         weatherZones.isEmpty ? 1.0 : 1.0 + (0.03 * _sectorPressureIndex);
     final noise =
         (_noise01('$aircraftId:runway:${_elapsed.inSeconds}') - 0.5) * 0.08;
-    final factor = (typeFactor * weatherFactor + noise).clamp(0.84, 1.28);
+    final factor =
+      (typeFactor * heavyStormFactor * weatherFactor + noise).clamp(0.84, 1.36);
     return Duration(
       milliseconds: (baseDuration.inMilliseconds * factor).round(),
     );
@@ -1315,17 +1463,34 @@ class _EnvironmentEffect {
   final double groundSpeedVariationKt;
   final double verticalProfileVariationFpm;
   final double turbulence;
+  final double wakeInfluence;
 
   const _EnvironmentEffect({
     required this.trackWobbleDeg,
     required this.groundSpeedVariationKt,
     required this.verticalProfileVariationFpm,
     required this.turbulence,
+    required this.wakeInfluence,
   });
 
   const _EnvironmentEffect.none()
       : trackWobbleDeg = 0,
         groundSpeedVariationKt = 0,
         verticalProfileVariationFpm = 0,
-        turbulence = 0;
+        turbulence = 0,
+        wakeInfluence = 0;
+}
+
+class _WakeInfluence {
+  final double intensity;
+  final String? leaderId;
+
+  const _WakeInfluence({
+    required this.intensity,
+    required this.leaderId,
+  });
+
+  const _WakeInfluence.none()
+      : intensity = 0,
+        leaderId = null;
 }

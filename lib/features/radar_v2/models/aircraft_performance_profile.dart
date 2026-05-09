@@ -5,6 +5,12 @@ enum AircraftPerformanceType {
   turboprop,
 }
 
+enum WakeCategory {
+  heavy,
+  medium,
+  light,
+}
+
 class AircraftPerformanceProfile {
   final AircraftPerformanceType type;
   final double turnRateDegPerSecond;
@@ -102,5 +108,38 @@ class AircraftPerformanceProfile {
       default:
         throw FormatException('Unknown aircraft performance type: $value');
     }
+  }
+
+  static WakeCategory wakeCategoryForType(AircraftPerformanceType type) {
+    switch (type) {
+      case AircraftPerformanceType.heavy:
+        return WakeCategory.heavy;
+      case AircraftPerformanceType.jet:
+      case AircraftPerformanceType.regional:
+        return WakeCategory.medium;
+      case AircraftPerformanceType.turboprop:
+        return WakeCategory.light;
+    }
+  }
+
+  static double wakeSpacingMultiplier({
+    required AircraftPerformanceType leaderType,
+    required AircraftPerformanceType followerType,
+  }) {
+    final leaderWake = wakeCategoryForType(leaderType);
+    final followerWake = wakeCategoryForType(followerType);
+    if (leaderWake == WakeCategory.heavy && followerWake == WakeCategory.light) {
+      return 1.42;
+    }
+    if (leaderWake == WakeCategory.heavy && followerWake == WakeCategory.medium) {
+      return 1.3;
+    }
+    if (leaderWake == WakeCategory.medium && followerWake == WakeCategory.light) {
+      return 1.16;
+    }
+    if (leaderWake == WakeCategory.heavy && followerWake == WakeCategory.heavy) {
+      return 1.16;
+    }
+    return 1.0;
   }
 }

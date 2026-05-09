@@ -163,6 +163,110 @@ void main() {
         contains('departureReleased'));
   });
 
+  test('heavy short-final traffic delays departure release ecology', () {
+    const wakeSource = '''
+{
+  "id": "wake_dep_delay",
+  "title": "Wake Delay",
+  "sectorId": "test_sector",
+  "durationSeconds": 240,
+  "difficulty": 3,
+  "radarRangeNm": 42,
+  "speedOptions": [1],
+  "waypoints": [
+    { "id": "FINAL", "xNm": 0, "yNm": 4 },
+    { "id": "RWY", "xNm": 0, "yNm": 0 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_A",
+      "name": "STAR A",
+      "type": "star",
+      "waypoints": ["FINAL", "RWY"],
+      "mergeWaypointId": "FINAL"
+    },
+    {
+      "id": "SID_A",
+      "name": "SID A",
+      "type": "sid",
+      "waypoints": ["RWY", "FINAL"]
+    }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "arr",
+      "runwayId": "RWY",
+      "procedureId": "STAR_A",
+      "mergeWaypointId": "FINAL",
+      "finalFixWaypointId": "FINAL",
+      "thresholdWaypointId": "RWY",
+      "spacingTargetNm": 6,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "dep",
+      "runwayId": "RWY",
+      "sidProcedureId": "SID_A",
+      "releaseIntervalSeconds": 20,
+      "crossingRunwayIds": [],
+      "initialClimbFt": 5000
+    }
+  ],
+  "aircraft": [
+    {
+      "id": "lead",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": 0, "yNm": 7 },
+      "altitudeFt": 3000,
+      "headingDeg": 180,
+      "groundSpeedKt": 170,
+      "performanceType": "heavy_jet",
+      "runwayId": "RWY",
+      "procedureId": "STAR_A",
+      "route": ["FINAL", "RWY"]
+    },
+    {
+      "id": "dep1",
+      "callsign": "QFA901",
+      "spawnAtSeconds": 0,
+      "isDeparture": true,
+      "departureFlowId": "dep",
+      "procedureId": "SID_A",
+      "position": { "xNm": 0, "yNm": 0 },
+      "altitudeFt": 3000,
+      "headingDeg": 80,
+      "groundSpeedKt": 160,
+      "runwayId": "RWY",
+      "route": ["RWY", "FINAL"]
+    }
+  ],
+  "winConditions": [{ "type": "allAircraftSpawned" }],
+  "failConditions": [{ "type": "timeout" }]
+}
+''';
+    final scenario = const ScenarioLoader().parse(wakeSource);
+    final runtime = ScenarioRuntime(definition: scenario);
+
+    for (var i = 0; i < 10; i++) {
+      runtime.tick();
+    }
+    final earlyEvents = runtime.snapshot.events
+        .where((event) => event.type == 'departureReleased')
+        .toList(growable: false);
+    expect(earlyEvents, isEmpty);
+
+    for (var i = 0; i < 220; i++) {
+      runtime.tick();
+    }
+    final laterEvents = runtime.snapshot.events
+        .where((event) => event.type == 'departureReleased')
+        .toList(growable: false);
+    expect(laterEvents, isNotEmpty);
+  });
+
   test('scenario does not complete immediately after all aircraft spawn', () {
     final scenario = const ScenarioLoader().parse(source);
     final runtime = ScenarioRuntime(definition: scenario);

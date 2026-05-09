@@ -32,6 +32,7 @@ import '../core/replay/cognition_analytics.dart';
 import '../core/replay/replay_workload_frame.dart';
 import '../engine/pilot_behavior_realism_profile.dart';
 import '../engine/simulation_engine.dart';
+import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
 import '../models/arrival_flow.dart';
 import '../models/controller_alert.dart';
@@ -1100,7 +1101,31 @@ class ScenarioRuntime {
             Duration(seconds: flow.releaseIntervalSeconds)) {
       return false;
     }
+    if (_heavyArrivalOnCriticalFinal(flow.runwayId)) {
+      return false;
+    }
     return !_arrivalOnShortFinal(flow.runwayId);
+  }
+
+  bool _heavyArrivalOnCriticalFinal(String runwayId) {
+    final flow = _arrivalFlowForRunway(runwayId);
+    if (flow == null) return false;
+    final threshold = definition.waypoints[flow.thresholdWaypointId];
+    if (threshold == null) return false;
+    return engine.snapshot.aircraft.any((aircraft) {
+      if (!aircraft.active || aircraft.intent.isDeparture) return false;
+      if (aircraft.intent.assignedRunwayId != runwayId) return false;
+      if (aircraft.performanceType != AircraftPerformanceType.heavy) {
+        return false;
+      }
+      final distance = _distance(
+        aircraft.xNm,
+        aircraft.yNm,
+        threshold.xNm,
+        threshold.yNm,
+      );
+      return distance <= 9;
+    });
   }
 
   bool _arrivalOnShortFinal(String runwayId) {
@@ -1201,9 +1226,14 @@ class ScenarioRuntime {
     final leader = sameRunway[index - 1];
     final spacing =
         _distance(aircraft.xNm, aircraft.yNm, leader.xNm, leader.yNm);
+    final wakeSpacing = flow.spacingTargetNm *
+      AircraftPerformanceProfile.wakeSpacingMultiplier(
+        leaderType: leader.performanceType,
+        followerType: aircraft.performanceType,
+      );
     final instability =
         0.72 + _lastPsychologyState.spacingInstabilityProbability * 0.45;
-    return spacing < flow.spacingTargetNm * instability.clamp(0.72, 0.95);
+    return spacing < wakeSpacing * instability.clamp(0.72, 0.95);
   }
 
   bool _hasCloseFinalPair(

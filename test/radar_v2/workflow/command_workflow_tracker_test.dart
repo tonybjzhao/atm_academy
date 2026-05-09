@@ -190,6 +190,58 @@ void main() {
         'Trajectory instability reduced merge/spacing predictability.',
       );
     });
+
+    test('replay insights explain wake ecology pressure and instability', () {
+      final tracker = CommandWorkflowTracker();
+      final insights = tracker.replayInsights(const [
+        SimulationEvent(
+          elapsed: Duration(seconds: 18),
+          type: 'commandIssued',
+          label: 'Command sent: speed 180',
+          aircraftId: 'A4',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 20),
+          type: 'wakeTurbulenceWobble',
+          label: 'Heavy wake turbulence introduced subtle trajectory wobble.',
+          aircraftId: 'A4',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 21),
+          type: 'wakeTurnStabilizationDelay',
+          label: 'Wake turbulence delayed turn stabilization behind lead traffic.',
+          aircraftId: 'A4',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 22),
+          type: 'wakeSpeedInstability',
+          label: 'Wake influence caused speed instability during follow-through.',
+          aircraftId: 'A4',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 23),
+          type: 'wakeSequencingPressure',
+          label: 'Sequencing pressure built behind heavy final approach traffic.',
+          aircraftId: 'A4',
+        ),
+        SimulationEvent(
+          elapsed: Duration(seconds: 24),
+          type: 'commandAcknowledged',
+          label: 'ACK speed 180',
+          aircraftId: 'A4',
+        ),
+      ]);
+
+      expect(insights, hasLength(1));
+      expect(insights.single.causes, contains('wake turbulence wobble'));
+      expect(insights.single.causes, contains('wake-delayed turn stabilization'));
+      expect(insights.single.causes, contains('wake-induced speed instability'));
+      expect(insights.single.causes, contains('heavy sequencing pressure'));
+      expect(
+        insights.single.spacingImpact,
+        'Wake effects increased sequencing pressure and reduced recovery margin.',
+      );
+    });
   });
 }
 

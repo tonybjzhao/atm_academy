@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import '../models/aircraft_performance_profile.dart';
 import '../models/aircraft_state.dart';
 import '../models/separation_result.dart';
 
@@ -42,7 +43,9 @@ class SeparationCalculator {
     // Under high pressure, effective minimums are reduced (spacing degrades)
     final pressureFactor = _getPressureFactor(pressureIndex);
     final pairScale = _pairSpacingScale(a.id, b.id);
-    final effectiveMinLateral = (minimumLateralNm / pressureFactor) * pairScale;
+    final wakeScale = _wakeSpacingScale(a, b);
+    final effectiveMinLateral =
+      (minimumLateralNm / pressureFactor) * pairScale * wakeScale;
     final effectiveMinVertical = (minimumVerticalFt / pressureFactor).round();
 
     return SeparationResult(
@@ -90,5 +93,18 @@ class SeparationCalculator {
   int _pairHash(String aId, String bId) {
     final ids = [aId, bId]..sort();
     return ('${ids[0]}:${ids[1]}').hashCode & 0x7fffffff;
+  }
+
+  double _wakeSpacingScale(AircraftState a, AircraftState b) {
+    final forward = AircraftPerformanceProfile.wakeSpacingMultiplier(
+      leaderType: a.performanceType,
+      followerType: b.performanceType,
+    );
+    final reverse = AircraftPerformanceProfile.wakeSpacingMultiplier(
+      leaderType: b.performanceType,
+      followerType: a.performanceType,
+    );
+    final scale = math.max(forward, reverse);
+    return scale.clamp(1.0, 1.45);
   }
 }

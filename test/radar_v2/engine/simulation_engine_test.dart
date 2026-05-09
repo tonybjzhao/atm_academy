@@ -909,6 +909,112 @@ void main() {
     expect(aircraft.intent.assignedSpeedKt, 145);
     expect(aircraft.intent.assignedAltitudeFt, 3000);
   });
+
+  test('wake influence can trigger restrained instability events', () {
+    final engine = SimulationEngine(
+      waypoints: const {
+        'FINAL': Waypoint(id: 'FINAL', xNm: 0, yNm: 4),
+        'RWY': Waypoint(id: 'RWY', xNm: 0, yNm: 0),
+      },
+      arrivalFlows: const [
+        ArrivalFlow(
+          id: 'flow',
+          runwayId: 'RWY',
+          mergeWaypointId: 'FINAL',
+          finalFixWaypointId: 'FINAL',
+          thresholdWaypointId: 'RWY',
+          spacingTargetNm: 6,
+          stabilizedAltitudeFt: 3000,
+        ),
+      ],
+      aircraft: const [
+        AircraftState(
+          id: 'lead',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 6,
+          altitudeFt: 4000,
+          headingDeg: 180,
+          groundSpeedKt: 185,
+          performanceType: AircraftPerformanceType.heavy,
+          intent: AircraftIntent(route: ['FINAL', 'RWY'], assignedRunwayId: 'RWY'),
+        ),
+        AircraftState(
+          id: 'trail',
+          callsign: 'REX438',
+          xNm: 0,
+          yNm: 9,
+          altitudeFt: 4000,
+          headingDeg: 180,
+          groundSpeedKt: 195,
+          performanceType: AircraftPerformanceType.turboprop,
+          intent: AircraftIntent(route: ['FINAL', 'RWY'], assignedRunwayId: 'RWY'),
+        ),
+      ],
+    )..updateWorkloadState(dynamicControllerLoad: 8, sectorPressureIndex: 1.3);
+
+    final snapshot = engine.tick(steps: 16);
+
+    expect(
+      snapshot.events.where((event) => event.type == 'wakeTurbulenceWobble'),
+      isNotEmpty,
+    );
+  });
+
+  test('heavy leader can propagate sequencing pressure on final', () {
+    final engine = SimulationEngine(
+      waypoints: const {
+        'FINAL': Waypoint(id: 'FINAL', xNm: 0, yNm: 4),
+        'RWY': Waypoint(id: 'RWY', xNm: 0, yNm: 0),
+      },
+      arrivalFlows: const [
+        ArrivalFlow(
+          id: 'flow',
+          runwayId: 'RWY',
+          mergeWaypointId: 'FINAL',
+          finalFixWaypointId: 'FINAL',
+          thresholdWaypointId: 'RWY',
+          spacingTargetNm: 6,
+          stabilizedAltitudeFt: 3000,
+        ),
+      ],
+      aircraft: const [
+        AircraftState(
+          id: 'lead',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 6,
+          altitudeFt: 3200,
+          headingDeg: 180,
+          groundSpeedKt: 170,
+          performanceType: AircraftPerformanceType.heavy,
+          intent: AircraftIntent(route: ['FINAL', 'RWY'], assignedRunwayId: 'RWY'),
+        ),
+        AircraftState(
+          id: 'trail',
+          callsign: 'VJA612',
+          xNm: 0,
+          yNm: 9,
+          altitudeFt: 3300,
+          headingDeg: 180,
+          groundSpeedKt: 215,
+          performanceType: AircraftPerformanceType.jet,
+          intent: AircraftIntent(route: ['FINAL', 'RWY'], assignedRunwayId: 'RWY'),
+        ),
+      ],
+    )..updateWorkloadState(dynamicControllerLoad: 9, sectorPressureIndex: 1.4);
+
+    final snapshot = engine.tick(steps: 12);
+
+    expect(
+      snapshot.events.where((event) => event.type == 'wakeSpacingCompression'),
+      isNotEmpty,
+    );
+    expect(
+      snapshot.events.where((event) => event.type == 'wakeSequencingPressure'),
+      isNotEmpty,
+    );
+  });
 }
 
 double _headingDelta(double a, double b) {

@@ -12,7 +12,7 @@
   "lowVisibilityRunwayOccupancyMultiplier": 1.0,
   "workloadPressureMultiplier": 1.08,
   "runwayOccupancySeconds": 45,
-  "trafficDescription": "Two same-level arrivals converge near the centre of the sector, followed by a lower southbound arrival.",
+  "trafficDescription": "A heavy-leading arrival is followed by converging same-level traffic near the sector centre, forcing wake-sensitive merge timing.",
   "objectives": [
     "Resolve the crossing conflict before it becomes urgent",
     "Keep all aircraft inside safe separation",
@@ -20,6 +20,7 @@
   ],
   "expectedTechniques": [
     "Use early heading vectors",
+    "Preserve wake-sensitive merge spacing behind the heavy leader",
     "Use small speed reductions if the geometry tightens",
     "Reserve altitude changes for late recoveries"
   ],
@@ -69,7 +70,7 @@
       "procedureId": "STAR_WEST27",
       "goAroundMergeWaypointId": "MLB_MISSED",
       "goAroundRoute": ["MLB_MISSED", "MLB_BASE", "RWY27"],
-      "spacingTargetNm": 6,
+      "spacingTargetNm": 7,
       "stabilizedAltitudeFt": 3000
     },
     {
@@ -89,7 +90,7 @@
       "id": "mlb_dep_27",
       "runwayId": "RWY27",
       "sidProcedureId": "SID_MLB27E",
-      "releaseIntervalSeconds": 52,
+      "releaseIntervalSeconds": 58,
       "crossingRunwayIds": ["RWY34"],
       "initialClimbFt": 5000
     }
@@ -126,7 +127,7 @@
     {
       "id": "vja612",
       "callsign": "VJA612",
-      "spawnAtSeconds": 20,
+      "spawnAtSeconds": 14,
       "position": { "xNm": 26, "yNm": -8 },
       "altitudeFt": 9000,
       "headingDeg": 285,
