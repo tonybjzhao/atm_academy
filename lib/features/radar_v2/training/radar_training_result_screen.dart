@@ -178,6 +178,34 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               for (final line in result.assumptionDrivenErrors)
                 _EvaluationChip(text: line),
             ],
+            if (result.cognitiveCascadeChains.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Cognitive Cascade Chains'),
+              const SizedBox(height: 8),
+              for (final line in result.cognitiveCascadeChains)
+                _EvaluationChip(text: line),
+            ],
+            if (result.rootSurpriseEvent.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Root Surprise Event'),
+              const SizedBox(height: 8),
+              for (final line in result.rootSurpriseEvent)
+                _EvaluationChip(text: line),
+            ],
+            if (result.secondaryFailuresCaused.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Secondary Failures Caused'),
+              const SizedBox(height: 8),
+              for (final line in result.secondaryFailuresCaused)
+                _EvaluationChip(text: line),
+            ],
+            if (result.recoveryQuality.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Recovery Quality'),
+              const SizedBox(height: 8),
+              for (final line in result.recoveryQuality)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),

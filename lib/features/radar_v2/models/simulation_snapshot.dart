@@ -12,6 +12,7 @@ import 'waypoint.dart';
 import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/alerts/operational_alert.dart';
+import '../core/mental_model/cognitive_cascade_state.dart';
 import '../core/mental_model/controller_expectation_state.dart';
 import '../core/mental_model/predictive_mental_model_state.dart';
 import '../core/mental_model/working_memory_state.dart';
@@ -44,6 +45,8 @@ class SimulationSnapshot {
   final ControllerExpectationState expectationState;
   final PredictiveMentalModelState predictiveMentalModelState;
   final List<String> predictiveMentalModelReportLines;
+  final CognitiveCascadeState cognitiveCascadeState;
+  final List<String> cognitiveCascadeReportLines;
   final WorkingMemoryState workingMemoryState;
   final List<String> workingMemoryReportLines;
 
@@ -73,6 +76,8 @@ class SimulationSnapshot {
     this.expectationState = ControllerExpectationState.idle,
     this.predictiveMentalModelState = PredictiveMentalModelState.idle,
     this.predictiveMentalModelReportLines = const [],
+    this.cognitiveCascadeState = CognitiveCascadeState.idle,
+    this.cognitiveCascadeReportLines = const [],
     this.workingMemoryState = WorkingMemoryState.idle,
     this.workingMemoryReportLines = const [],
   });

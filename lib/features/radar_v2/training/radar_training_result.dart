@@ -25,6 +25,10 @@ class RadarTrainingResult {
   final List<String> lateAbnormalRecognition;
   final List<String> surpriseOverloadMoments;
   final List<String> assumptionDrivenErrors;
+  final List<String> cognitiveCascadeChains;
+  final List<String> rootSurpriseEvent;
+  final List<String> secondaryFailuresCaused;
+  final List<String> recoveryQuality;
   final String topMistake;
   final String bestRecovery;
 
@@ -52,6 +56,10 @@ class RadarTrainingResult {
     required this.lateAbnormalRecognition,
     required this.surpriseOverloadMoments,
     required this.assumptionDrivenErrors,
+    required this.cognitiveCascadeChains,
+    required this.rootSurpriseEvent,
+    required this.secondaryFailuresCaused,
+    required this.recoveryQuality,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -114,9 +122,68 @@ class RadarTrainingResultBuilder {
       lateAbnormalRecognition: buildLateAbnormalRecognition(snapshot),
       surpriseOverloadMoments: buildSurpriseOverloadMoments(snapshot),
       assumptionDrivenErrors: buildAssumptionDrivenErrors(snapshot),
+      cognitiveCascadeChains: buildCognitiveCascadeChains(snapshot),
+      rootSurpriseEvent: buildRootSurpriseEvent(snapshot),
+      secondaryFailuresCaused: buildSecondaryFailuresCaused(snapshot),
+      recoveryQuality: buildCascadeRecoveryQuality(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
+  }
+
+  static List<String> buildCognitiveCascadeChains(SimulationSnapshot snapshot) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'cognitiveCascadeChain') continue;
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 3) break;
+    }
+    if (lines.isEmpty && snapshot.cognitiveCascadeState.chainHistory.isNotEmpty) {
+      lines.add(
+        'Cascade chains recorded: ${snapshot.cognitiveCascadeState.chainHistory.length}.',
+      );
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildRootSurpriseEvent(SimulationSnapshot snapshot) {
+    final root = snapshot.cognitiveCascadeState.rootSurpriseLabel;
+    if (root == null || root.isEmpty) {
+      final history = snapshot.cognitiveCascadeState.chainHistory;
+      if (history.isEmpty) return const [];
+      return ['Root surprise event: ${history.last.rootLabel}.'];
+    }
+    return ['Root surprise event: $root.'];
+  }
+
+  static List<String> buildSecondaryFailuresCaused(SimulationSnapshot snapshot) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'cognitiveCascadeSecondaryFailure') continue;
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 4) break;
+    }
+    if (lines.isEmpty) {
+      final history = snapshot.cognitiveCascadeState.chainHistory;
+      if (history.isNotEmpty && history.last.secondaryFailures.isNotEmpty) {
+        lines.add('Secondary failures: ${history.last.secondaryFailures.join(', ')}.');
+      }
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildCascadeRecoveryQuality(SimulationSnapshot snapshot) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'cognitiveCascadeRecovery') continue;
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 2) break;
+    }
+    if (lines.isEmpty && snapshot.cognitiveCascadeState.chainHistory.isNotEmpty) {
+      final quality = snapshot.cognitiveCascadeState.chainHistory.last.recoveryQuality;
+      lines.add('Recovery quality score: ${quality.toStringAsFixed(2)}.');
+    }
+    return List.unmodifiable(lines);
   }
 
   static List<String> buildExpectationMismatches(SimulationSnapshot snapshot) {
@@ -432,6 +499,7 @@ class RadarTrainingResultBuilder {
     final lines = <String>[
       ...snapshot.attentionReportLines,
       ...snapshot.predictiveMentalModelReportLines,
+      ...snapshot.cognitiveCascadeReportLines,
       ...snapshot.workingMemoryReportLines,
       ...snapshot.psychologyState.reportLines,
       ...snapshot.expectationState.reportLines,
@@ -490,6 +558,7 @@ class RadarTrainingResultBuilder {
       ...snapshot.psychologyState.reportLines,
       ...snapshot.expectationState.reportLines,
       ...snapshot.predictiveMentalModelReportLines,
+      ...snapshot.cognitiveCascadeReportLines,
       ...snapshot.attentionReportLines,
       ...snapshot.workingMemoryReportLines,
     ]) {

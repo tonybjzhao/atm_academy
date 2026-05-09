@@ -7,6 +7,8 @@ import '../core/attention/attention_competition_engine.dart' as attention_v1;
 import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_engine.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
+import '../core/mental_model/cognitive_cascade_engine.dart';
+import '../core/mental_model/cognitive_cascade_state.dart';
 import '../core/mental_model/controller_expectation_state.dart';
 import '../core/mental_model/expectation_tracker.dart';
 import '../core/mental_model/predictive_mental_model_engine.dart';
@@ -67,6 +69,8 @@ class ScenarioRuntime {
   final ExpectationTracker _expectationTracker = ExpectationTracker();
   final PredictiveMentalModelEngine _predictiveMentalModelEngine =
       PredictiveMentalModelEngine();
+    final CognitiveCascadeEngine _cognitiveCascadeEngine =
+      CognitiveCascadeEngine();
   final WorkingMemoryEngine _workingMemoryEngine = WorkingMemoryEngine();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
@@ -84,9 +88,13 @@ class ScenarioRuntime {
       ControllerExpectationState.idle;
     PredictiveMentalModelState _lastPredictiveMentalModelState =
       PredictiveMentalModelState.idle;
+    CognitiveCascadeState _lastCognitiveCascadeState =
+      CognitiveCascadeState.idle;
   WorkingMemoryState _lastWorkingMemoryState = WorkingMemoryState.idle;
   WorkingMemoryState _previousWorkingMemoryState = WorkingMemoryState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
+    Duration? _stickyFocusUntil;
+    String? _stickyFocusTarget;
   // Rolling command timestamps for recent-command-density tracking
   final List<Duration> _recentCommandTimestamps = [];
   int _totalGoAroundCount = 0;
@@ -169,9 +177,13 @@ class ScenarioRuntime {
       recentCommandCount: _recentCommandTimestamps.length,
     );
     _lastTunnelVisionState = _tunnelVisionEngine.tick(baseSnapshot.elapsed);
+    final effectiveSelectedAircraft = _effectiveSelectedAircraftForAttention(
+      elapsed: baseSnapshot.elapsed,
+      requestedAircraftId: _selectedAircraftIdForAttention,
+    );
     _lastAttentionFocusState = _attentionV1Engine.evaluate(
       snapshot: baseSnapshot,
-      selectedAircraftId: _selectedAircraftIdForAttention,
+      selectedAircraftId: effectiveSelectedAircraft,
       selectedRunwayId: _selectedRunwayIdForAttention,
       selectedAlertId: _selectedAlertIdForAttention,
       cognitiveLoad: cognitiveLoad,
@@ -206,6 +218,17 @@ class ScenarioRuntime {
     _applyPredictiveMentalModelEffects(
       elapsed: baseSnapshot.elapsed,
       state: _lastPredictiveMentalModelState,
+    );
+    _lastCognitiveCascadeState = _cognitiveCascadeEngine.evaluate(
+      snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
+      predictive: _lastPredictiveMentalModelState,
+      attention: _lastAttentionFocusState,
+      workingMemory: _lastWorkingMemoryState,
+      expectation: _lastExpectationState,
+    );
+    _applyCognitiveCascadeEffects(
+      elapsed: baseSnapshot.elapsed,
+      state: _lastCognitiveCascadeState,
     );
     _lastWorkingMemoryState = _workingMemoryEngine.evaluate(
       snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
@@ -263,16 +286,35 @@ class ScenarioRuntime {
         ..._lastPsychologyState.reportLines,
         ..._lastExpectationState.reportLines,
         ..._lastPredictiveMentalModelState.reportLines,
+        ..._lastCognitiveCascadeState.reportLines,
       ].take(5).toList(growable: false),
       psychologyState: _lastPsychologyState,
       expectationState: _lastExpectationState,
       predictiveMentalModelState: _lastPredictiveMentalModelState,
       predictiveMentalModelReportLines:
           List<String>.from(_lastPredictiveMentalModelState.reportLines),
+      cognitiveCascadeState: _lastCognitiveCascadeState,
+      cognitiveCascadeReportLines:
+          List<String>.from(_lastCognitiveCascadeState.reportLines),
       workingMemoryState: _lastWorkingMemoryState,
       workingMemoryReportLines:
           List<String>.from(_lastWorkingMemoryState.reportLines),
     );
+  }
+
+  String? _effectiveSelectedAircraftForAttention({
+    required Duration elapsed,
+    required String? requestedAircraftId,
+  }) {
+    if (_stickyFocusUntil == null ||
+        _stickyFocusTarget == null ||
+        elapsed >= (_stickyFocusUntil ?? elapsed)) {
+      return requestedAircraftId;
+    }
+    if (_stickyFocusTarget!.startsWith('aircraft:')) {
+      return _stickyFocusTarget!.substring('aircraft:'.length);
+    }
+    return requestedAircraftId;
   }
 
   SimulationSnapshot _snapshotForPsychology(
@@ -493,6 +535,8 @@ class ScenarioRuntime {
   ControllerExpectationState get lastExpectationState => _lastExpectationState;
   PredictiveMentalModelState get lastPredictiveMentalModelState =>
       _lastPredictiveMentalModelState;
+    CognitiveCascadeState get lastCognitiveCascadeState =>
+      _lastCognitiveCascadeState;
   WorkingMemoryState get lastWorkingMemoryState => _lastWorkingMemoryState;
 
   void _applyPredictiveMentalModelEffects({
@@ -557,6 +601,66 @@ class ScenarioRuntime {
         type: 'predictionSurpriseOverload',
         label:
             'Surprise overload moment ${(state.surpriseLoad * 100).round()}%',
+      ));
+    }
+  }
+
+  void _applyCognitiveCascadeEffects({
+    required Duration elapsed,
+    required CognitiveCascadeState state,
+  }) {
+    if (state.chainStartedThisTick) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'cognitiveCascadeChain',
+        label: 'Cascade started from ${state.rootSurpriseLabel ?? 'unknown'}',
+      ));
+    }
+    if (state.secondaryFailuresThisTick.isNotEmpty) {
+      for (final secondary in state.secondaryFailuresThisTick) {
+        engine.recordEvent(SimulationEvent(
+          elapsed: elapsed,
+          type: 'cognitiveCascadeSecondaryFailure',
+          label: secondary,
+        ));
+      }
+    }
+    if (state.chainEndedThisTick) {
+      final recent = state.chainHistory.isEmpty ? null : state.chainHistory.last;
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'cognitiveCascadeRecovery',
+        label: recent == null
+            ? 'Cascade recovery assessed'
+            : 'Cascade recovery quality ${recent.recoveryQuality.toStringAsFixed(2)}',
+      ));
+    }
+
+    if (state.stickyFocusActive) {
+      _stickyFocusUntil = elapsed + const Duration(seconds: 10);
+      _stickyFocusTarget = _lastAttentionFocusState.currentFocusTarget;
+    } else if (_stickyFocusUntil != null && elapsed >= _stickyFocusUntil!) {
+      _stickyFocusUntil = null;
+      _stickyFocusTarget = null;
+    }
+
+    if (state.intentionInterruptionActive || state.recoveryInstabilityActive) {
+      _activeDistractionUntil['cascade:${state.activeChainId ?? 'recovery'}'] =
+          elapsed + const Duration(seconds: 12);
+    }
+
+    if (state.scanQualityPenalty >= 0.18) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'attentionScanDisruption',
+        label: 'Cascade scan penalty ${(state.scanQualityPenalty * 100).round()}%',
+      ));
+    }
+    if (state.recoveryInstabilityActive) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'cognitiveRecoveryInstability',
+        label: 'Recovery instability: over-correction risk elevated',
       ));
     }
   }
