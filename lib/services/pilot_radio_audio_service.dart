@@ -91,11 +91,10 @@ class PilotRadioAudioService {
     await _warningPlayer.setReleaseMode(ReleaseMode.stop);
     await _warningPlayer.setPlayerMode(PlayerMode.mediaPlayer);
     await _immediateCuePlayer.setReleaseMode(ReleaseMode.stop);
-    await _immediateCuePlayer.setPlayerMode(PlayerMode.mediaPlayer);
+    await _immediateCuePlayer.setPlayerMode(PlayerMode.lowLatency);
     await _warningPlayer
         .setVolume(_warningVolumeFrom(_settings.settings.value));
-    await _immediateCuePlayer
-        .setVolume(_warningVolumeFrom(_settings.settings.value));
+    await _immediateCuePlayer.setVolume(1.0);
 
     _settings.settings.addListener(_onSettingsChanged);
     _initialized = true;
@@ -107,7 +106,7 @@ class PilotRadioAudioService {
       _tts.setVolume(s.voiceVolume);
     }
     _warningPlayer.setVolume(_warningVolumeFrom(s));
-    _immediateCuePlayer.setVolume(_warningVolumeFrom(s));
+    _immediateCuePlayer.setVolume(1.0);
     if (!s.subtitlesEnabled) {
       subtitle.value = null;
     }
@@ -126,7 +125,7 @@ class PilotRadioAudioService {
       await _immediateCuePlayer.stop();
       await _immediateCuePlayer.play(
         AssetSource(asset),
-        volume: _warningVolumeFrom(_settings.settings.value),
+        volume: 1.0,
       );
       return true;
     } catch (_) {

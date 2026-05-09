@@ -194,7 +194,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
   void _issueCommand(String type) {
     final a = _selected;
     if (a == null) return;
-    _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
+    _radioAudio.playImmediateCue(RadioWarningType.conflict);
     developer.log('AUDIO_PROBE_PRACTICE command cue fired',
         name: 'RadarSimulationScreen');
     setState(() {
@@ -219,7 +219,7 @@ class _RadarSimulationScreenState extends State<RadarSimulationScreen>
 
   Future<void> _runAudioSelfTest() async {
     final l10n = AppLocalizations.of(context)!;
-    final ok = await _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
+    final ok = await _radioAudio.playImmediateCue(RadioWarningType.conflict);
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()

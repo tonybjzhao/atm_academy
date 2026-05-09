@@ -264,10 +264,10 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
 
   void _playImmediateCommandCue() {
     // Immediate cue bypasses queue/TTS so command taps are always audible.
-    _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
+    _radioAudio.playImmediateCue(RadioWarningType.conflict);
     // Keep queue path too for continuity in replay/cadence.
     _radioAudio.enqueueWarning(
-      RadioWarningType.runwayPressure,
+      RadioWarningType.conflict,
       interrupt: false,
       delay: Duration.zero,
     );
@@ -278,9 +278,9 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   Future<void> _runAudioSelfTest() async {
     final l10n = AppLocalizations.of(context)!;
     final immediateOk =
-        await _radioAudio.playImmediateCue(RadioWarningType.runwayPressure);
+        await _radioAudio.playImmediateCue(RadioWarningType.conflict);
     await _radioAudio.enqueueWarning(
-      RadioWarningType.runwayPressure,
+      RadioWarningType.conflict,
       interrupt: true,
       delay: Duration.zero,
     );
