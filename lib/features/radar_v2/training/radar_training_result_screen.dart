@@ -122,6 +122,34 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               for (final line in result.delayedAwarenessMoments)
                 _EvaluationChip(text: line),
             ],
+            if (result.forgottenIntentions.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Forgotten Intentions'),
+              const SizedBox(height: 8),
+              for (final line in result.forgottenIntentions)
+                _EvaluationChip(text: line),
+            ],
+            if (result.interruptedWorkflows.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Interrupted Workflows'),
+              const SizedBox(height: 8),
+              for (final line in result.interruptedWorkflows)
+                _EvaluationChip(text: line),
+            ],
+            if (result.delayedFollowThrough.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Delayed Follow-Through'),
+              const SizedBox(height: 8),
+              for (final line in result.delayedFollowThrough)
+                _EvaluationChip(text: line),
+            ],
+            if (result.intentionRecovery.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Intention Recovery'),
+              const SizedBox(height: 8),
+              for (final line in result.intentionRecovery)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),

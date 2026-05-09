@@ -17,6 +17,10 @@ class RadarTrainingResult {
   final List<String> scanBlindPeriods;
   final List<String> fixationWindows;
   final List<String> delayedAwarenessMoments;
+  final List<String> forgottenIntentions;
+  final List<String> interruptedWorkflows;
+  final List<String> delayedFollowThrough;
+  final List<String> intentionRecovery;
   final String topMistake;
   final String bestRecovery;
 
@@ -36,6 +40,10 @@ class RadarTrainingResult {
     required this.scanBlindPeriods,
     required this.fixationWindows,
     required this.delayedAwarenessMoments,
+    required this.forgottenIntentions,
+    required this.interruptedWorkflows,
+    required this.delayedFollowThrough,
+    required this.intentionRecovery,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -90,9 +98,79 @@ class RadarTrainingResultBuilder {
       scanBlindPeriods: buildScanBlindPeriods(snapshot),
       fixationWindows: buildFixationWindows(snapshot),
       delayedAwarenessMoments: buildDelayedAwarenessMoments(snapshot),
+      forgottenIntentions: buildForgottenIntentions(snapshot),
+      interruptedWorkflows: buildInterruptedWorkflows(snapshot),
+      delayedFollowThrough: buildDelayedFollowThrough(snapshot),
+      intentionRecovery: buildIntentionRecovery(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
+  }
+
+  static List<String> buildForgottenIntentions(SimulationSnapshot snapshot) {
+    final state = snapshot.workingMemoryState;
+    if (state.forgottenIntentionCount == 0) return const [];
+    final forgotten = state.pendingIntentions.where((item) => item.forgotten);
+    if (forgotten.isEmpty) {
+      return [
+        'Forgotten pending intentions detected: ${state.forgottenIntentionCount}.',
+      ];
+    }
+    final labels = forgotten.take(2).map((item) => item.typeLabel).toSet();
+    return [
+      'Forgotten intentions: ${state.forgottenIntentionCount} '
+          '(${labels.join(', ')}).',
+    ];
+  }
+
+  static List<String> buildInterruptedWorkflows(SimulationSnapshot snapshot) {
+    final state = snapshot.workingMemoryState;
+    final lines = <String>[];
+    if (state.interruptedWorkflowCount > 0) {
+      lines.add(
+        'Interrupted workflow chains: ${state.interruptedWorkflowCount}.',
+      );
+    }
+    final interrupts = snapshot.events.where(
+      (event) => event.type == 'workingMemoryInterrupted',
+    );
+    for (final event in interrupts) {
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 3) break;
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildDelayedFollowThrough(SimulationSnapshot snapshot) {
+    final state = snapshot.workingMemoryState;
+    if (state.delayedFollowThroughCount == 0) return const [];
+    return [
+      'Delayed follow-through tasks: ${state.delayedFollowThroughCount}.',
+      'Unrecovered pending tasks: ${state.unrecoveredTaskCount}.',
+    ];
+  }
+
+  static List<String> buildIntentionRecovery(SimulationSnapshot snapshot) {
+    final state = snapshot.workingMemoryState;
+    if (state.recoveredTaskCount == 0 && state.unrecoveredTaskCount == 0) {
+      return const [];
+    }
+    final lines = <String>[
+      'Recovered tasks: ${state.recoveredTaskCount}; '
+          'unrecovered: ${state.unrecoveredTaskCount}.',
+    ];
+    if (state.catchUpBurstCount > 0) {
+      lines.add(
+        'Catch-up behavior observed in ${state.catchUpBurstCount} burst window(s).',
+      );
+    }
+    if (state.stressRecoveryLoad > 0.1) {
+      lines.add(
+        'Reminder recovery added stress load '
+        '(${state.stressRecoveryLoad.toStringAsFixed(2)}).',
+      );
+    }
+    return List.unmodifiable(lines);
   }
 
   static List<String> buildNeglectedAircraft(SimulationSnapshot snapshot) {
@@ -284,6 +362,7 @@ class RadarTrainingResultBuilder {
   static List<String> buildReplayExplanation(SimulationSnapshot snapshot) {
     final lines = <String>[
       ...snapshot.attentionReportLines,
+      ...snapshot.workingMemoryReportLines,
       ...snapshot.psychologyState.reportLines,
       ...snapshot.expectationState.reportLines,
     ];
@@ -341,6 +420,7 @@ class RadarTrainingResultBuilder {
       ...snapshot.psychologyState.reportLines,
       ...snapshot.expectationState.reportLines,
       ...snapshot.attentionReportLines,
+      ...snapshot.workingMemoryReportLines,
     ]) {
       final seconds = _firstSeconds(line) ?? snapshot.elapsed.inSeconds;
       final lower = line.toLowerCase();

@@ -9,6 +9,8 @@ import '../core/cognitive_load/cognitive_load_engine.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/mental_model/controller_expectation_state.dart';
 import '../core/mental_model/expectation_tracker.dart';
+import '../core/mental_model/working_memory_engine.dart';
+import '../core/mental_model/working_memory_state.dart';
 import '../core/pressure/attention_competition_engine.dart' as pressure;
 import '../core/pressure/tunnel_vision_engine.dart';
 import '../core/pressure/workload_degradation.dart';
@@ -61,6 +63,7 @@ class ScenarioRuntime {
       attention_v1.AttentionCompetitionEngine();
   final PressurePacingEngine _pressurePacingEngine = PressurePacingEngine();
   final ExpectationTracker _expectationTracker = ExpectationTracker();
+  final WorkingMemoryEngine _workingMemoryEngine = WorkingMemoryEngine();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
   String? _selectedRunwayIdForAttention;
@@ -75,6 +78,8 @@ class ScenarioRuntime {
   ScenarioPsychologyState _lastPsychologyState = ScenarioPsychologyState.idle;
   ControllerExpectationState _lastExpectationState =
       ControllerExpectationState.idle;
+  WorkingMemoryState _lastWorkingMemoryState = WorkingMemoryState.idle;
+  WorkingMemoryState _previousWorkingMemoryState = WorkingMemoryState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
   // Rolling command timestamps for recent-command-density tracking
   final List<Duration> _recentCommandTimestamps = [];
@@ -186,6 +191,18 @@ class ScenarioRuntime {
     _lastExpectationState = _expectationTracker.evaluate(
       _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
     );
+    _lastWorkingMemoryState = _workingMemoryEngine.evaluate(
+      snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
+      attentionFocus: _lastAttentionFocusState,
+      cognitiveLoad: cognitiveLoad,
+      operationalAlerts: _alertManager.activeAlerts,
+    );
+    _recordWorkingMemoryEvents(
+      elapsed: baseSnapshot.elapsed,
+      previous: _previousWorkingMemoryState,
+      current: _lastWorkingMemoryState,
+    );
+    _previousWorkingMemoryState = _lastWorkingMemoryState;
 
     // Feed analytics tracker
     _analyticsTracker.recordTick(ReplayWorkloadFrame(
@@ -232,6 +249,9 @@ class ScenarioRuntime {
       ].take(5).toList(growable: false),
       psychologyState: _lastPsychologyState,
       expectationState: _lastExpectationState,
+      workingMemoryState: _lastWorkingMemoryState,
+      workingMemoryReportLines:
+          List<String>.from(_lastWorkingMemoryState.reportLines),
     );
   }
 
@@ -451,6 +471,42 @@ class ScenarioRuntime {
   double get currentSectorPressure => _currentSectorPressure;
   ScenarioPsychologyState get lastPsychologyState => _lastPsychologyState;
   ControllerExpectationState get lastExpectationState => _lastExpectationState;
+  WorkingMemoryState get lastWorkingMemoryState => _lastWorkingMemoryState;
+
+  void _recordWorkingMemoryEvents({
+    required Duration elapsed,
+    required WorkingMemoryState previous,
+    required WorkingMemoryState current,
+  }) {
+    if (current.forgottenIntentionCount > previous.forgottenIntentionCount) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'workingMemoryForgotten',
+        label: 'Pending intention lost salience and was forgotten',
+      ));
+    }
+    if (current.recoveredTaskCount > previous.recoveredTaskCount) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'workingMemoryRecovered',
+        label: 'Forgotten intention recovered late',
+      ));
+    }
+    if (current.catchUpBurstCount > previous.catchUpBurstCount) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'workingMemoryCatchUp',
+        label: 'Catch-up burst followed reminder recovery',
+      ));
+    }
+    if (current.interruptedWorkflowCount > previous.interruptedWorkflowCount) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'workingMemoryInterrupted',
+        label: 'Task chain interrupted by competing demand',
+      ));
+    }
+  }
 
   /// Returns upcoming spawn times within the next [lookAheadSeconds], sorted ascending.
   /// Useful for UI to show imminent traffic load forecast.

@@ -13,6 +13,7 @@ import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/alerts/operational_alert.dart';
 import '../core/mental_model/controller_expectation_state.dart';
+import '../core/mental_model/working_memory_state.dart';
 import '../core/psychology/scenario_pressure_phase.dart';
 
 class SimulationSnapshot {
@@ -40,6 +41,8 @@ class SimulationSnapshot {
   final List<String> attentionReportLines;
   final ScenarioPsychologyState psychologyState;
   final ControllerExpectationState expectationState;
+  final WorkingMemoryState workingMemoryState;
+  final List<String> workingMemoryReportLines;
 
   const SimulationSnapshot({
     required this.tick,
@@ -65,6 +68,8 @@ class SimulationSnapshot {
     this.attentionReportLines = const [],
     this.psychologyState = ScenarioPsychologyState.idle,
     this.expectationState = ControllerExpectationState.idle,
+    this.workingMemoryState = WorkingMemoryState.idle,
+    this.workingMemoryReportLines = const [],
   });
 
   AircraftState? aircraftById(String id) {
