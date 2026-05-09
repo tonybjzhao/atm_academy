@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -63,7 +64,9 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
   final WorkloadAudioController _audioController = WorkloadAudioController();
   late final AudioPlayer _cuePlayer = AudioPlayer(playerId: 'radar_cues');
+  late final AudioPlayer _cuePlayerAlt = AudioPlayer(playerId: 'radar_cues_alt');
   Future<void> _cuePlaybackChain = Future<void>.value();
+  bool _useAltCuePlayer = false;
   Ticker? _ticker;
   Duration? _lastFrameTime;
   Duration _lastIdlePaint = Duration.zero;
@@ -107,29 +110,34 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   Future<void> _initializeAudio() async {
     try {
       await _audioController.initialize();
-      await _cuePlayer.setAudioContext(
-        AudioContext(
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.playback,
-            options: {},
-          ),
-          android: AudioContextAndroid(
-            contentType: AndroidContentType.sonification,
-            usageType: AndroidUsageType.media,
-            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
-            isSpeakerphoneOn: true,
-          ),
-        ),
-      );
-      await _cuePlayer.setVolume(1.0);
-      await _cuePlayer.setReleaseMode(ReleaseMode.stop);
-      await _cuePlayer.setPlayerMode(PlayerMode.mediaPlayer);
+      await _configureCuePlayer(_cuePlayer);
+      await _configureCuePlayer(_cuePlayerAlt);
     } catch (e) {
       assert(() {
         print('RadarV2DebugScreen: Failed to initialize audio: $e');
         return true;
       }());
     }
+  }
+
+  Future<void> _configureCuePlayer(AudioPlayer player) async {
+    await player.setAudioContext(
+      AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: {},
+        ),
+        android: AudioContextAndroid(
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.media,
+          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+          isSpeakerphoneOn: true,
+        ),
+      ),
+    );
+    await player.setVolume(1.0);
+    await player.setReleaseMode(ReleaseMode.stop);
+    await player.setPlayerMode(PlayerMode.lowLatency);
   }
 
   Future<void> _loadScenario(String scenarioName) async {
@@ -700,16 +708,35 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   }
 
   Future<bool> _playCueInternal(String assetPath) async {
+    final primary = _useAltCuePlayer ? _cuePlayerAlt : _cuePlayer;
+    final secondary = _useAltCuePlayer ? _cuePlayer : _cuePlayerAlt;
+    _useAltCuePlayer = !_useAltCuePlayer;
+
     try {
       // Android can miss repeated cues unless the previous state is fully reset.
-      await _cuePlayer.stop();
-      await _cuePlayer.play(AssetSource(assetPath), volume: 1.0);
+      await primary.stop();
+      await primary.play(AssetSource(assetPath), volume: 1.0);
       return true;
     } catch (e) {
-      assert(() {
-        print('RadarV2DebugScreen: Failed to play $assetPath: $e');
+      try {
+        await secondary.stop();
+        await secondary.play(AssetSource(assetPath), volume: 1.0);
         return true;
-      }());
+      } catch (_) {
+        assert(() {
+          print('RadarV2DebugScreen: Failed to play $assetPath: $e');
+          return true;
+        }());
+        return _playSystemFallbackCue();
+      }
+    }
+  }
+
+  bool _playSystemFallbackCue() {
+    try {
+      SystemSound.play(SystemSoundType.alert);
+      return true;
+    } catch (_) {
       return false;
     }
   }
@@ -997,6 +1024,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     _ackHighlightTimer?.cancel();
     _audioController.dispose();
     _cuePlayer.dispose();
+    _cuePlayerAlt.dispose();
     super.dispose();
   }
 }

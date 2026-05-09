@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
 
 import '../features/radar_v2/core/audio/workload_audio_state.dart';
 import '../features/radar_v2/core/cognitive_load/cognitive_load_level.dart';
@@ -112,6 +113,11 @@ class WorkloadAudioController {
         print('WorkloadAudioController: Failed to play $assetPath: $e');
         return true;
       }());
+      try {
+        SystemSound.play(SystemSoundType.alert);
+      } catch (_) {
+        // Ignore fallback failure.
+      }
     }
   }
 }
