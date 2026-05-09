@@ -131,8 +131,20 @@ class ScenarioRuntime {
               commandAcknowledgementDelay:
                   _commandAcknowledgementDelayFor(definition),
               pilotRealismProfile:
-                  PilotBehaviorRealismProfile.fromDifficulty(
-                definition.difficulty,
+                  PilotBehaviorRealismProfile.fromScenarioContext(
+                difficulty: definition.difficulty,
+                weatherMode: definition.weatherMode,
+                weatherZoneCount: definition.weatherZones.length,
+                maxWeatherSeverity: definition.weatherZones.isEmpty
+                    ? 0
+                    : definition.weatherZones
+                        .map((zone) => zone.severity)
+                    .reduce(math.max)
+                    .toDouble(),
+                densityScale: definition.densityScale,
+                workloadPressureMultiplier:
+                    definition.workloadPressureMultiplier,
+                maxControllerLoad: definition.maxControllerLoad,
               ),
             ) {
     final normalizedDifficulty =
