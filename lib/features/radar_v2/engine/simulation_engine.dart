@@ -52,7 +52,7 @@ class SimulationEngine {
     this.separationCalculator = const SeparationCalculator(),
     this.conflictPredictor = const ConflictPredictor(),
     this.maxTrailPoints = 28,
-    this.commandAcknowledgementDelay = const Duration(seconds: 3),
+    this.commandAcknowledgementDelay = const Duration(milliseconds: 2600),
     this.waypoints = const {},
     this.weatherZones = const [],
     this.arrivalFlows = const [],
@@ -757,7 +757,7 @@ class SimulationEngine {
     final wobbleNoise = _noise01('${aircraft.id}:wx_track:$phase') - 0.5;
     final speedNoise = _noise01('${aircraft.id}:wx_speed:$phase') - 0.5;
     final pressure = (0.65 + _sectorPressureIndex * 0.16).clamp(0.65, 1.35);
-    final wobble = wobbleNoise * 2 * influence * pressure * 1.4;
+    final wobble = wobbleNoise * 2 * influence * pressure * 1.2;
     final speed = speedNoise * 2 * influence * pressure * 4.5;
     if (influence > 0.28 && _weatherInfluenceTicks[aircraft.id]! >= 6) {
       _recordBehaviorEvent(

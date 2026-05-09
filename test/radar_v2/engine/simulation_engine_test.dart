@@ -477,7 +477,7 @@ void main() {
       (event) => event.type == 'commandAcknowledged',
     );
 
-    expect(ack.elapsed, greaterThanOrEqualTo(const Duration(seconds: 3)));
+    expect(ack.elapsed, greaterThanOrEqualTo(const Duration(milliseconds: 2500)));
     expect(ack.elapsed, lessThanOrEqualTo(const Duration(seconds: 5)));
   });
 
