@@ -539,6 +539,13 @@ class _MoreDetails extends StatelessWidget {
                   onTap: () => onInsightTap(insight),
                 ),
             ],
+            if (result.environmentalEcology.reportLines.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const _SectionTitle('Operational Pressure Ecology'),
+              const SizedBox(height: 8),
+              for (final line in result.environmentalEcology.reportLines)
+                _EvaluationChip(text: line),
+            ],
             const SizedBox(height: 12),
             const _SectionTitle('Timeline Summary'),
             const SizedBox(height: 8),
@@ -588,6 +595,7 @@ class _MoreDetails extends StatelessWidget {
       ...result.confidenceCalibrationQuality,
       ...result.archetypeDebrief,
       ...result.traitScenarioInteraction,
+      ...result.environmentalEcology.reportLines,
     ];
   }
 }

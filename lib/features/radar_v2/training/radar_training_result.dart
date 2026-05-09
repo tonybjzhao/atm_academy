@@ -5,6 +5,7 @@ import '../core/mental_model/trait_scenario_interaction_engine.dart';
 import '../core/mental_model/trait_scenario_interaction_state.dart';
 import 'debrief_insight.dart';
 import 'debrief_salience_engine.dart';
+import 'environmental_pressure_ecology.dart';
 
 class RadarTrainingResult {
   final String scenarioTitle;
@@ -40,6 +41,7 @@ class RadarTrainingResult {
   final List<String> confidenceCalibrationQuality;
   final List<String> archetypeDebrief;
   final List<String> traitScenarioInteraction;
+  final EnvironmentalPressureEcology environmentalEcology;
   final DebriefSalienceResult debriefSalience;
   final String topMistake;
   final String bestRecovery;
@@ -78,6 +80,7 @@ class RadarTrainingResult {
     required this.confidenceCalibrationQuality,
     required this.archetypeDebrief,
     required this.traitScenarioInteraction,
+    required this.environmentalEcology,
     required this.debriefSalience,
     required this.topMistake,
     required this.bestRecovery,
@@ -119,6 +122,11 @@ class RadarTrainingResultBuilder {
     final replayExplanation = buildReplayExplanation(snapshot);
     final archetypeDebrief = buildArchetypeDebrief(snapshot);
     final traitScenarioInteraction = buildTraitScenarioInteraction(snapshot);
+    final environmentalEcology =
+        const EnvironmentalPressureEcologyBuilder().build(
+      snapshot: snapshot,
+      score: score,
+    );
     final topMistake = buildTopMistake(score, snapshot);
     final bestRecovery = buildBestRecovery(score, snapshot, replayExplanation);
     final debriefSalience = buildDebriefSalience(
@@ -127,6 +135,7 @@ class RadarTrainingResultBuilder {
       replayExplanation: replayExplanation,
       archetypeDebrief: archetypeDebrief,
       traitScenarioInteraction: traitScenarioInteraction,
+      environmentalEcology: environmentalEcology,
       topMistake: topMistake,
       bestRecovery: bestRecovery,
     );
@@ -165,6 +174,7 @@ class RadarTrainingResultBuilder {
       confidenceCalibrationQuality: buildConfidenceCalibrationQuality(snapshot),
       archetypeDebrief: archetypeDebrief,
       traitScenarioInteraction: traitScenarioInteraction,
+      environmentalEcology: environmentalEcology,
       debriefSalience: debriefSalience,
       topMistake: topMistake,
       bestRecovery: bestRecovery,
@@ -179,6 +189,8 @@ class RadarTrainingResultBuilder {
     required List<String> traitScenarioInteraction,
     required String topMistake,
     required String bestRecovery,
+    EnvironmentalPressureEcology environmentalEcology =
+        EnvironmentalPressureEcology.empty,
     String? scenarioLearningGoal,
   }) {
     final workloadReports = <String>[
@@ -194,6 +206,7 @@ class RadarTrainingResultBuilder {
       if (score.lateResolutionCount > 0)
         '${score.lateResolutionCount} late conflict resolution(s).',
       ...score.penalties,
+      ...environmentalEcology.reportLines,
     ];
     return const DebriefSalienceEngine().rank(
       workloadReports: workloadReports,

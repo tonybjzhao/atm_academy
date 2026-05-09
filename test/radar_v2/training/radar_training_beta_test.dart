@@ -1,9 +1,14 @@
 import 'dart:io';
 
 import 'package:atm_flutter/features/radar_v2/core/attention/attention_focus_state.dart';
+import 'package:atm_flutter/features/radar_v2/core/cognitive_load/cognitive_load_level.dart';
+import 'package:atm_flutter/features/radar_v2/core/cognitive_load/cognitive_load_state.dart';
 import 'package:atm_flutter/features/radar_v2/core/mental_model/cognitive_cascade_state.dart';
 import 'package:atm_flutter/features/radar_v2/core/mental_model/controller_expectation_state.dart';
 import 'package:atm_flutter/features/radar_v2/core/psychology/scenario_pressure_phase.dart';
+import 'package:atm_flutter/features/radar_v2/models/aircraft_state.dart';
+import 'package:atm_flutter/features/radar_v2/models/arrival_flow.dart';
+import 'package:atm_flutter/features/radar_v2/models/departure_flow.dart';
 import 'package:atm_flutter/features/radar_v2/radar_v2_debug_screen.dart';
 import 'package:atm_flutter/features/radar_v2/scenario/scenario_loader.dart';
 import 'package:atm_flutter/features/radar_v2/scoring/radar_v2_score.dart';
@@ -12,12 +17,14 @@ import 'package:atm_flutter/features/radar_v2/training/cognitive_cascade_propaga
 import 'package:atm_flutter/features/radar_v2/training/cognitive_timeline.dart';
 import 'package:atm_flutter/features/radar_v2/training/debrief_insight.dart';
 import 'package:atm_flutter/features/radar_v2/training/debrief_salience_engine.dart';
+import 'package:atm_flutter/features/radar_v2/training/environmental_pressure_ecology.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_beta_screen.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_briefing_screen.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_progress_store.dart';
 import 'package:atm_flutter/features/radar_v2/training/radar_training_result.dart';
 import 'package:atm_flutter/features/radar_v2/models/simulation_snapshot.dart';
 import 'package:atm_flutter/features/radar_v2/models/simulation_event.dart';
+import 'package:atm_flutter/features/radar_v2/models/weather_zone.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -620,6 +627,95 @@ void main() {
       );
     });
   });
+
+  group('Environmental pressure ecology', () {
+    test('detects traffic rhythm and synchronized operational pressure', () {
+      final ecology = const EnvironmentalPressureEcologyBuilder().build(
+        snapshot: _ecologySnapshot(),
+        score: const RadarV2ScoreSnapshot(
+          score: 66,
+          commandCount: 7,
+          separationLossCount: 0,
+          lateResolutionCount: 1,
+          spacingStability: 52,
+          throughputEfficiency: 68,
+          weatherManagement: 70,
+          commandEfficiency: 74,
+          anticipationScore: 56,
+          lastDelta: -5,
+          lastReason: 'Late resolution',
+          penalties: ['Late resolution'],
+          totalOverloadDuration: Duration(seconds: 24),
+        ),
+      );
+
+      expect(
+        ecology.windows.map((window) => window.source),
+        containsAll([
+          EnvironmentalPressureSource.arrivalWave,
+          EnvironmentalPressureSource.departureCompression,
+          EnvironmentalPressureSource.weatherReroute,
+          EnvironmentalPressureSource.synchronizedStressors,
+        ]),
+      );
+      expect(ecology.synchronizedRisk, greaterThan(0.45));
+    });
+
+    test('explains why pressure emerged operationally', () {
+      final result = RadarTrainingResultBuilder.build(
+        scenarioTitle: 'Ecology Scenario',
+        scenarioId: 'ecology',
+        score: const RadarV2ScoreSnapshot(
+          score: 61,
+          commandCount: 8,
+          separationLossCount: 0,
+          lateResolutionCount: 1,
+          spacingStability: 48,
+          throughputEfficiency: 62,
+          weatherManagement: 66,
+          commandEfficiency: 70,
+          anticipationScore: 52,
+          lastDelta: -5,
+          lastReason: 'Late resolution',
+          penalties: ['Late resolution'],
+          totalOverloadDuration: Duration(seconds: 18),
+        ),
+        snapshot: _ecologySnapshot(),
+      );
+
+      expect(result.environmentalEcology.reportLines.join(' '),
+          contains('Arrival compression'));
+      expect(result.debriefSalience.primaryInsights, isNotEmpty);
+    });
+
+    test('detects attention traps and latent conflict ecology', () {
+      final ecology = const EnvironmentalPressureEcologyBuilder().build(
+        snapshot: _ecologySnapshot(),
+        score: const RadarV2ScoreSnapshot(
+          score: 58,
+          commandCount: 9,
+          separationLossCount: 1,
+          lateResolutionCount: 1,
+          spacingStability: 44,
+          throughputEfficiency: 58,
+          weatherManagement: 64,
+          commandEfficiency: 62,
+          anticipationScore: 48,
+          lastDelta: -25,
+          lastReason: 'Separation loss',
+          penalties: ['Separation loss'],
+        ),
+      );
+
+      expect(
+        ecology.windows.map((window) => window.source),
+        containsAll([
+          EnvironmentalPressureSource.attentionTrap,
+          EnvironmentalPressureSource.latentConflict,
+        ]),
+      );
+    });
+  });
 }
 
 DebriefInsight _insight({
@@ -797,6 +893,110 @@ RadarTrainingResult _parallelCascadeResult() {
           ),
         ],
       ),
+    ),
+  );
+}
+
+SimulationSnapshot _ecologySnapshot() {
+  return const SimulationSnapshot(
+    tick: 1,
+    elapsed: Duration(seconds: 210),
+    aircraft: [
+      AircraftState(
+        id: 'a1',
+        callsign: 'QFA214',
+        xNm: -18,
+        yNm: 12,
+        altitudeFt: 6000,
+        headingDeg: 90,
+        groundSpeedKt: 250,
+      ),
+      AircraftState(
+        id: 'a2',
+        callsign: 'VOZ431',
+        xNm: -10,
+        yNm: 8,
+        altitudeFt: 6000,
+        headingDeg: 110,
+        groundSpeedKt: 220,
+      ),
+    ],
+    separation: [],
+    weatherZones: [
+      WeatherZone(id: 'wx1', xNm: 4, yNm: 4, radiusNm: 8, severity: 3),
+    ],
+    arrivalFlows: [
+      ArrivalFlow(
+        id: 'arrivals',
+        runwayId: 'RWY16',
+        mergeWaypointId: 'MERGE',
+        finalFixWaypointId: 'FINAL',
+        thresholdWaypointId: 'THR',
+        spacingTargetNm: 5,
+        stabilizedAltitudeFt: 3000,
+      ),
+    ],
+    departureFlows: [
+      DepartureFlow(
+        id: 'deps',
+        runwayId: 'RWY16',
+        sidProcedureId: 'SID16',
+        releaseIntervalSeconds: 40,
+      ),
+    ],
+    events: [
+      SimulationEvent(
+        elapsed: Duration(seconds: 20),
+        type: 'sectorEntry',
+        label: 'QFA214 sector entry',
+      ),
+      SimulationEvent(
+        elapsed: Duration(seconds: 36),
+        type: 'sectorEntry',
+        label: 'VOZ431 sector entry',
+      ),
+      SimulationEvent(
+        elapsed: Duration(seconds: 52),
+        type: 'sectorEntry',
+        label: 'JST908 sector entry',
+      ),
+      SimulationEvent(
+        elapsed: Duration(seconds: 68),
+        type: 'departureQueued',
+        label: 'RXA33 queued for departure',
+      ),
+      SimulationEvent(
+        elapsed: Duration(seconds: 86),
+        type: 'departureReleased',
+        label: 'RXA33 departure released',
+      ),
+      SimulationEvent(
+        elapsed: Duration(seconds: 110),
+        type: 'expectationMismatch',
+        label: 'Ambiguous trajectory mismatch before spacing compression',
+      ),
+      SimulationEvent(
+        elapsed: Duration(seconds: 124),
+        type: 'separationWarning',
+        label: 'Delayed conflict alert surfaced',
+      ),
+      SimulationEvent(
+        elapsed: Duration(seconds: 145),
+        type: 'metaRecoveryAction',
+        label: 'Recovery command issued',
+      ),
+    ],
+    cognitiveLoad: CognitiveLoadState(
+      totalLoadScore: 6.8,
+      currentLevel: CognitiveLoadLevel.overloaded,
+      activeStressors: ['arrival compression', 'weather reroute'],
+      recentSpikes: [],
+    ),
+    attentionFocus: AttentionFocusState(
+      currentFocusTarget: 'aircraft:QFA214',
+      scanCoverageQuality: 0.46,
+      fixationWindowCount: 1,
+      ignoredAlerts: [],
     ),
   );
 }
