@@ -43,6 +43,30 @@ import '../models/simulation_snapshot.dart';
 import 'scenario_definition.dart';
 
 class ScenarioRuntime {
+  static const Map<int, _AttentionDifficultyCalibration>
+      _attentionDifficultyCalibration = {
+    1: _AttentionDifficultyCalibration(
+      awarenessSupport: 1.00,
+      subtleConflictDelayBudgetSeconds: 8,
+    ),
+    2: _AttentionDifficultyCalibration(
+      awarenessSupport: 0.94,
+      subtleConflictDelayBudgetSeconds: 10,
+    ),
+    3: _AttentionDifficultyCalibration(
+      awarenessSupport: 0.82,
+      subtleConflictDelayBudgetSeconds: 14,
+    ),
+    4: _AttentionDifficultyCalibration(
+      awarenessSupport: 0.68,
+      subtleConflictDelayBudgetSeconds: 18,
+    ),
+    5: _AttentionDifficultyCalibration(
+      awarenessSupport: 0.55,
+      subtleConflictDelayBudgetSeconds: 22,
+    ),
+  };
+
   final ScenarioDefinition definition;
   final SimulationEngine engine;
   final Set<String> _spawnedIds = <String>{};
@@ -1799,7 +1823,7 @@ class ScenarioRuntime {
     }
 
     final delay = snapshot.elapsed - firstSeen;
-    if (delay >= const Duration(seconds: 18)) {
+    if (delay >= _subtleConflictDelayBudgetForDifficulty()) {
       return false;
     }
     return true;
@@ -1837,10 +1861,28 @@ class ScenarioRuntime {
   }
 
   double _awarenessSupportForDifficulty() {
-    // Beginner scenarios keep more awareness assistance and slower scan decay.
-    if (definition.difficulty <= 2) return 1.0;
-    if (definition.difficulty == 3) return 0.82;
-    if (definition.difficulty == 4) return 0.68;
-    return 0.55;
+    return _attentionCalibrationForDifficulty().awarenessSupport;
   }
+
+  Duration _subtleConflictDelayBudgetForDifficulty() {
+    final seconds = _attentionCalibrationForDifficulty()
+        .subtleConflictDelayBudgetSeconds;
+    return Duration(seconds: seconds);
+  }
+
+  _AttentionDifficultyCalibration _attentionCalibrationForDifficulty() {
+    final key = definition.difficulty.clamp(1, 5);
+    return _attentionDifficultyCalibration[key] ??
+        _attentionDifficultyCalibration[5]!;
+  }
+}
+
+class _AttentionDifficultyCalibration {
+  final double awarenessSupport;
+  final int subtleConflictDelayBudgetSeconds;
+
+  const _AttentionDifficultyCalibration({
+    required this.awarenessSupport,
+    required this.subtleConflictDelayBudgetSeconds,
+  });
 }

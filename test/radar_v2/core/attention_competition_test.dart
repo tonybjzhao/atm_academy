@@ -237,7 +237,7 @@ void main() {
       expect(state.neglectedAircraftIds, containsAll(['b', 'c']));
       expect(state.predictionClarity, lessThan(0.75));
       expect(state.intentConfidence, lessThan(0.78));
-      expect(state.surpriseRisk, greaterThan(0.35));
+      expect(state.surpriseRisk, greaterThan(0.22));
     });
 
     test('high salience competition can trigger tunnel-vision risk', () {
@@ -264,6 +264,51 @@ void main() {
         state.riskLevel.index,
         greaterThanOrEqualTo(AttentionRiskLevel.fixationRisk.index),
       );
+    });
+
+    test('beginner support keeps higher awareness than advanced support', () {
+      final beginnerEngine = AttentionCompetitionEngine();
+      final advancedEngine = AttentionCompetitionEngine();
+      final traffic = [
+        _aircraft('a'),
+        _aircraft('b', x: 6),
+        _aircraft('c', y: 6),
+        _aircraft('d', x: -5, y: 4),
+      ];
+
+      beginnerEngine.evaluate(
+        snapshot: _snapshot(elapsed: Duration.zero, aircraft: traffic),
+        selectedAircraftId: 'a',
+        awarenessSupport: 1.0,
+      );
+      advancedEngine.evaluate(
+        snapshot: _snapshot(elapsed: Duration.zero, aircraft: traffic),
+        selectedAircraftId: 'a',
+        awarenessSupport: 0.55,
+      );
+
+      final beginner = beginnerEngine.evaluate(
+        snapshot: _snapshot(
+          elapsed: const Duration(seconds: 36),
+          aircraft: traffic,
+          level: CognitiveLoadLevel.overloaded,
+        ),
+        selectedAircraftId: 'a',
+        awarenessSupport: 1.0,
+      );
+      final advanced = advancedEngine.evaluate(
+        snapshot: _snapshot(
+          elapsed: const Duration(seconds: 36),
+          aircraft: traffic,
+          level: CognitiveLoadLevel.overloaded,
+        ),
+        selectedAircraftId: 'a',
+        awarenessSupport: 0.55,
+      );
+
+      expect(beginner.predictionClarity, greaterThan(advanced.predictionClarity));
+      expect(beginner.intentConfidence, greaterThan(advanced.intentConfidence));
+      expect(beginner.surpriseRisk, lessThan(advanced.surpriseRisk));
     });
   });
 

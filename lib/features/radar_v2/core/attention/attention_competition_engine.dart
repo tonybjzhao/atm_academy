@@ -97,6 +97,7 @@ class AttentionCompetitionEngine {
       focusDuration: focusDuration,
       activeInterruptCount: activeInterrupts.length,
       salienceCompetitionCount: salientAircraft.length,
+      awarenessSupport: awarenessSupport,
     );
     final neglect = _observeNeglect(
       snapshot: snapshot,
@@ -210,6 +211,7 @@ class AttentionCompetitionEngine {
     required Duration focusDuration,
     required int activeInterruptCount,
     required int salienceCompetitionCount,
+    required double awarenessSupport,
   }) {
     final loadWeight = (load.totalLoadScore / 10).clamp(0.0, 1.0) * 0.32;
     final competitionWeight =
@@ -224,13 +226,16 @@ class AttentionCompetitionEngine {
         (activeInterruptCount / 3).clamp(0.0, 1.0) * 0.12;
     final salienceWeight =
       (salienceCompetitionCount / 5).clamp(0.0, 1.0) * 0.08;
+    final supportRelief =
+      (awarenessSupport.clamp(0.5, 1.0) - 0.5) * 0.18;
     final consumed =
       (loadWeight +
           competitionWeight +
           ignoredWeight +
           fixationWeight +
           interruptWeight +
-          salienceWeight)
+          salienceWeight -
+          supportRelief)
             .clamp(0.0, 1.0);
     return (1.0 - consumed).clamp(0.0, 1.0);
   }
@@ -283,9 +288,9 @@ class AttentionCompetitionEngine {
       if (neglect > longest) longest = neglect;
     }
 
-    final thresholdBias = ((awarenessSupport - 0.5) * 10).clamp(0.0, 5.0);
+    final thresholdBias = ((awarenessSupport - 0.5) * 16).clamp(0.0, 8.0);
     final dynamicThresholdSeconds =
-      (30 - (1.0 - attentionBudget) * 16 + thresholdBias).clamp(14.0, 36.0);
+      (30 - (1.0 - attentionBudget) * 16 + thresholdBias).clamp(14.0, 38.0);
     final neglected = neglectByAircraft.entries
         .where((entry) => entry.value.inSeconds >= dynamicThresholdSeconds)
         .map((entry) => entry.key)
@@ -370,7 +375,7 @@ class AttentionCompetitionEngine {
     final budgetPressure = (1 - attentionBudget).clamp(0.0, 1.0) * 0.20;
     final loadPressure = (load.totalLoadScore / 10).clamp(0.0, 1.0) * 0.15;
     final fixationPressure = (fixationWindowCount / 3).clamp(0.0, 1.0) * 0.10;
-    final supportShield = (awarenessSupport.clamp(0.5, 1.0) - 0.5) * 0.35;
+    final supportShield = (awarenessSupport.clamp(0.5, 1.0) - 0.5) * 0.50;
 
     final decay = (neglectPressure +
             longNeglectPressure +
