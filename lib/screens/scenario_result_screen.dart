@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../l10n/app_localizations.dart';
 import '../models/scenario_result.dart';
 import '../services/scoring_engine.dart';
 import '../widgets/radar_replay_view.dart';
@@ -46,7 +45,6 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
 
   bool _playing          = false;
   int  _speedMultiplier  = 1;
-  bool _autoStarted      = false;
 
   // ── Tab ───────────────────────────────────────────────────────────────────
   int  _selectedTab   = 0; // 0 = Replay, 1 = Debrief
@@ -125,7 +123,6 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final l10n  = AppLocalizations.of(context)!;
     final result = widget.result;
 
     return Scaffold(

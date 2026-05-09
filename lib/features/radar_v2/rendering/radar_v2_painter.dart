@@ -38,11 +38,11 @@ class RadarV2Painter extends CustomPainter {
     final gridPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = const Color(0x3346F5A7);
+      ..color = const Color(0x1F46F5A7);
     final axisPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = const Color(0x5546F5A7);
+      ..color = const Color(0x3046F5A7);
 
     canvas.drawCircle(center, radius, gridPaint);
     canvas.drawCircle(center, radius * 0.66, gridPaint);
@@ -138,6 +138,14 @@ class RadarV2Painter extends CustomPainter {
         ..color = aircraftColor.withValues(alpha: 0.45),
     );
     if (selected || recentlyCommanded) {
+      canvas.drawCircle(
+        position,
+        selected ? 22 : 18,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = (selected ? aircraftColor : const Color(0xFF62D2FF))
+              .withValues(alpha: selected ? 0.12 : 0.08),
+      );
       _drawIntentVector(canvas, position, aircraft, selected ? 54 : 42);
     }
     canvas.drawCircle(position, 4, targetPaint);
@@ -180,23 +188,21 @@ class RadarV2Painter extends CustomPainter {
   ) {
     final points = snapshot.trailFor(aircraft.id);
     if (points.length < 2) return;
-    final path = Path()
-      ..moveTo(
-        _toCanvas(center, scale, points.first.xNm, points.first.yNm).dx,
-        _toCanvas(center, scale, points.first.xNm, points.first.yNm).dy,
+    for (var i = 1; i < points.length; i++) {
+      final from =
+          _toCanvas(center, scale, points[i - 1].xNm, points[i - 1].yNm);
+      final to = _toCanvas(center, scale, points[i].xNm, points[i].yNm);
+      final alpha = (0.12 + i / points.length * 0.42).clamp(0.12, 0.54);
+      canvas.drawLine(
+        from,
+        to,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.3
+          ..strokeCap = StrokeCap.round
+          ..color = const Color(0xFF46F5A7).withValues(alpha: alpha),
       );
-    for (final point in points.skip(1)) {
-      final offset = _toCanvas(center, scale, point.xNm, point.yNm);
-      path.lineTo(offset.dx, offset.dy);
     }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0x6646F5A7),
-    );
   }
 
   String _datablockText(AircraftState aircraft) {
@@ -221,18 +227,18 @@ class RadarV2Painter extends CustomPainter {
           : const Color(0xFFFFD166);
       canvas.drawCircle(
         position,
-        radius,
+        radius + (alertPulse ? 1.8 : 0),
         Paint()
           ..style = PaintingStyle.fill
-          ..color = color.withValues(alpha: 0.12),
+          ..color = color.withValues(alpha: alertPulse ? 0.16 : 0.1),
       );
       canvas.drawCircle(
         position,
-        radius,
+        radius + (alertPulse ? 2.5 : 0),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1
-          ..color = color.withValues(alpha: 0.7),
+          ..color = color.withValues(alpha: alertPulse ? 0.85 : 0.58),
       );
       _drawAlertLabel(
         canvas,
@@ -654,6 +660,14 @@ class RadarV2Painter extends CustomPainter {
           ? const Color(0xFFFF4D4D)
           : const Color(0xFFFFD166);
     canvas.drawCircle(position, 10, paint);
+    canvas.drawCircle(
+      position,
+      alertPulse ? 18 : 14,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1
+        ..color = paint.color.withValues(alpha: alertPulse ? 0.55 : 0.24),
+    );
     canvas.drawLine(
         position.translate(-8, -8), position.translate(8, 8), paint);
     canvas.drawLine(
@@ -761,7 +775,8 @@ class RadarV2Painter extends CustomPainter {
   AircraftState _interpolatedAircraft(AircraftState current) {
     final previous = previousSnapshot?.aircraftById(current.id);
     if (previous == null || !previous.active) return current;
-    final t = interpolation.clamp(0, 1).toDouble();
+    final rawT = interpolation.clamp(0, 1).toDouble();
+    final t = rawT * rawT * (3 - 2 * rawT);
     return current.copyWith(
       xNm: _lerp(previous.xNm, current.xNm, t),
       yNm: _lerp(previous.yNm, current.yNm, t),

@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../features/radar_v2/radar_v2_feature_flags.dart';
+import '../features/radar_v2/training/radar_training_beta_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../models/daily_challenge_state.dart';
 import '../services/daily_challenge_service.dart';
@@ -41,14 +44,16 @@ class HomeScreen extends StatelessWidget {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => LanguageSettingsScreen(languageService: languageService),
+                builder: (_) =>
+                    LanguageSettingsScreen(languageService: languageService),
               ),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 24),
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, MediaQuery.of(context).padding.bottom + 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -86,7 +91,8 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     AppLocalizations.of(context)!.systemSubtitle,
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 13),
                   ),
                 ],
               ),
@@ -137,14 +143,16 @@ class HomeScreen extends StatelessWidget {
                   subtitle: AppLocalizations.of(context)!.homeCardRadarSimSub,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const RadarSimulationScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const RadarSimulationScreen()),
                   ),
                 ),
                 AtmCard(
                   icon: Icons.flag_outlined,
                   iconColor: AppTheme.warning,
                   title: AppLocalizations.of(context)!.homeCardScenarioTraining,
-                  subtitle: AppLocalizations.of(context)!.homeCardScenarioTrainingSub,
+                  subtitle:
+                      AppLocalizations.of(context)!.homeCardScenarioTrainingSub,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -167,6 +175,19 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (kDebugMode && kRadarTrainingBetaEnabled)
+                  AtmCard(
+                    icon: Icons.radar_outlined,
+                    iconColor: AppTheme.primary,
+                    title: 'Radar Training Beta',
+                    subtitle: 'Internal tester flow',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RadarTrainingBetaScreen(),
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -180,8 +201,10 @@ class HomeScreen extends StatelessWidget {
                     color: Colors.tealAccent,
                     title: AppLocalizations.of(context)!.homeContribute,
                     subtitle: AppLocalizations.of(context)!.homeContributeSub,
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const ContributeScreen())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ContributeScreen())),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -191,8 +214,10 @@ class HomeScreen extends StatelessWidget {
                     color: AppTheme.warning,
                     title: AppLocalizations.of(context)!.homeAboutSafety,
                     subtitle: AppLocalizations.of(context)!.homeAboutSafetySub,
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const AboutSafetyScreen())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AboutSafetyScreen())),
                   ),
                 ),
               ],
@@ -243,32 +268,42 @@ class _RecommendedPath extends StatelessWidget {
                   icon: Icons.school_outlined,
                   label: l10n.homePathLearn,
                   color: AppTheme.secondary,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => LessonsScreen(languageCode: languageCode))),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              LessonsScreen(languageCode: languageCode))),
                 ),
                 const _PathArrow(),
                 _PathStep(
                   icon: Icons.radar,
                   label: l10n.homePathRadarPractice,
                   color: AppTheme.primary,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const RadarSimulationScreen())),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const RadarSimulationScreen())),
                 ),
                 const _PathArrow(),
                 _PathStep(
                   icon: Icons.flag_outlined,
                   label: l10n.homePathGuidedScenario,
                   color: AppTheme.warning,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const ScenarioTrainingScreen())),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ScenarioTrainingScreen())),
                 ),
                 const _PathArrow(),
                 _PathStep(
                   icon: Icons.quiz_outlined,
                   label: l10n.homePathQuiz,
                   color: Colors.purpleAccent,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => LessonsScreen(languageCode: languageCode, quizMode: true))),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => LessonsScreen(
+                              languageCode: languageCode, quizMode: true))),
                 ),
               ],
             ),
@@ -284,7 +319,11 @@ class _PathStep extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _PathStep({required this.icon, required this.label, required this.color, required this.onTap});
+  const _PathStep(
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -302,7 +341,9 @@ class _PathStep extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 14),
             const SizedBox(width: 5),
-            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 11, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -315,7 +356,8 @@ class _PathArrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Padding(
         padding: EdgeInsets.symmetric(horizontal: 4),
-        child: Icon(Icons.arrow_forward_ios, size: 10, color: AppTheme.borderColor),
+        child: Icon(Icons.arrow_forward_ios,
+            size: 10, color: AppTheme.borderColor),
       );
 }
 
@@ -373,7 +415,8 @@ class _BottomCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppTheme.borderColor, size: 16),
+            const Icon(Icons.chevron_right,
+                color: AppTheme.borderColor, size: 16),
           ],
         ),
       ),
@@ -392,10 +435,14 @@ class _DailyChallengeCard extends StatelessWidget {
   String _localizedRank(BuildContext context, String rank) {
     final l10n = AppLocalizations.of(context)!;
     switch (rank) {
-      case 'Mission Complete': return l10n.rankMissionComplete;
-      case 'Tower Ready':      return l10n.rankTowerReady;
-      case 'Controller Trainee': return l10n.rankControllerTrainee;
-      default:                 return l10n.rankCadet;
+      case 'Mission Complete':
+        return l10n.rankMissionComplete;
+      case 'Tower Ready':
+        return l10n.rankTowerReady;
+      case 'Controller Trainee':
+        return l10n.rankControllerTrainee;
+      default:
+        return l10n.rankCadet;
     }
   }
 
@@ -424,15 +471,19 @@ class _DailyChallengeCard extends StatelessWidget {
               Row(
                 children: [
                   ControlPanelLight(
-                    status: state.isComplete ? LightStatus.on : LightStatus.blink,
-                    color: state.isComplete ? AppTheme.primary : AppTheme.warning,
+                    status:
+                        state.isComplete ? LightStatus.on : LightStatus.blink,
+                    color:
+                        state.isComplete ? AppTheme.primary : AppTheme.warning,
                     size: 9,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     AppLocalizations.of(context)!.dailyChallengeTitle,
                     style: TextStyle(
-                      color: state.isComplete ? AppTheme.primary : AppTheme.warning,
+                      color: state.isComplete
+                          ? AppTheme.primary
+                          : AppTheme.warning,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.0,
@@ -534,7 +585,9 @@ class _DailyChallengeCard extends StatelessWidget {
                   Text(
                     _localizedRank(context, state.rank),
                     style: TextStyle(
-                      color: state.isComplete ? AppTheme.primary : AppTheme.warning,
+                      color: state.isComplete
+                          ? AppTheme.primary
+                          : AppTheme.warning,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -551,16 +604,19 @@ class _DailyChallengeCard extends StatelessWidget {
                 ? OutlinedButton.icon(
                     onPressed: null,
                     icon: const Icon(Icons.check_circle, size: 16),
-                    label: Text(AppLocalizations.of(context)!.dailyChallengeCompletedToday),
+                    label: Text(AppLocalizations.of(context)!
+                        .dailyChallengeCompletedToday),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.primary,
-                      side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.4)),
+                      side: BorderSide(
+                          color: AppTheme.primary.withValues(alpha: 0.4)),
                     ),
                   )
                 : !state.quizDone
                     ? ElevatedButton.icon(
                         icon: const Icon(Icons.quiz_outlined, size: 16),
-                        label: Text(AppLocalizations.of(context)!.dailyChallengeStartQuiz),
+                        label: Text(AppLocalizations.of(context)!
+                            .dailyChallengeStartQuiz),
                         onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -573,7 +629,8 @@ class _DailyChallengeCard extends StatelessWidget {
                       )
                     : ElevatedButton.icon(
                         icon: const Icon(Icons.radar, size: 16),
-                        label: Text(AppLocalizations.of(context)!.dailyChallengeStartRadar),
+                        label: Text(AppLocalizations.of(context)!
+                            .dailyChallengeStartRadar),
                         onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -597,7 +654,8 @@ class _TaskRow extends StatelessWidget {
   final String points;
   final bool done;
 
-  const _TaskRow({required this.label, required this.points, required this.done});
+  const _TaskRow(
+      {required this.label, required this.points, required this.done});
 
   @override
   Widget build(BuildContext context) {
@@ -698,7 +756,8 @@ class AtmCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

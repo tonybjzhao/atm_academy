@@ -20,6 +20,7 @@ import 'scenario/scenario_runtime.dart';
 import 'scoring/radar_v2_score.dart';
 import 'training/radar_training_result.dart';
 import 'training/radar_training_result_screen.dart';
+import 'training/radar_training_progress_store.dart';
 
 class RadarV2DebugScreen extends StatefulWidget {
   final bool betaMode;
@@ -27,6 +28,7 @@ class RadarV2DebugScreen extends StatefulWidget {
   final String? initialScenarioName;
   final Map<String, String>? scenarioAssets;
   final String? trainingScenarioTitle;
+  final String? trainingScenarioId;
 
   const RadarV2DebugScreen({
     super.key,
@@ -35,6 +37,7 @@ class RadarV2DebugScreen extends StatefulWidget {
     this.initialScenarioName,
     this.scenarioAssets,
     this.trainingScenarioTitle,
+    this.trainingScenarioId,
   });
 
   @override
@@ -60,6 +63,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   final WorkloadAudioController _audioController = WorkloadAudioController();
   Ticker? _ticker;
   Duration? _lastFrameTime;
+  Duration _lastIdlePaint = Duration.zero;
   double _simulationAccumulatorSeconds = 0;
   double _renderInterpolation = 0;
   double _sweepAngleRad = 0;
@@ -80,6 +84,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   String? _recentlyCommandedAircraftId;
   Timer? _commandHighlightTimer;
   DateTime _lastAudioCue = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime _lastSweepCue = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _muted = false;
   Object? _loadError;
 
   @override
@@ -130,10 +136,16 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final lastFrameTime = _lastFrameTime;
     _lastFrameTime = frameTime;
     if (!_scenarioStarted || _paused) {
+      if (frameTime - _lastIdlePaint < const Duration(milliseconds: 80)) {
+        _playSweepCue();
+        return;
+      }
+      _lastIdlePaint = frameTime;
       setState(() {
         _sweepAngleRad = (_sweepAngleRad + 0.012) % (math.pi * 2);
         _alertPulse = !_alertPulse;
       });
+      _playSweepCue();
       return;
     }
 
@@ -155,20 +167,28 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _sweepAngleRad = (_sweepAngleRad + deltaSeconds * 1.35) % (math.pi * 2);
       if (advanced) _alertPulse = !_alertPulse;
     });
+    _playSweepCue();
   }
 
   void _restartScenario() {
     _loadScenario(_scenarioName);
   }
 
-  void _openTrainingResult() {
+  Future<void> _openTrainingResult() async {
     final snapshot = _snapshot;
     if (snapshot == null) return;
     final result = RadarTrainingResultBuilder.build(
       scenarioTitle: widget.trainingScenarioTitle ?? _scenarioName,
+      scenarioId: widget.trainingScenarioId ?? _scenarioName,
       score: _scoreTracker.snapshot,
       snapshot: snapshot,
     );
+    await const RadarTrainingProgressStore().saveResult(
+      scenarioId: result.scenarioId,
+      score: result.score.score,
+      grade: result.score.grade,
+    );
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RadarTrainingResultScreen(
@@ -278,6 +298,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final snapshot = _snapshot;
     if (runtime == null || snapshot == null) return;
     runtime.engine.applyCommand(command);
+    _playButtonCue();
     runtime.recordCommandTimestamp(snapshot.elapsed,
         aircraftId: command.aircraftId);
     _scoreTracker.recordCommand(command, snapshot);
@@ -495,6 +516,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   }
 
   void _playConflictCue(SimulationSnapshot snapshot) {
+    if (_muted) return;
     var level = 0;
     for (final result in snapshot.separation) {
       if (result.isLossOfSeparation) {
@@ -521,6 +543,19 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         level == 1 ? SystemSoundType.click : SystemSoundType.alert);
   }
 
+  void _playSweepCue() {
+    if (_muted || !_sweepEnabled || !widget.betaMode) return;
+    final now = DateTime.now();
+    if (now.difference(_lastSweepCue).inMilliseconds < 3600) return;
+    _lastSweepCue = now;
+    SystemSound.play(SystemSoundType.click);
+  }
+
+  void _playButtonCue() {
+    if (_muted) return;
+    SystemSound.play(SystemSoundType.click);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!kDebugMode) {
@@ -535,6 +570,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
         title: Text(widget.betaMode ? 'Radar Training' : 'Radar V2 Debug'),
         backgroundColor: AppTheme.surface,
         actions: [
+          if (widget.betaMode)
+            IconButton(
+              tooltip: _muted ? 'Unmute audio cues' : 'Mute audio cues',
+              icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
+              onPressed: () => setState(() => _muted = !_muted),
+            ),
           IconButton(
             tooltip: 'Restart scenario',
             icon: const Icon(Icons.restart_alt),
@@ -550,10 +591,44 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               color: const Color(0xFF020A10),
               child: _loadError != null
                   ? Center(
-                      child: Text(
-                        'Scenario failed to load:\n$_loadError',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppTheme.danger),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.warning_amber,
+                              color: AppTheme.warning,
+                              size: 34,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Scenario could not be loaded.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Please retry. If it still fails, choose another training scenario.\n$_loadError',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            FilledButton.icon(
+                              onPressed: () => _loadScenario(_scenarioName),
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : snapshot == null || runtime == null
@@ -677,7 +752,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                 if (value != null) _loadScenario(value);
               },
               onRestart: _restartScenario,
-              onViewResult: widget.betaMode ? _openTrainingResult : null,
+              onViewResult:
+                  widget.betaMode ? () => _openTrainingResult() : null,
               onReturnToLive: _returnToLive,
               onEventSelected: _jumpToEvent,
               commandFilterAircraftId: _commandFilterAircraftId,
@@ -2084,8 +2160,11 @@ class _SelectedAircraftPanel extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF0A1723),
-        border: Border.all(color: AppTheme.borderColor),
+        border: Border.all(color: const Color(0x6646F5A7)),
         borderRadius: BorderRadius.circular(8),
+        boxShadow: const [
+          BoxShadow(color: Color(0x2200B0FF), blurRadius: 16),
+        ],
       ),
       child: Column(
         children: [
@@ -2174,15 +2253,19 @@ class _CommandButton extends StatelessWidget {
         message: label,
         child: SizedBox(
           width: 42,
-          height: 36,
+          height: 48,
           child: OutlinedButton(
             onPressed: onPressed,
             style: OutlinedButton.styleFrom(
               padding: EdgeInsets.zero,
               foregroundColor: AppTheme.primary,
-              side: const BorderSide(color: AppTheme.borderColor),
+              backgroundColor: const Color(0xFF07131C),
+              side: const BorderSide(color: Color(0x6655D6BE)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: Icon(icon, size: 18),
+            child: Icon(icon, size: 21),
           ),
         ),
       ),

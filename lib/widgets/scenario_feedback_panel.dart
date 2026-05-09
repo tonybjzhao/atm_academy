@@ -59,18 +59,6 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     }
   }
 
-  String _mainFeedback() {
-    if (result.hadLOS) return scenario.feedback.los.of(languageCode);
-    if (result.levelAtFirstCommand.index >= AlertLevel.warning.index) {
-      return scenario.feedback.late.of(languageCode);
-    }
-    if (result.rating == ScenarioRating.excellent ||
-        result.rating == ScenarioRating.safe) {
-      return scenario.feedback.success.of(languageCode);
-    }
-    return scenario.feedback.wrong.of(languageCode);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

@@ -8,7 +8,6 @@ import '../data/scenario_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
 import '../models/scenario_result.dart' as detailed;
-import '../screens/scenario_result_screen.dart';
 import '../services/progression_service.dart';
 import '../services/scenario_engine.dart';
 import '../services/scoring_engine.dart';

@@ -312,7 +312,6 @@ class ScoringEngine {
     final outcomes   = <ProjectedOutcome>[];
     final actualSep  = result.minHorizontalDistancePx;
     final pairFirst  = result.conflictPair.isNotEmpty ? result.conflictPair.first : '';
-    final pairStr    = result.conflictPair.join(' & ');
     final reactionSec = result.reactionTimeSec;
 
     for (final raw in result.penaltyBreakdown) {
