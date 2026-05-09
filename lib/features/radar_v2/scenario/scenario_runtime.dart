@@ -7,6 +7,8 @@ import '../core/attention/attention_competition_engine.dart' as attention_v1;
 import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_engine.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
+import '../core/mental_model/controller_expectation_state.dart';
+import '../core/mental_model/expectation_tracker.dart';
 import '../core/pressure/attention_competition_engine.dart' as pressure;
 import '../core/pressure/tunnel_vision_engine.dart';
 import '../core/pressure/workload_degradation.dart';
@@ -55,6 +57,7 @@ class ScenarioRuntime {
   final attention_v1.AttentionCompetitionEngine _attentionV1Engine =
       attention_v1.AttentionCompetitionEngine();
   final PressurePacingEngine _pressurePacingEngine = PressurePacingEngine();
+  final ExpectationTracker _expectationTracker = ExpectationTracker();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
   String? _selectedRunwayIdForAttention;
@@ -66,6 +69,8 @@ class ScenarioRuntime {
       pressure.AttentionCompetitionResult.idle;
   AttentionFocusState _lastAttentionFocusState = AttentionFocusState.idle;
   ScenarioPsychologyState _lastPsychologyState = ScenarioPsychologyState.idle;
+  ControllerExpectationState _lastExpectationState =
+      ControllerExpectationState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
   // Rolling command timestamps for recent-command-density tracking
   final List<Duration> _recentCommandTimestamps = [];
@@ -168,6 +173,9 @@ class ScenarioRuntime {
       _snapshotForPsychology(baseSnapshot, cognitiveLoad),
     );
     _syncPsychologyTrapAlert(baseSnapshot.elapsed, _lastPsychologyState);
+    _lastExpectationState = _expectationTracker.evaluate(
+      _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
+    );
 
     // Feed analytics tracker
     _analyticsTracker.recordTick(ReplayWorkloadFrame(
@@ -210,8 +218,10 @@ class ScenarioRuntime {
         ..._lastAttentionFocusState.reportLines,
         ...attentionReport.reportLines,
         ..._lastPsychologyState.reportLines,
+        ..._lastExpectationState.reportLines,
       ].take(5).toList(growable: false),
       psychologyState: _lastPsychologyState,
+      expectationState: _lastExpectationState,
     );
   }
 
@@ -241,6 +251,36 @@ class ScenarioRuntime {
       cognitiveLoad: cognitiveLoad,
       operationalAlerts: _alertManager.activeAlerts,
       attentionFocus: _lastAttentionFocusState,
+    );
+  }
+
+  SimulationSnapshot _snapshotForMentalModel(
+    SimulationSnapshot base,
+    CognitiveLoadState cognitiveLoad,
+  ) {
+    return SimulationSnapshot(
+      tick: base.tick,
+      elapsed: base.elapsed,
+      aircraft: base.aircraft,
+      separation: base.separation,
+      trails: base.trails,
+      waypoints: base.waypoints,
+      weatherZones: base.weatherZones,
+      arrivalFlows: base.arrivalFlows,
+      departureFlows: base.departureFlows,
+      holdPatterns: base.holdPatterns,
+      runwayStates: base.runwayStates,
+      maxControllerLoad: base.maxControllerLoad,
+      sectorPressureIndex: base.sectorPressureIndex,
+      events: base.events,
+      activeAlerts: List<ControllerAlert>.from(_activeAlerts.values),
+      activeDistractions: Set<String>.from(_activeDistractionUntil.keys),
+      distractionEfficiencyPenalty:
+          getDistractionEfficiencyPenalty(base.elapsed),
+      cognitiveLoad: cognitiveLoad,
+      operationalAlerts: _alertManager.activeAlerts,
+      attentionFocus: _lastAttentionFocusState,
+      psychologyState: _lastPsychologyState,
     );
   }
 
@@ -400,6 +440,7 @@ class ScenarioRuntime {
   /// Returns the current sector pressure index (0–5 scale).
   double get currentSectorPressure => _currentSectorPressure;
   ScenarioPsychologyState get lastPsychologyState => _lastPsychologyState;
+  ControllerExpectationState get lastExpectationState => _lastExpectationState;
 
   /// Returns upcoming spawn times within the next [lookAheadSeconds], sorted ascending.
   /// Useful for UI to show imminent traffic load forecast.

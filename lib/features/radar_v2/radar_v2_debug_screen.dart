@@ -2359,6 +2359,7 @@ class _PsychologyOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = snapshot.psychologyState;
+    final expectation = snapshot.expectationState;
     final color = _phaseColor(state.phaseLabel);
     return IgnorePointer(
       child: Container(
@@ -2431,6 +2432,50 @@ class _PsychologyOverlay extends StatelessWidget {
                 ),
               ),
             ],
+            const SizedBox(height: 5),
+            Container(
+              height: 1,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                Text(
+                  expectation.driftLabel.toUpperCase(),
+                  style: TextStyle(
+                    color: _driftColor(expectation.driftScore),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'SENS ${expectation.threatSensitivity.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.62),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            if (expectation.confirmationBiasActive ||
+                expectation.falseRecoveryActive ||
+                expectation.attentionAnchored) ...[
+              const SizedBox(height: 3),
+              Text(
+                [
+                  if (expectation.confirmationBiasActive) 'bias',
+                  if (expectation.falseRecoveryActive) 'false recovery',
+                  if (expectation.attentionAnchored) 'anchored',
+                ].join(' / '),
+                style: const TextStyle(
+                  color: Color(0xFFFFD166),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -2446,6 +2491,12 @@ class _PsychologyOverlay extends StatelessWidget {
       'overload' => const Color(0xFFFF4D4D),
       _ => const Color(0xFF9B8CFF),
     };
+  }
+
+  Color _driftColor(double driftScore) {
+    if (driftScore >= 0.42) return const Color(0xFFFF4D4D);
+    if (driftScore >= 0.24) return const Color(0xFFFFD166);
+    return const Color(0xFF46F5A7);
   }
 }
 
