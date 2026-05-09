@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
@@ -104,6 +105,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   @override
   void initState() {
     super.initState();
+    developer.log(
+      'AUDIO_PROBE init betaMode=${widget.betaMode}',
+      name: 'RadarV2DebugScreen',
+    );
     _initializeAudio();
     _loadScenario(_scenarioName);
     _ticker = createTicker(_onFrame)..start();
@@ -669,6 +674,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     if (_muted) return;
     // Keep an always-audible diagnostic cue on Android command actions.
     final fallbackOk = _playSystemFallbackCue();
+    developer.log(
+      'AUDIO_PROBE commandCue fallback=$fallbackOk',
+      name: 'RadarV2DebugScreen',
+    );
     _audioProbeCount++;
     _audioProbeStatus = fallbackOk
         ? 'command cue: system beep ok (#$_audioProbeCount)'
@@ -687,6 +696,10 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final fallbackOk = _playSystemFallbackCue();
     final assetOk = await _enqueueCue('audio/radio/runway_pressure_warning.wav');
     final ok = fallbackOk || assetOk;
+    developer.log(
+      'AUDIO_PROBE selfTest system=$fallbackOk asset=$assetOk overall=$ok',
+      name: 'RadarV2DebugScreen',
+    );
     if (mounted) {
       setState(() {
         _audioProbeCount++;
@@ -752,8 +765,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   bool _playSystemFallbackCue() {
     try {
       SystemSound.play(SystemSoundType.alert);
+      developer.log('AUDIO_PROBE systemBeep ok', name: 'RadarV2DebugScreen');
       return true;
     } catch (_) {
+      developer.log(
+        'AUDIO_PROBE systemBeep failed',
+        name: 'RadarV2DebugScreen',
+      );
       return false;
     }
   }
@@ -792,6 +810,36 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
             onPressed: _restartScenario,
           ),
         ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          color: const Color(0xCC0A1A28),
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _audioProbeStatus.isEmpty
+                      ? 'Audio probe ready'
+                      : _audioProbeStatus,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: () => _runAudioSelfTest(l10n),
+                icon: const Icon(Icons.hearing, size: 16),
+                label: Text(l10n.radarTrainingAudioSelfTestTooltip),
+              ),
+            ],
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'radar-audio-self-test',
