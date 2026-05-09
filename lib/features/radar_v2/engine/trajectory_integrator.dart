@@ -22,7 +22,10 @@ class TrajectoryIntegrator {
     double pressureIndex = 0,
     double trackWobbleDeg = 0,
     double groundSpeedVariationKt = 0,
+    double verticalProfileVariationFpm = 0,
+    double weatherTurbulence = 0,
   }) {
+    final type = performance?.type ?? aircraft.performanceType;
     final effectiveTurnRate =
         performance?.turnRateDegPerSecond ?? turnRateDegPerSecond;
     final effectiveTurnAcceleration =
@@ -36,18 +39,40 @@ class TrajectoryIntegrator {
 
     // Under high pressure, reduce responsiveness (degraded command efficiency)
     final pressureDegradation = _getResponsivenessDegradation(pressureIndex);
-    final degradedTurnRate = effectiveTurnRate * pressureDegradation;
-    final degradedAcceleration = effectiveAcceleration * pressureDegradation;
+    final inertiaFactor = _inertiaFactor(type);
+    final degradedTurnRate =
+        (effectiveTurnRate * pressureDegradation) / inertiaFactor;
+    final degradedAcceleration =
+        (effectiveAcceleration * pressureDegradation) / inertiaFactor;
 
     final seconds = step.inMicroseconds / Duration.microsecondsPerSecond;
+    final bankLimit = _bankLimitDeg(
+      type,
+      aircraft.groundSpeedKt,
+      weatherTurbulence,
+    );
+    final bankLimitedTurnRate = math.min(
+      degradedTurnRate,
+      _turnRateFromBankLimit(
+        bankLimitDeg: bankLimit,
+        speedKt: aircraft.groundSpeedKt,
+      ),
+    );
+    final speedOvershootBias =
+        ((aircraft.groundSpeedKt - 250) / 170).clamp(0.0, 1.0);
+    final rollResponse =
+        (1.0 - 0.18 * speedOvershootBias - (inertiaFactor - 1.0) * 0.5)
+            .clamp(0.55, 1.05);
     final turn = _approachAngle(
       aircraft.headingDeg,
       aircraft.intent.assignedHeadingDeg ?? aircraft.headingDeg,
-      degradedTurnRate * seconds,
+      bankLimitedTurnRate * seconds,
       currentTurnRateDegPerSecond: aircraft.turnRateDegPerSecond,
       turnAccelerationDegPerSecond2:
           effectiveTurnAcceleration * pressureDegradation,
       stepSeconds: seconds,
+      rollResponse: rollResponse,
+      overshootBias: speedOvershootBias,
     );
     final speed = _approachSpeed(
       aircraft.groundSpeedKt,
@@ -57,17 +82,23 @@ class TrajectoryIntegrator {
           effectiveSpeedAcceleration * pressureDegradation,
       currentSpeedTrendKtPerSecond: aircraft.speedTrendKtPerSecond,
       stepSeconds: seconds,
+      turbulenceFactor: weatherTurbulence,
+      inertiaFactor: inertiaFactor,
+      overshootBias: speedOvershootBias,
     );
     final nextAltitude = _advanceAltitude(
       aircraft,
       seconds,
       climbRateFpm: effectiveClimbRate,
       descentRateFpm: effectiveDescentRate,
+      verticalProfileVariationFpm: verticalProfileVariationFpm,
+      turbulenceFactor: weatherTurbulence,
+      inertiaFactor: inertiaFactor,
     );
 
     final movementHeading = _normalizeHeading(turn.headingDeg + trackWobbleDeg);
-    final movementSpeed =
-        (speed.speedKt + groundSpeedVariationKt).clamp(80.0, 520.0);
+    final movementSpeed = (speed.speedKt + groundSpeedVariationKt)
+      .clamp(80.0, 520.0);
     final headingRad = movementHeading * math.pi / 180;
     final distanceNm = movementSpeed * seconds / 3600;
     final dx = math.sin(headingRad) * distanceNm;
@@ -101,19 +132,64 @@ class TrajectoryIntegrator {
     double seconds, {
     required int climbRateFpm,
     required int descentRateFpm,
+    required double verticalProfileVariationFpm,
+    required double turbulenceFactor,
+    required double inertiaFactor,
   }) {
     final target = aircraft.intent.assignedAltitudeFt;
-    if (target == null || target == aircraft.altitudeFt) {
-      return (aircraft.altitudeFt, 0);
+    if (target == null) {
+      final settleRate = _approachScalar(
+        aircraft.verticalSpeedFpm.toDouble(),
+        0,
+        (420 / inertiaFactor) * seconds,
+      );
+      final altitude = aircraft.altitudeFt + settleRate * seconds / 60;
+      return (altitude.round(), settleRate.round());
     }
 
     final delta = target - aircraft.altitudeFt;
-    final rate = delta > 0 ? climbRateFpm : -descentRateFpm;
-    final stepFeet = rate * seconds / 60;
-    if (stepFeet.abs() >= delta.abs()) {
+    if (delta == 0 && aircraft.verticalSpeedFpm.abs() <= 35) {
       return (target, 0);
     }
-    return ((aircraft.altitudeFt + stepFeet).round(), rate);
+
+    var desiredRateFpm = delta > 0 ? climbRateFpm.toDouble() : -descentRateFpm.toDouble();
+
+    if (delta < 0 &&
+        aircraft.verticalSpeedFpm > -220 &&
+        delta.abs() > 900) {
+      // Descent planning lag: some aircraft initiate descent conservatively.
+      desiredRateFpm *= 0.58;
+    }
+
+    if (delta.abs() < 1300) {
+      final approach = (delta.abs() / 1300).clamp(0.14, 1.0);
+      desiredRateFpm *= approach;
+    }
+
+    final verticalAccel = (480 / inertiaFactor) * (1 - turbulenceFactor * 0.22);
+    var nextRateFpm = _approachScalar(
+      aircraft.verticalSpeedFpm.toDouble(),
+      desiredRateFpm,
+      verticalAccel.clamp(180.0, 620.0) * seconds,
+    );
+    nextRateFpm += verticalProfileVariationFpm * 0.18;
+
+    var nextAltitude = aircraft.altitudeFt + nextRateFpm * seconds / 60;
+    if (_crossed(aircraft.altitudeFt.toDouble(), target.toDouble(), nextAltitude)) {
+      final overshootFt = (nextAltitude - target).abs();
+      if (overshootFt < 24 && nextRateFpm.abs() < 120) {
+        return (target, 0);
+      }
+      final oscillationFactor = (0.24 + turbulenceFactor * 0.22 + (inertiaFactor - 1) * 0.12)
+          .clamp(0.18, 0.52);
+      nextRateFpm *= -(0.28 + oscillationFactor);
+      nextAltitude = target + (nextAltitude - target) * (0.18 + oscillationFactor);
+    }
+
+    if ((nextAltitude - target).abs() < 55 && nextRateFpm.abs() < 90) {
+      return (target, 0);
+    }
+    return (nextAltitude.round(), nextRateFpm.round());
   }
 
   _SpeedStep _approachSpeed(
@@ -123,6 +199,9 @@ class TrajectoryIntegrator {
     required double speedAccelerationKtPerSecond2,
     required double currentSpeedTrendKtPerSecond,
     required double stepSeconds,
+    required double turbulenceFactor,
+    required double inertiaFactor,
+    required double overshootBias,
   }) {
     final delta = target - current;
     if (delta.abs() < 0.05 && currentSpeedTrendKtPerSecond.abs() < 0.05) {
@@ -131,8 +210,10 @@ class TrajectoryIntegrator {
 
     // Deceleration is intentionally a bit slower than acceleration to avoid
     // robotic speed snaps and create inertia for heavier aircraft behavior.
-    final accelRate = accelerationKtPerSecond;
-    final decelRate = accelerationKtPerSecond * 0.72;
+    final accelRate =
+      accelerationKtPerSecond * (1 - turbulenceFactor * 0.18);
+    final decelRate =
+      accelerationKtPerSecond * 0.72 * (1 - turbulenceFactor * 0.24);
     final maxRate = delta > 0 ? accelRate : decelRate;
     var desiredTrend = delta.sign * maxRate;
 
@@ -143,16 +224,23 @@ class TrajectoryIntegrator {
 
     final trendStep = speedAccelerationKtPerSecond2 * stepSeconds;
     var nextTrend =
-        _approachScalar(currentSpeedTrendKtPerSecond, desiredTrend, trendStep);
+        _approachScalar(
+      currentSpeedTrendKtPerSecond,
+      desiredTrend,
+      (trendStep / inertiaFactor).clamp(0.08, trendStep),
+    );
     var nextSpeed = current + nextTrend * stepSeconds;
 
     if (_crossed(current, target, nextSpeed)) {
       final overshoot = (nextSpeed - target).abs();
-      if (overshoot < 0.45 && nextTrend.abs() < 0.35) {
+      final lockThreshold = 0.45 + overshootBias * 0.8;
+      if (overshoot < lockThreshold && nextTrend.abs() < 0.35) {
         return _SpeedStep(target, 0);
       }
-      nextTrend *= -0.35;
-      nextSpeed = target + (nextSpeed - target) * 0.28;
+      final rebound = (0.35 - overshootBias * 0.14).clamp(0.2, 0.38);
+      nextTrend *= -rebound;
+      final retain = (0.28 + overshootBias * 0.22).clamp(0.2, 0.5);
+      nextSpeed = target + (nextSpeed - target) * retain;
     }
     return _SpeedStep(nextSpeed, nextTrend);
   }
@@ -164,6 +252,8 @@ class TrajectoryIntegrator {
     required double currentTurnRateDegPerSecond,
     required double turnAccelerationDegPerSecond2,
     required double stepSeconds,
+    required double rollResponse,
+    required double overshootBias,
   }) {
     final delta = _shortestAngleDelta(current, target);
     final absDelta = delta.abs();
@@ -185,21 +275,56 @@ class TrajectoryIntegrator {
     var nextRate = _approachScalar(
       currentTurnRateDegPerSecond,
       desiredRate,
-      turnAccelerationDegPerSecond2 * stepSeconds,
+      turnAccelerationDegPerSecond2 * stepSeconds * rollResponse,
     );
     var nextHeading = current + nextRate * stepSeconds;
 
     if (_headingCrossed(current, target, nextHeading)) {
       final overshoot = _shortestAngleDelta(target, nextHeading).abs();
-      if (overshoot < 0.25 && nextRate.abs() < 0.35) {
+      final lockThreshold = 0.25 + overshootBias * 0.9;
+      if (overshoot < lockThreshold && nextRate.abs() < 0.35) {
         return _TurnStep(target, 0);
       }
       // Keep a small overshoot/settle feel, but damp the reversal quickly so
       // aircraft remain predictable and controller-safe.
-      nextRate *= -0.42;
-      nextHeading = target + _shortestAngleDelta(target, nextHeading) * 0.35;
+      final rebound = (0.42 - overshootBias * 0.16).clamp(0.24, 0.44);
+      nextRate *= -rebound;
+      final settle = (0.35 + overshootBias * 0.22).clamp(0.28, 0.58);
+      nextHeading = target + _shortestAngleDelta(target, nextHeading) * settle;
     }
     return _TurnStep(nextHeading, nextRate);
+  }
+
+  double _inertiaFactor(AircraftPerformanceType type) {
+    return switch (type) {
+      AircraftPerformanceType.jet => 1.22,
+      AircraftPerformanceType.regional => 1.0,
+      AircraftPerformanceType.turboprop => 0.86,
+    };
+  }
+
+  double _bankLimitDeg(
+    AircraftPerformanceType type,
+    double speedKt,
+    double turbulence,
+  ) {
+    final base = switch (type) {
+      AircraftPerformanceType.jet => 24.0,
+      AircraftPerformanceType.regional => 27.0,
+      AircraftPerformanceType.turboprop => 30.0,
+    };
+    final speedPenalty = ((speedKt - 260) / 130).clamp(0.0, 1.0) * 2.6;
+    final turbulencePenalty = turbulence.clamp(0.0, 1.0) * 1.2;
+    return (base - speedPenalty - turbulencePenalty).clamp(19.0, 31.0);
+  }
+
+  double _turnRateFromBankLimit({
+    required double bankLimitDeg,
+    required double speedKt,
+  }) {
+    final speed = speedKt.clamp(120.0, 520.0);
+    final rate = (1091.0 * math.tan(bankLimitDeg * math.pi / 180)) / speed;
+    return rate.clamp(1.2, 4.2);
   }
 
   double _approachScalar(double current, double target, double maxStep) {

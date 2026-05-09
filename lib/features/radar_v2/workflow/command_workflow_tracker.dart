@@ -260,6 +260,14 @@ class CommandWorkflowTracker {
           add('late capture after acknowledgement');
         case 'pilotSpeedInstability':
           add('speed instability during follow-through');
+        case 'trajectoryTurnOvershoot':
+          add('turn overshoot');
+        case 'trajectoryAltitudeUnstableCapture':
+          add('unstable altitude capture');
+        case 'trajectoryInertiaDelay':
+          add('inertia delay');
+        case 'trajectoryWeatherInstability':
+          add('weather-driven trajectory instability');
       }
     }
     return causes;
@@ -286,6 +294,15 @@ class CommandWorkflowTracker {
     }
     if (sawCompression) {
       return 'Spacing compressed during pilot response and execution.';
+    }
+    final sawTrajectoryInstability = events.any((event) {
+      return event.type == 'trajectoryTurnOvershoot' ||
+          event.type == 'trajectoryAltitudeUnstableCapture' ||
+          event.type == 'trajectoryInertiaDelay' ||
+          event.type == 'trajectoryWeatherInstability';
+    });
+    if (sawTrajectoryInstability) {
+      return 'Trajectory instability reduced merge/spacing predictability.';
     }
     if (ackDelay >= const Duration(seconds: 6)) {
       return 'Long acknowledgement window reduced spacing recovery margin.';

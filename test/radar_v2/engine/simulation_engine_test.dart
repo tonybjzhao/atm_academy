@@ -94,14 +94,14 @@ void main() {
 
     final aircraft = engine.tick(steps: 10).aircraftById('a')!;
 
-    expect(aircraft.headingDeg, greaterThan(20));
+    expect(aircraft.headingDeg, greaterThan(18));
     expect(aircraft.headingDeg, lessThan(90));
     expect(aircraft.turnRateDegPerSecond, greaterThan(0));
     expect(aircraft.groundSpeedKt, greaterThan(250));
     expect(aircraft.groundSpeedKt, lessThan(300));
     expect(aircraft.speedTrendKtPerSecond, greaterThan(0));
-    expect(aircraft.altitudeFt, 9300);
-    expect(aircraft.verticalSpeedFpm, 1800);
+    expect(aircraft.altitudeFt, inInclusiveRange(9180, 9400));
+    expect(aircraft.verticalSpeedFpm, inInclusiveRange(1200, 1900));
   });
 
   test('separation loss is detected', () {
@@ -285,6 +285,42 @@ void main() {
         greaterThan(snapshot.aircraftById('jet')!.headingDeg));
   });
 
+  test('high-speed turn response is bank-rate-limited', () {
+    final engine = SimulationEngine(
+      aircraft: const [
+        AircraftState(
+          id: 'slow',
+          callsign: 'QFA214',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 200,
+          performanceType: AircraftPerformanceType.jet,
+          intent: AircraftIntent(assignedHeadingDeg: 90),
+        ),
+        AircraftState(
+          id: 'fast',
+          callsign: 'QFA412',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 9000,
+          headingDeg: 0,
+          groundSpeedKt: 360,
+          performanceType: AircraftPerformanceType.jet,
+          intent: AircraftIntent(assignedHeadingDeg: 90),
+        ),
+      ],
+    );
+
+    final snapshot = engine.tick(steps: 8);
+    final slow = snapshot.aircraftById('slow')!;
+    final fast = snapshot.aircraftById('fast')!;
+
+    expect(slow.headingDeg, greaterThan(fast.headingDeg));
+    expect(fast.turnRateDegPerSecond, lessThan(slow.turnRateDegPerSecond));
+  });
+
   test('hold command flies aircraft onto a racetrack hold', () {
     final engine = SimulationEngine(
       waypoints: const {
@@ -425,6 +461,37 @@ void main() {
     expect(first.yNm, closeTo(second.yNm, 0.0001));
     expect(first.yNm.abs(), lessThan(0.06));
     expect(first.groundSpeedKt, inInclusiveRange(253, 267));
+  });
+
+  test('weather can destabilize vertical profile and trigger trajectory event', () {
+    final engine = SimulationEngine(
+      aircraft: const [
+        AircraftState(
+          id: 'wxv',
+          callsign: 'VOZ533',
+          xNm: 0,
+          yNm: 0,
+          altitudeFt: 11000,
+          headingDeg: 90,
+          groundSpeedKt: 260,
+          intent: AircraftIntent(assignedAltitudeFt: 8000),
+        ),
+      ],
+      weatherZones: const [
+        WeatherZone(id: 'storm', xNm: 0, yNm: 0, radiusNm: 14, severity: 3),
+      ],
+    );
+
+    final snapshot = engine.tick(steps: 40);
+    final aircraft = snapshot.aircraftById('wxv')!;
+
+    expect(aircraft.verticalSpeedFpm.abs(), greaterThan(120));
+    expect(
+      snapshot.events.where(
+        (event) => event.type == 'trajectoryWeatherInstability',
+      ),
+      isNotEmpty,
+    );
   });
 
   test('repeated weather ticks do not create unbounded speed drift', () {

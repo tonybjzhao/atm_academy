@@ -98,6 +98,8 @@ class SimulationEngine {
           pressureIndex: _sectorPressureIndex,
           trackWobbleDeg: environment.trackWobbleDeg,
           groundSpeedVariationKt: environment.groundSpeedVariationKt,
+          verticalProfileVariationFpm: environment.verticalProfileVariationFpm,
+          weatherTurbulence: environment.turbulence,
         );
         if (original.intent.assignedHeadingDeg == null &&
             guided.intent.assignedHeadingDeg != null &&
@@ -116,6 +118,11 @@ class SimulationEngine {
               (_isVectoring(advanced) ? fixedStep.inSeconds : 0),
         );
         _aircraft[index] = advanced;
+        _recordDynamicsBehavior(
+          before: original,
+          after: _aircraft[index],
+          environment: environment,
+        );
         _recordTrailPoint(_aircraft[index]);
       }
       _tick += 1;
@@ -1089,11 +1096,14 @@ class SimulationEngine {
     final phase = _elapsed.inSeconds ~/ 2;
     final wobbleNoise = _noise01('${aircraft.id}:wx_track:$phase') - 0.5;
     final speedNoise = _noise01('${aircraft.id}:wx_speed:$phase') - 0.5;
+    final verticalNoise = _noise01('${aircraft.id}:wx_vertical:$phase') - 0.5;
     final pressure = ((0.65 + _sectorPressureIndex * 0.16) *
         pilotRealismProfile.weatherImpactScale)
       .clamp(0.55, 1.45);
     final wobble = wobbleNoise * 2 * influence * pressure * 1.2;
     final speed = speedNoise * 2 * influence * pressure * 4.5;
+    final vertical = verticalNoise * 2 * influence * pressure * 260;
+    final turbulence = (influence * pressure * 0.86).clamp(0.0, 1.0);
     if (influence > 0.28 && _weatherInfluenceTicks[aircraft.id]! >= 6) {
       _recordBehaviorEvent(
         key: 'weather_wobble:${aircraft.id}',
@@ -1105,7 +1115,73 @@ class SimulationEngine {
     return _EnvironmentEffect(
       trackWobbleDeg: wobble.clamp(-2.2, 2.2),
       groundSpeedVariationKt: speed.clamp(-7.0, 7.0),
+      verticalProfileVariationFpm: vertical.clamp(-320.0, 320.0),
+      turbulence: turbulence,
     );
+  }
+
+  void _recordDynamicsBehavior({
+    required AircraftState before,
+    required AircraftState after,
+    required _EnvironmentEffect environment,
+  }) {
+    final assignedHeading = after.intent.assignedHeadingDeg;
+    if (assignedHeading != null) {
+      final prevErr = _headingDeltaDeg(before.headingDeg, assignedHeading);
+      final nextErr = _headingDeltaDeg(after.headingDeg, assignedHeading);
+      if (prevErr < 6.5 && nextErr > prevErr + 1.4) {
+        _recordBehaviorEvent(
+          key: 'trajectory_overshoot:${after.id}:${_tick}',
+          type: 'trajectoryTurnOvershoot',
+          label: 'Turn overshoot widened heading correction before settling.',
+          aircraftId: after.id,
+        );
+      }
+      if (prevErr > 18 &&
+          nextErr > prevErr - 0.25 &&
+          after.groundSpeedKt > 280 &&
+          before.turnRateDegPerSecond.abs() < 1.2) {
+        _recordBehaviorEvent(
+          key: 'trajectory_inertia:${after.id}:${_tick}',
+          type: 'trajectoryInertiaDelay',
+          label: 'Inertia delayed turn response at higher energy state.',
+          aircraftId: after.id,
+        );
+      }
+    }
+
+    final assignedAltitude = after.intent.assignedAltitudeFt;
+    if (assignedAltitude != null) {
+      final prevDelta = (before.altitudeFt - assignedAltitude).abs();
+      final nextDelta = (after.altitudeFt - assignedAltitude).abs();
+      if (prevDelta < 260 &&
+          nextDelta > prevDelta + 45 &&
+          after.verticalSpeedFpm.abs() > 180) {
+        _recordBehaviorEvent(
+          key: 'trajectory_alt_capture:${after.id}:${_tick}',
+          type: 'trajectoryAltitudeUnstableCapture',
+          label: 'Altitude capture remained unstable before final level-off.',
+          aircraftId: after.id,
+        );
+      }
+    }
+
+    if ((environment.trackWobbleDeg.abs() > 0.8 ||
+        environment.groundSpeedVariationKt.abs() > 3.2 ||
+        environment.verticalProfileVariationFpm.abs() > 130) &&
+      environment.turbulence > 0.15) {
+      _recordBehaviorEvent(
+        key: 'trajectory_weather:${after.id}',
+        type: 'trajectoryWeatherInstability',
+        label: 'Weather-driven trajectory instability reduced merge predictability.',
+        aircraftId: after.id,
+      );
+    }
+  }
+
+  double _headingDeltaDeg(double a, double b) {
+    final raw = (a - b).abs() % 360;
+    return raw > 180 ? 360 - raw : raw;
   }
 
   double _weatherInfluenceFor(AircraftState aircraft) {
@@ -1232,13 +1308,19 @@ class _ReadbackResult {
 class _EnvironmentEffect {
   final double trackWobbleDeg;
   final double groundSpeedVariationKt;
+  final double verticalProfileVariationFpm;
+  final double turbulence;
 
   const _EnvironmentEffect({
     required this.trackWobbleDeg,
     required this.groundSpeedVariationKt,
+    required this.verticalProfileVariationFpm,
+    required this.turbulence,
   });
 
   const _EnvironmentEffect.none()
       : trackWobbleDeg = 0,
-        groundSpeedVariationKt = 0;
+        groundSpeedVariationKt = 0,
+        verticalProfileVariationFpm = 0,
+        turbulence = 0;
 }

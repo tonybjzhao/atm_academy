@@ -165,6 +165,12 @@ void main() {
           aircraftId: 'A3',
         ),
         SimulationEvent(
+          elapsed: Duration(seconds: 45),
+          type: 'trajectoryTurnOvershoot',
+          label: 'Turn overshoot widened heading correction before settling.',
+          aircraftId: 'A3',
+        ),
+        SimulationEvent(
           elapsed: Duration(seconds: 46),
           type: 'commandAcknowledged',
           label: 'ACK heading 210',
@@ -178,9 +184,10 @@ void main() {
       expect(insights.single.acknowledgementDelay, const Duration(seconds: 6));
       expect(insights.single.causes, contains('weather-driven deviation'));
       expect(insights.single.causes, contains('pilot response delay'));
+      expect(insights.single.causes, contains('turn overshoot'));
       expect(
         insights.single.spacingImpact,
-        'Long acknowledgement window reduced spacing recovery margin.',
+        'Trajectory instability reduced merge/spacing predictability.',
       );
     });
   });
