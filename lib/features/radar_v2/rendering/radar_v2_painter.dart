@@ -6,9 +6,13 @@ import '../models/aircraft_state.dart';
 import '../models/separation_result.dart';
 import '../models/simulation_snapshot.dart';
 import 'radar_declutter_profile.dart';
+import 'radar_label_stability.dart';
 import 'radar_view_transform.dart';
 
 class RadarV2Painter extends CustomPainter {
+  static final RadarLabelStabilityController _labelStability =
+      RadarLabelStabilityController();
+
   final SimulationSnapshot snapshot;
   final SimulationSnapshot? previousSnapshot;
   final double interpolation;
@@ -113,32 +117,47 @@ class RadarV2Painter extends CustomPainter {
       return (bUrgency + selectedBonusB).compareTo(aUrgency + selectedBonusA);
     });
 
-    final labelsToRender = <AircraftState>[];
+    final labelTargets = <RadarLabelTarget>[];
     var nonCriticalRank = 0;
     for (final aircraft in renderAircraft) {
       final priority = _labelPriorityFor(aircraft.id, criticalIds);
-      final show = profile.shouldShowAircraftLabel(
+      final showFromDeclutter = profile.shouldShowAircraftLabel(
         priority: priority,
         nonCriticalRank: nonCriticalRank,
       );
       if (priority == RadarLabelPriority.normal) {
         nonCriticalRank += 1;
       }
-      if (show) {
-        labelsToRender.add(aircraft);
-      }
+      final forceDetails = priority != RadarLabelPriority.normal;
+      final labelWidth =
+          (profile.showSecondaryLabelDetails || forceDetails) ? 92.0 : 74.0;
+      final labelHeight =
+          (profile.showSecondaryLabelDetails || forceDetails) ? 24.0 : 13.0;
+      final anchor =
+          _toCanvas(center, scale, aircraft.xNm, aircraft.yNm) +
+              _weatherWobbleOffset(aircraft, scale);
+      labelTargets.add(
+        RadarLabelTarget(
+          aircraftId: aircraft.id,
+          anchorCanvas: anchor,
+          headingDeg: aircraft.headingDeg,
+          labelWidth: labelWidth,
+          labelHeight: labelHeight,
+          priority: priority,
+          shouldShowFromDeclutter: showFromDeclutter,
+        ),
+      );
     }
 
-    final labelOffsets = _resolveLabelOffsets(
-      center,
-      scale,
-      labelsToRender,
-      labelWidth: profile.showSecondaryLabelDetails ? 88 : 72,
-      labelHeight: profile.showSecondaryLabelDetails ? 24 : 13,
+    final labelPlacements = _labelStability.resolve(
+      tick: snapshot.tick,
+      targets: labelTargets,
+      replayMode: replayMode,
     );
 
     for (final aircraft in renderAircraft) {
       final priority = _labelPriorityFor(aircraft.id, criticalIds);
+      final placement = labelPlacements[aircraft.id];
       _drawAircraft(
         canvas,
         center,
@@ -149,8 +168,9 @@ class RadarV2Painter extends CustomPainter {
         selected: selectedAircraftId == aircraft.id,
         recentlyCommanded: recentlyCommandedAircraftId == aircraft.id,
         recentlyAcknowledged: recentlyAcknowledgedAircraftId == aircraft.id,
-        labelOffset: labelOffsets[aircraft.id] ?? const Offset(8, -18),
-        showLabel: labelOffsets.containsKey(aircraft.id),
+        labelOffset: placement?.offset ?? const Offset(8, -18),
+        showLabel: placement?.visible ?? false,
+        labelOpacity: placement?.opacity ?? 0,
         warningAircraft: priority == RadarLabelPriority.warning,
         conflictAircraft: priority == RadarLabelPriority.conflict,
         sweepPulse: sweepEnabled ? _sweepPulseFor(aircraft) : 0,
@@ -167,6 +187,7 @@ class RadarV2Painter extends CustomPainter {
       required bool recentlyAcknowledged,
       required Offset labelOffset,
       required bool showLabel,
+      required double labelOpacity,
       required bool warningAircraft,
       required bool conflictAircraft,
       required double sweepPulse}) {
@@ -203,7 +224,9 @@ class RadarV2Painter extends CustomPainter {
               selected || conflictAircraft || warningAircraft || recentlyCommanded,
         ),
         style: TextStyle(
-          color: Color(0xFFE7FFF4),
+          color: const Color(0xFFE7FFF4).withValues(
+            alpha: labelOpacity.clamp(0.0, 1.0),
+          ),
           fontSize: (selected ? 10 : 9) * (selected ? 1.06 : profile.labelScale),
           height: 1.1,
           fontFamily: 'monospace',
@@ -294,7 +317,7 @@ class RadarV2Painter extends CustomPainter {
           ..color = const Color(0xFF46F5A7),
       );
     }
-    if (showLabel) {
+    if (showLabel && labelOpacity > 0.01) {
       labelPainter.paint(
         canvas,
         position.translate(labelOffset.dx, labelOffset.dy),
@@ -334,67 +357,6 @@ class RadarV2Painter extends CustomPainter {
           ..color = const Color(0xFF46F5A7).withValues(alpha: alpha),
       );
     }
-  }
-
-  Map<String, Offset> _resolveLabelOffsets(
-    Offset center,
-    double scale,
-    List<AircraftState> aircraft,
-    {required double labelWidth,
-    required double labelHeight,
-  }) {
-    final placements = <String, Offset>{};
-    final occupiedRects = <Rect>[];
-
-    for (final item in aircraft) {
-      final position = _toCanvas(center, scale, item.xNm, item.yNm);
-      final headingRad = item.headingDeg * math.pi / 180;
-      final headingOffset = Offset(
-        math.sin(headingRad) * 10,
-        -math.cos(headingRad) * 10,
-      );
-      final base = Offset(
-        headingOffset.dx >= 0 ? 10 : -(labelWidth + 4),
-        headingOffset.dy <= 0 ? -22 : 8,
-      );
-      final candidates = <Offset>[
-        base,
-        base.translate(0, 14),
-        base.translate(0, -14),
-        Offset(base.dx < 0 ? 10 : -(labelWidth + 4), base.dy),
-        Offset(base.dx < 0 ? 10 : -(labelWidth + 4), base.dy + 14),
-      ];
-
-      Offset picked = candidates.first;
-      for (final candidate in candidates) {
-        final rect = Rect.fromLTWH(
-          position.dx + candidate.dx,
-          position.dy + candidate.dy,
-          labelWidth,
-          labelHeight,
-        ).inflate(3);
-        final overlaps =
-            occupiedRects.any((existing) => existing.overlaps(rect));
-        if (!overlaps) {
-          picked = candidate;
-          occupiedRects.add(rect);
-          break;
-        }
-      }
-
-      final pickedRect = Rect.fromLTWH(
-        position.dx + picked.dx,
-        position.dy + picked.dy,
-        labelWidth,
-        labelHeight,
-      ).inflate(3);
-      if (!occupiedRects.any((existing) => existing.overlaps(pickedRect))) {
-        occupiedRects.add(pickedRect);
-      }
-      placements[item.id] = picked;
-    }
-
-    return placements;
   }
 
   String _datablockText(
