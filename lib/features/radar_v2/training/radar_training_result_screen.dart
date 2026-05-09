@@ -150,6 +150,34 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               for (final line in result.intentionRecovery)
                 _EvaluationChip(text: line),
             ],
+            if (result.expectationMismatches.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Expectation Mismatches'),
+              const SizedBox(height: 8),
+              for (final line in result.expectationMismatches)
+                _EvaluationChip(text: line),
+            ],
+            if (result.lateAbnormalRecognition.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Late Abnormal Recognition'),
+              const SizedBox(height: 8),
+              for (final line in result.lateAbnormalRecognition)
+                _EvaluationChip(text: line),
+            ],
+            if (result.surpriseOverloadMoments.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Surprise Overload Moments'),
+              const SizedBox(height: 8),
+              for (final line in result.surpriseOverloadMoments)
+                _EvaluationChip(text: line),
+            ],
+            if (result.assumptionDrivenErrors.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Assumption-Driven Errors'),
+              const SizedBox(height: 8),
+              for (final line in result.assumptionDrivenErrors)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),

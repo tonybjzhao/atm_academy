@@ -9,6 +9,8 @@ import '../core/cognitive_load/cognitive_load_engine.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/mental_model/controller_expectation_state.dart';
 import '../core/mental_model/expectation_tracker.dart';
+import '../core/mental_model/predictive_mental_model_engine.dart';
+import '../core/mental_model/predictive_mental_model_state.dart';
 import '../core/mental_model/working_memory_engine.dart';
 import '../core/mental_model/working_memory_state.dart';
 import '../core/pressure/attention_competition_engine.dart' as pressure;
@@ -63,6 +65,8 @@ class ScenarioRuntime {
       attention_v1.AttentionCompetitionEngine();
   final PressurePacingEngine _pressurePacingEngine = PressurePacingEngine();
   final ExpectationTracker _expectationTracker = ExpectationTracker();
+  final PredictiveMentalModelEngine _predictiveMentalModelEngine =
+      PredictiveMentalModelEngine();
   final WorkingMemoryEngine _workingMemoryEngine = WorkingMemoryEngine();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
@@ -78,6 +82,8 @@ class ScenarioRuntime {
   ScenarioPsychologyState _lastPsychologyState = ScenarioPsychologyState.idle;
   ControllerExpectationState _lastExpectationState =
       ControllerExpectationState.idle;
+    PredictiveMentalModelState _lastPredictiveMentalModelState =
+      PredictiveMentalModelState.idle;
   WorkingMemoryState _lastWorkingMemoryState = WorkingMemoryState.idle;
   WorkingMemoryState _previousWorkingMemoryState = WorkingMemoryState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
@@ -191,6 +197,16 @@ class ScenarioRuntime {
     _lastExpectationState = _expectationTracker.evaluate(
       _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
     );
+    _lastPredictiveMentalModelState = _predictiveMentalModelEngine.evaluate(
+      snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
+      expectationState: _lastExpectationState,
+      attentionFocus: _lastAttentionFocusState,
+      cognitiveLoad: cognitiveLoad,
+    );
+    _applyPredictiveMentalModelEffects(
+      elapsed: baseSnapshot.elapsed,
+      state: _lastPredictiveMentalModelState,
+    );
     _lastWorkingMemoryState = _workingMemoryEngine.evaluate(
       snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
       attentionFocus: _lastAttentionFocusState,
@@ -246,9 +262,13 @@ class ScenarioRuntime {
         ...attentionReport.reportLines,
         ..._lastPsychologyState.reportLines,
         ..._lastExpectationState.reportLines,
+        ..._lastPredictiveMentalModelState.reportLines,
       ].take(5).toList(growable: false),
       psychologyState: _lastPsychologyState,
       expectationState: _lastExpectationState,
+      predictiveMentalModelState: _lastPredictiveMentalModelState,
+      predictiveMentalModelReportLines:
+          List<String>.from(_lastPredictiveMentalModelState.reportLines),
       workingMemoryState: _lastWorkingMemoryState,
       workingMemoryReportLines:
           List<String>.from(_lastWorkingMemoryState.reportLines),
@@ -471,7 +491,75 @@ class ScenarioRuntime {
   double get currentSectorPressure => _currentSectorPressure;
   ScenarioPsychologyState get lastPsychologyState => _lastPsychologyState;
   ControllerExpectationState get lastExpectationState => _lastExpectationState;
+  PredictiveMentalModelState get lastPredictiveMentalModelState =>
+      _lastPredictiveMentalModelState;
   WorkingMemoryState get lastWorkingMemoryState => _lastWorkingMemoryState;
+
+  void _applyPredictiveMentalModelEffects({
+    required Duration elapsed,
+    required PredictiveMentalModelState state,
+  }) {
+    for (final mismatch in state.newlyDetectedMismatches) {
+      final alertId = 'predictive:${mismatch.id}';
+      final alertType = OperationalAlertType.abnormalBehavior;
+      final critical = mismatch.type == PredictionMismatchType.missedHandoff ||
+          mismatch.type == PredictionMismatchType.wrongAltitudeTrend;
+      _alertManager.register(OperationalAlert(
+        id: alertId,
+        type: alertType,
+        priority: critical ? AlertPriority.critical : AlertPriority.high,
+        createdAt: elapsed,
+        expiresAt: elapsed + const Duration(seconds: 25),
+        workloadImpact: critical ? 7 : 6,
+        relatedAircraftIds: [mismatch.aircraftId],
+      ));
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'predictionMismatch',
+        label:
+            '${mismatch.aircraftId} ${mismatch.typeLabel} (sev ${mismatch.severity.toStringAsFixed(2)})',
+        aircraftId: mismatch.aircraftId,
+      ));
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'attentionInterrupt',
+        label: 'surprise_reallocation:${mismatch.aircraftId}',
+        aircraftId: mismatch.aircraftId,
+      ));
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'predictiveUrgentReevaluation',
+        label: 'Urgent re-evaluation triggered for ${mismatch.aircraftId}',
+        aircraftId: mismatch.aircraftId,
+      ));
+      if (mismatch.lateRecognition) {
+        engine.recordEvent(SimulationEvent(
+          elapsed: elapsed,
+          type: 'predictionLateRecognition',
+          label: 'Late recognition of abnormal behavior for ${mismatch.aircraftId}',
+          aircraftId: mismatch.aircraftId,
+        ));
+      }
+    }
+
+    for (final resolved in state.resolvedMismatchIds) {
+      _alertManager.dismiss('predictive:$resolved');
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'predictionRecovered',
+        label: 'Prediction mismatch resolved ($resolved)',
+      ));
+    }
+
+    if (state.surpriseLoad >= 0.72 && state.newlyDetectedMismatches.isNotEmpty) {
+      engine.recordEvent(SimulationEvent(
+        elapsed: elapsed,
+        type: 'predictionSurpriseOverload',
+        label:
+            'Surprise overload moment ${(state.surpriseLoad * 100).round()}%',
+      ));
+    }
+  }
 
   void _recordWorkingMemoryEvents({
     required Duration elapsed,

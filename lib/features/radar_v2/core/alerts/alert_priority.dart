@@ -43,6 +43,7 @@ class OperationalAlertType {
   static const String unstableSpacing = 'unstable_spacing';
   static const String medicalEmergency = 'medical_emergency';
   static const String engineFailure = 'engine_failure';
+  static const String abnormalBehavior = 'abnormal_behavior';
 
   /// Default priority for each alert type.
   static AlertPriority defaultPriority(String type) => switch (type) {
@@ -54,6 +55,7 @@ class OperationalAlertType {
         runwayOccupancy => AlertPriority.high,
         lowFuel => AlertPriority.high,
         unstableSpacing => AlertPriority.medium,
+        abnormalBehavior => AlertPriority.high,
         weatherEscalation => AlertPriority.medium,
         departureQueueSaturation => AlertPriority.medium,
         runwayChange => AlertPriority.low,
@@ -70,6 +72,7 @@ class OperationalAlertType {
         runwayOccupancy => 6,
         lowFuel => 6,
         unstableSpacing => 5,
+        abnormalBehavior => 6,
         weatherEscalation => 4,
         departureQueueSaturation => 3,
         runwayChange => 2,

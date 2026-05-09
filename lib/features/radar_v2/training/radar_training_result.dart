@@ -21,6 +21,10 @@ class RadarTrainingResult {
   final List<String> interruptedWorkflows;
   final List<String> delayedFollowThrough;
   final List<String> intentionRecovery;
+  final List<String> expectationMismatches;
+  final List<String> lateAbnormalRecognition;
+  final List<String> surpriseOverloadMoments;
+  final List<String> assumptionDrivenErrors;
   final String topMistake;
   final String bestRecovery;
 
@@ -44,6 +48,10 @@ class RadarTrainingResult {
     required this.interruptedWorkflows,
     required this.delayedFollowThrough,
     required this.intentionRecovery,
+    required this.expectationMismatches,
+    required this.lateAbnormalRecognition,
+    required this.surpriseOverloadMoments,
+    required this.assumptionDrivenErrors,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -102,9 +110,70 @@ class RadarTrainingResultBuilder {
       interruptedWorkflows: buildInterruptedWorkflows(snapshot),
       delayedFollowThrough: buildDelayedFollowThrough(snapshot),
       intentionRecovery: buildIntentionRecovery(snapshot),
+      expectationMismatches: buildExpectationMismatches(snapshot),
+      lateAbnormalRecognition: buildLateAbnormalRecognition(snapshot),
+      surpriseOverloadMoments: buildSurpriseOverloadMoments(snapshot),
+      assumptionDrivenErrors: buildAssumptionDrivenErrors(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
+  }
+
+  static List<String> buildExpectationMismatches(SimulationSnapshot snapshot) {
+    final state = snapshot.predictiveMentalModelState;
+    if (state.activeMismatches.isEmpty) return const [];
+    final lines = <String>[
+      'Expectation mismatches active: ${state.activeMismatches.length}.',
+    ];
+    for (final mismatch in state.activeMismatches.take(2)) {
+      lines.add(
+        '${mismatch.aircraftId}: ${mismatch.typeLabel} '
+        '(confidence ${mismatch.confidenceAtDetection.toStringAsFixed(2)}).',
+      );
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildLateAbnormalRecognition(SimulationSnapshot snapshot) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'predictionLateRecognition') continue;
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 3) break;
+    }
+    if (lines.isEmpty && snapshot.predictiveMentalModelState.lateRecognitionCount > 0) {
+      lines.add(
+        'Late abnormal recognition count: '
+        '${snapshot.predictiveMentalModelState.lateRecognitionCount}.',
+      );
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildSurpriseOverloadMoments(SimulationSnapshot snapshot) {
+    final lines = <String>[];
+    for (final event in snapshot.events) {
+      if (event.type != 'predictionSurpriseOverload') continue;
+      lines.add('${event.label} (T+${event.elapsed.inSeconds}s).');
+      if (lines.length == 3) break;
+    }
+    if (lines.isEmpty && snapshot.predictiveMentalModelState.surpriseOverloadMoments > 0) {
+      lines.add(
+        'Surprise overload moments: '
+        '${snapshot.predictiveMentalModelState.surpriseOverloadMoments}.',
+      );
+    }
+    return List.unmodifiable(lines);
+  }
+
+  static List<String> buildAssumptionDrivenErrors(SimulationSnapshot snapshot) {
+    final count = snapshot.predictiveMentalModelState.assumptionDrivenErrorCount;
+    if (count == 0) return const [];
+    return [
+      'Assumption-driven errors: $count (high-confidence expectations violated).',
+      'Aggregate prediction confidence at end state: '
+          '${snapshot.predictiveMentalModelState.aggregatePredictionConfidence.toStringAsFixed(2)}.',
+    ];
   }
 
   static List<String> buildForgottenIntentions(SimulationSnapshot snapshot) {
@@ -362,6 +431,7 @@ class RadarTrainingResultBuilder {
   static List<String> buildReplayExplanation(SimulationSnapshot snapshot) {
     final lines = <String>[
       ...snapshot.attentionReportLines,
+      ...snapshot.predictiveMentalModelReportLines,
       ...snapshot.workingMemoryReportLines,
       ...snapshot.psychologyState.reportLines,
       ...snapshot.expectationState.reportLines,
@@ -419,6 +489,7 @@ class RadarTrainingResultBuilder {
     for (final line in [
       ...snapshot.psychologyState.reportLines,
       ...snapshot.expectationState.reportLines,
+      ...snapshot.predictiveMentalModelReportLines,
       ...snapshot.attentionReportLines,
       ...snapshot.workingMemoryReportLines,
     ]) {

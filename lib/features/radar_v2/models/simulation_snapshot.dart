@@ -13,6 +13,7 @@ import '../core/attention/attention_focus_state.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/alerts/operational_alert.dart';
 import '../core/mental_model/controller_expectation_state.dart';
+import '../core/mental_model/predictive_mental_model_state.dart';
 import '../core/mental_model/working_memory_state.dart';
 import '../core/psychology/scenario_pressure_phase.dart';
 
@@ -41,6 +42,8 @@ class SimulationSnapshot {
   final List<String> attentionReportLines;
   final ScenarioPsychologyState psychologyState;
   final ControllerExpectationState expectationState;
+  final PredictiveMentalModelState predictiveMentalModelState;
+  final List<String> predictiveMentalModelReportLines;
   final WorkingMemoryState workingMemoryState;
   final List<String> workingMemoryReportLines;
 
@@ -68,6 +71,8 @@ class SimulationSnapshot {
     this.attentionReportLines = const [],
     this.psychologyState = ScenarioPsychologyState.idle,
     this.expectationState = ControllerExpectationState.idle,
+    this.predictiveMentalModelState = PredictiveMentalModelState.idle,
+    this.predictiveMentalModelReportLines = const [],
     this.workingMemoryState = WorkingMemoryState.idle,
     this.workingMemoryReportLines = const [],
   });
