@@ -31,6 +31,10 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+build/
+/ios/build/
+ios/build/
+*.xcarchive
 /coverage/
 
 # Symbolication related
