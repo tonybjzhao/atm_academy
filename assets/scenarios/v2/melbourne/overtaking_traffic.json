@@ -3,14 +3,14 @@
   "title": "Overtaking Traffic",
   "sectorId": "melbourne_approach",
   "sectorPersonality": "busy_terminal",
-  "durationSeconds": 210,
+  "durationSeconds": 240,
   "difficulty": 3,
   "radarRangeNm": 42,
   "maxControllerLoad": 5,
   "weatherMode": "low_visibility",
   "lowVisibilitySpacingMultiplier": 1.25,
   "lowVisibilityRunwayOccupancyMultiplier": 1.35,
-  "workloadPressureMultiplier": 1.25,
+  "workloadPressureMultiplier": 1.18,
   "runwayOccupancySeconds": 50,
   "trafficDescription": "A faster jet catches a slower aircraft on the same track while another arrival descends toward the flow.",
   "objectives": [
@@ -113,7 +113,7 @@
     {
       "id": "jst771",
       "callsign": "JST771",
-      "spawnAtSeconds": 8,
+      "spawnAtSeconds": 28,
       "position": { "xNm": -35, "yNm": -2 },
       "altitudeFt": 8000,
       "headingDeg": 90,
@@ -126,7 +126,7 @@
     {
       "id": "vja454",
       "callsign": "VJA454",
-      "spawnAtSeconds": 25,
+      "spawnAtSeconds": 92,
       "position": { "xNm": 12, "yNm": 28 },
       "altitudeFt": 9000,
       "headingDeg": 205,
@@ -139,7 +139,7 @@
     {
       "id": "jst812",
       "callsign": "JST812",
-      "spawnAtSeconds": 48,
+      "spawnAtSeconds": 138,
       "isDeparture": true,
       "departureFlowId": "mlb_dep_09",
       "procedureId": "SID_COAST09",

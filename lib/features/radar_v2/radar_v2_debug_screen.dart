@@ -82,9 +82,14 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   String _commandFilterType = 'all';
   String? _reviewEventLabel;
   String? _recentlyCommandedAircraftId;
+  String? _recentlyAcknowledgedAircraftId;
+  DateTime? _commandFlashUntil;
+  DateTime? _ackFlashUntil;
   Timer? _commandHighlightTimer;
+  Timer? _ackHighlightTimer;
   DateTime _lastAudioCue = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastSweepCue = DateTime.fromMillisecondsSinceEpoch(0);
+  final Map<String, DateTime> _commandCooldownUntil = {};
   bool _muted = false;
   Object? _loadError;
 
@@ -136,13 +141,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final lastFrameTime = _lastFrameTime;
     _lastFrameTime = frameTime;
     if (!_scenarioStarted || _paused) {
-      if (frameTime - _lastIdlePaint < const Duration(milliseconds: 80)) {
+      if (frameTime - _lastIdlePaint < const Duration(milliseconds: 33)) {
         _playSweepCue();
         return;
       }
       _lastIdlePaint = frameTime;
       setState(() {
-        _sweepAngleRad = (_sweepAngleRad + 0.012) % (math.pi * 2);
+        _sweepAngleRad = (_sweepAngleRad + 0.024) % (math.pi * 2);
         _alertPulse = !_alertPulse;
       });
       _playSweepCue();
@@ -247,6 +252,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     _scoreTracker.observe(_snapshot!);
     _scoreTracker.observeWorkload(_snapshot!);
     _audioController.tick(_snapshot!.cognitiveLoad.currentLevel);
+    _captureAckFeedback(snapshot, _snapshot!);
     _playConflictCue(_snapshot!);
     final scenarioState = runtime.evaluate();
     if (scenarioState.complete && !_resultShown) {
@@ -297,6 +303,23 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     final runtime = _runtime;
     final snapshot = _snapshot;
     if (runtime == null || snapshot == null) return;
+    final cooldownKey = '${command.aircraftId}:${command.runtimeType}';
+    final now = DateTime.now();
+    final blockedUntil = _commandCooldownUntil[cooldownKey];
+    if (blockedUntil != null && now.isBefore(blockedUntil)) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Command channel busy. Confirm previous instruction.'),
+            duration: Duration(milliseconds: 700),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+    _commandCooldownUntil[cooldownKey] =
+        now.add(const Duration(milliseconds: 450));
     runtime.engine.applyCommand(command);
     _playButtonCue();
     runtime.recordCommandTimestamp(snapshot.elapsed,
@@ -308,6 +331,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _previousSnapshot = snapshot;
       _renderInterpolation = 1;
       _recentlyCommandedAircraftId = command.aircraftId;
+      _commandFlashUntil = now.add(const Duration(milliseconds: 900));
     });
     _commandHighlightTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) setState(() => _recentlyCommandedAircraftId = null);
@@ -461,6 +485,30 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     }
   }
 
+  void _captureAckFeedback(
+    SimulationSnapshot previous,
+    SimulationSnapshot current,
+  ) {
+    if (current.events.length <= previous.events.length) return;
+    final newEvents = current.events.skip(previous.events.length);
+    String? acknowledgedAircraftId;
+    for (final event in newEvents) {
+      if (event.type == 'commandAcknowledged' && event.aircraftId != null) {
+        acknowledgedAircraftId = event.aircraftId;
+      }
+    }
+    if (acknowledgedAircraftId == null) return;
+    _ackHighlightTimer?.cancel();
+    setState(() {
+      _recentlyAcknowledgedAircraftId = acknowledgedAircraftId;
+      _ackFlashUntil = DateTime.now().add(const Duration(milliseconds: 1100));
+    });
+    _ackHighlightTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (!mounted) return;
+      setState(() => _recentlyAcknowledgedAircraftId = null);
+    });
+  }
+
   void _setCommandFilterAircraftId(String? aircraftId) {
     setState(() => _commandFilterAircraftId = aircraftId);
   }
@@ -533,20 +581,30 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     if (level == 0) return;
     final now = DateTime.now();
     final cooldownMs = switch (level) {
-      3 => 450,
-      2 => 800,
-      _ => 2200,
+      3 => 520,
+      2 => 900,
+      _ => 2600,
     };
     if (now.difference(_lastAudioCue).inMilliseconds < cooldownMs) return;
     _lastAudioCue = now;
-    SystemSound.play(
-        level == 1 ? SystemSoundType.click : SystemSoundType.alert);
+    if (level == 3) {
+      SystemSound.play(SystemSoundType.alert);
+      Future.delayed(const Duration(milliseconds: 160), () {
+        if (!_muted) SystemSound.play(SystemSoundType.alert);
+      });
+      return;
+    }
+    if (level == 2) {
+      SystemSound.play(SystemSoundType.alert);
+      return;
+    }
+    SystemSound.play(SystemSoundType.click);
   }
 
   void _playSweepCue() {
     if (_muted || !_sweepEnabled || !widget.betaMode) return;
     final now = DateTime.now();
-    if (now.difference(_lastSweepCue).inMilliseconds < 3600) return;
+    if (now.difference(_lastSweepCue).inMilliseconds < 2600) return;
     _lastSweepCue = now;
     SystemSound.play(SystemSoundType.click);
   }
@@ -649,28 +707,70 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                 final size = constraints.biggest;
                                 return Stack(
                                   children: [
-                                    GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTapUp: (details) =>
-                                          _selectAircraft(details, size),
-                                      child: CustomPaint(
-                                        painter: RadarV2Painter(
-                                          snapshot: snapshot,
-                                          previousSnapshot: _previousSnapshot,
-                                          interpolation: _renderInterpolation,
-                                          rangeNm:
-                                              _runtime!.definition.radarRangeNm,
-                                          selectedAircraftId:
-                                              _selectedAircraftId,
-                                          recentlyCommandedAircraftId:
-                                              _recentlyCommandedAircraftId,
-                                          alertPulse: _alertPulse,
-                                          sweepEnabled: _sweepEnabled,
-                                          sweepAngleRad: _sweepAngleRad,
+                                    RepaintBoundary(
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTapUp: (details) =>
+                                            _selectAircraft(details, size),
+                                        child: CustomPaint(
+                                          painter: RadarV2Painter(
+                                            snapshot: snapshot,
+                                            previousSnapshot: _previousSnapshot,
+                                            interpolation: _renderInterpolation,
+                                            rangeNm:
+                                                _runtime!.definition.radarRangeNm,
+                                            selectedAircraftId:
+                                                _selectedAircraftId,
+                                            recentlyCommandedAircraftId:
+                                                _recentlyCommandedAircraftId,
+                                            recentlyAcknowledgedAircraftId:
+                                                _recentlyAcknowledgedAircraftId,
+                                            alertPulse: _alertPulse,
+                                            sweepEnabled: _sweepEnabled,
+                                            sweepAngleRad: _sweepAngleRad,
+                                          ),
+                                          child: const SizedBox.expand(),
                                         ),
-                                        child: const SizedBox.expand(),
                                       ),
                                     ),
+                                    Positioned(
+                                      top: 8,
+                                      left: 196,
+                                      right: 212,
+                                      child: _OperationalAtmosphereStrip(
+                                        snapshot: snapshot,
+                                        sectorId: runtime.definition.sectorId,
+                                        weatherMode:
+                                            runtime.definition.weatherMode,
+                                      ),
+                                    ),
+                                    if (_commandFlashUntil != null &&
+                                        DateTime.now().isBefore(
+                                            _commandFlashUntil!))
+                                      const Positioned(
+                                        top: 74,
+                                        left: 0,
+                                        right: 0,
+                                        child: Center(
+                                          child: _TransientStatusChip(
+                                            label: 'COMMAND ISSUED',
+                                            color: Color(0xFF62D2FF),
+                                          ),
+                                        ),
+                                      ),
+                                    if (_ackFlashUntil != null &&
+                                        DateTime.now().isBefore(_ackFlashUntil!))
+                                      const Positioned(
+                                        top: 104,
+                                        left: 0,
+                                        right: 0,
+                                        child: Center(
+                                          child: _TransientStatusChip(
+                                            label: 'ACKNOWLEDGED',
+                                            color: Color(0xFF46F5A7),
+                                          ),
+                                        ),
+                                      ),
                                     if (!widget.betaMode ||
                                         widget.showDebugOverlays)
                                       _OverloadPulseEffect(
@@ -768,6 +868,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               onSpeed: _commandSpeed,
               onHold: _commandHold,
               reviewEventLabel: _reviewEventLabel,
+              recentlyAcknowledgedAircraftId: _recentlyAcknowledgedAircraftId,
             ),
         ],
       ),
@@ -778,6 +879,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   void dispose() {
     _ticker?.dispose();
     _commandHighlightTimer?.cancel();
+    _ackHighlightTimer?.cancel();
     _audioController.dispose();
     super.dispose();
   }
@@ -820,6 +922,7 @@ class _DebugControls extends StatelessWidget {
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
   final void Function(AircraftState aircraft) onHold;
   final String? reviewEventLabel;
+  final String? recentlyAcknowledgedAircraftId;
 
   const _DebugControls({
     required this.snapshot,
@@ -858,6 +961,7 @@ class _DebugControls extends StatelessWidget {
     required this.onSpeed,
     required this.onHold,
     required this.reviewEventLabel,
+    required this.recentlyAcknowledgedAircraftId,
   });
 
   @override
@@ -1050,6 +1154,8 @@ class _DebugControls extends StatelessWidget {
                 onAltitude: onAltitude,
                 onSpeed: onSpeed,
                 onHold: onHold,
+                recentlyAcknowledged:
+                    recentlyAcknowledgedAircraftId == selectedAircraft!.id,
               ),
             ],
             if (score.penalties.isNotEmpty) ...[
@@ -2145,6 +2251,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
   final void Function(AircraftState aircraft, int deltaFt) onAltitude;
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
   final void Function(AircraftState aircraft) onHold;
+  final bool recentlyAcknowledged;
 
   const _SelectedAircraftPanel({
     required this.aircraft,
@@ -2152,6 +2259,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
     required this.onAltitude,
     required this.onSpeed,
     required this.onHold,
+    required this.recentlyAcknowledged,
   });
 
   @override
@@ -2182,52 +2290,134 @@ class _SelectedAircraftPanel extends StatelessWidget {
               ),
             ),
           ),
+          if (recentlyAcknowledged) ...[
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0x3346F5A7),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: const Color(0xAA46F5A7)),
+                ),
+                child: const Text(
+                  'ACK RECEIVED',
+                  style: TextStyle(
+                    color: Color(0xFF46F5A7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.7,
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _CommandButton(
-                  icon: Icons.rotate_left,
-                  label: 'L',
-                  onPressed: () => onHeading(aircraft, -10),
+                _CommandGroup(
+                  label: 'HDG',
+                  children: [
+                    _CommandButton(
+                      icon: Icons.rotate_left,
+                      label: 'L',
+                      onPressed: () => onHeading(aircraft, -10),
+                    ),
+                    _CommandButton(
+                      icon: Icons.rotate_right,
+                      label: 'R',
+                      onPressed: () => onHeading(aircraft, 10),
+                    ),
+                  ],
                 ),
-                _CommandButton(
-                  icon: Icons.rotate_right,
-                  label: 'R',
-                  onPressed: () => onHeading(aircraft, 10),
+                _CommandGroup(
+                  label: 'ALT',
+                  children: [
+                    _CommandButton(
+                      icon: Icons.arrow_upward,
+                      label: '+ALT',
+                      onPressed: () => onAltitude(aircraft, 1000),
+                    ),
+                    _CommandButton(
+                      icon: Icons.arrow_downward,
+                      label: '-ALT',
+                      onPressed: () => onAltitude(aircraft, -1000),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                _CommandButton(
-                  icon: Icons.arrow_upward,
-                  label: '+ALT',
-                  onPressed: () => onAltitude(aircraft, 1000),
+                _CommandGroup(
+                  label: 'SPD',
+                  children: [
+                    _CommandButton(
+                      icon: Icons.add,
+                      label: '+SPD',
+                      onPressed: () => onSpeed(aircraft, 20),
+                    ),
+                    _CommandButton(
+                      icon: Icons.remove,
+                      label: '-SPD',
+                      onPressed: () => onSpeed(aircraft, -20),
+                    ),
+                  ],
                 ),
-                _CommandButton(
-                  icon: Icons.arrow_downward,
-                  label: '-ALT',
-                  onPressed: () => onAltitude(aircraft, -1000),
-                ),
-                const SizedBox(width: 10),
-                _CommandButton(
-                  icon: Icons.add,
-                  label: '+SPD',
-                  onPressed: () => onSpeed(aircraft, 20),
-                ),
-                _CommandButton(
-                  icon: Icons.remove,
-                  label: '-SPD',
-                  onPressed: () => onSpeed(aircraft, -20),
-                ),
-                const SizedBox(width: 10),
-                _CommandButton(
-                  icon: aircraft.intent.hold ? Icons.play_arrow : Icons.loop,
-                  label: aircraft.intent.hold ? 'EXIT HOLD' : 'HOLD',
-                  onPressed: () => onHold(aircraft),
+                _CommandGroup(
+                  label: 'FLOW',
+                  children: [
+                    _CommandButton(
+                      icon: aircraft.intent.hold ? Icons.play_arrow : Icons.loop,
+                      label: aircraft.intent.hold ? 'EXIT HOLD' : 'HOLD',
+                      onPressed: () => onHold(aircraft),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommandGroup extends StatelessWidget {
+  final String label;
+  final List<Widget> children;
+
+  const _CommandGroup({
+    required this.label,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.fromLTRB(6, 4, 3, 4),
+      decoration: BoxDecoration(
+        color: const Color(0x1800B0FF),
+        border: Border.all(color: const Color(0x3355D6BE)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 3, bottom: 4),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          Row(children: children),
         ],
       ),
     );
@@ -2407,6 +2597,116 @@ class _WorkloadOverlay extends StatelessWidget {
         'medium' => const Color(0xFFFFEB3B),
         _ => const Color(0xFF9E9E9E),
       };
+}
+
+class _OperationalAtmosphereStrip extends StatelessWidget {
+  final SimulationSnapshot snapshot;
+  final String sectorId;
+  final String weatherMode;
+
+  const _OperationalAtmosphereStrip({
+    required this.snapshot,
+    required this.sectorId,
+    required this.weatherMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final utc = DateTime.now().toUtc();
+    final hh = utc.hour.toString().padLeft(2, '0');
+    final mm = utc.minute.toString().padLeft(2, '0');
+    final ss = utc.second.toString().padLeft(2, '0');
+    final activeWeather = snapshot.weatherZones
+        .where((zone) => zone.severity >= 2)
+        .map((zone) => zone.id)
+        .toList();
+    final weatherSummary = activeWeather.isEmpty
+        ? weatherMode.toUpperCase()
+        : '${weatherMode.toUpperCase()} ${activeWeather.join('/')}';
+
+    return IgnorePointer(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xD00A141D),
+          border: Border.all(color: const Color(0x5546F5A7)),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.radar, size: 13, color: AppTheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              sectorId.toUpperCase(),
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '$hh:$mm:${ss}Z',
+              style: const TextStyle(
+                color: Color(0xFF62D2FF),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                weatherSummary,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFFFD166),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TransientStatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _TransientStatusChip({
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xE0091620),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withValues(alpha: 0.8)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.9,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _AttentionOverlay extends StatelessWidget {

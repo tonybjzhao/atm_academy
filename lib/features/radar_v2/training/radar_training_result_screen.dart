@@ -59,6 +59,11 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               accent: AppTheme.primary,
             ),
             const SizedBox(height: 18),
+            const _SectionTitle('Controller Evaluation'),
+            const SizedBox(height: 8),
+            for (final line in result.controllerEvaluation)
+              _EvaluationChip(text: line),
+            const SizedBox(height: 18),
             const _SectionTitle('Timeline Summary'),
             const SizedBox(height: 8),
             for (final line in result.timelineSummary)
@@ -71,6 +76,38 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _momentIndex > 0
+                        ? () => setState(() => _momentIndex--)
+                        : null,
+                    icon: const Icon(Icons.chevron_left),
+                    label: const Text('Prev'),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Moment ${_momentIndex + 1}/${moments.length}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: _momentIndex < moments.length - 1
+                        ? () => setState(() => _momentIndex++)
+                        : null,
+                    icon: const Icon(Icons.chevron_right),
+                    label: const Text('Next'),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
               Slider(
                 value: _momentIndex.toDouble(),
@@ -292,6 +329,38 @@ class _ExplanationCard extends StatelessWidget {
                 style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 14,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EvaluationChip extends StatelessWidget {
+  final String text;
+
+  const _EvaluationChip({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: _Panel(
+        child: Row(
+          children: [
+            const Icon(Icons.rule_folder_outlined,
+                color: AppTheme.warning, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 13,
                   height: 1.35,
                 ),
               ),

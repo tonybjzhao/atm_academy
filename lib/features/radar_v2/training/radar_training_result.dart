@@ -9,6 +9,7 @@ class RadarTrainingResult {
   final List<String> replayExplanation;
   final List<String> timelineSummary;
   final List<ReplayMoment> replayMoments;
+  final List<String> controllerEvaluation;
   final String topMistake;
   final String bestRecovery;
 
@@ -20,6 +21,7 @@ class RadarTrainingResult {
     required this.replayExplanation,
     required this.timelineSummary,
     required this.replayMoments,
+    required this.controllerEvaluation,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -66,9 +68,33 @@ class RadarTrainingResultBuilder {
       replayExplanation: replayExplanation,
       timelineSummary: buildTimelineSummary(snapshot, score),
       replayMoments: buildReplayMoments(snapshot),
+      controllerEvaluation: buildControllerEvaluation(score, snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
+  }
+
+  static List<String> buildControllerEvaluation(
+    RadarV2ScoreSnapshot score,
+    SimulationSnapshot snapshot,
+  ) {
+    final notes = <String>[];
+    if (score.lateResolutionCount > 0) {
+      notes.add('Late intervention on at least one conflict pair.');
+    }
+    if (score.proactiveStabilizationBonus > 0 || score.anticipationScore >= 72) {
+      notes.add('Good anticipation during workload transitions.');
+    }
+    if (score.commandEfficiency >= 82 && score.commandCount <= 8) {
+      notes.add('Traffic prioritization improved under pressure.');
+    }
+    if (snapshot.expectationState.driftScore >= 0.24) {
+      notes.add('Expectation drift observed; maintain broad scan discipline.');
+    }
+    if (notes.isEmpty) {
+      notes.add('Control inputs were stable; continue earlier threat detection.');
+    }
+    return List.unmodifiable(notes.take(4));
   }
 
   static List<String> buildReplayExplanation(SimulationSnapshot snapshot) {

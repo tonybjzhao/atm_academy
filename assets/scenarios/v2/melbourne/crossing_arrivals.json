@@ -10,7 +10,7 @@
   "weatherMode": "normal",
   "lowVisibilitySpacingMultiplier": 1.0,
   "lowVisibilityRunwayOccupancyMultiplier": 1.0,
-  "workloadPressureMultiplier": 1.15,
+  "workloadPressureMultiplier": 1.08,
   "runwayOccupancySeconds": 45,
   "trafficDescription": "Two same-level arrivals converge near the centre of the sector, followed by a lower southbound arrival.",
   "objectives": [
@@ -126,7 +126,7 @@
     {
       "id": "vja612",
       "callsign": "VJA612",
-      "spawnAtSeconds": 10,
+      "spawnAtSeconds": 20,
       "position": { "xNm": 26, "yNm": -8 },
       "altitudeFt": 9000,
       "headingDeg": 285,
@@ -139,7 +139,7 @@
     {
       "id": "rex438",
       "callsign": "REX438",
-      "spawnAtSeconds": 35,
+      "spawnAtSeconds": 74,
       "position": { "xNm": -6, "yNm": -32 },
       "altitudeFt": 7000,
       "headingDeg": 12,
@@ -151,7 +151,7 @@
     {
       "id": "qfa901",
       "callsign": "QFA901",
-      "spawnAtSeconds": 52,
+      "spawnAtSeconds": 128,
       "isDeparture": true,
       "departureFlowId": "mlb_dep_27",
       "procedureId": "SID_MLB27E",

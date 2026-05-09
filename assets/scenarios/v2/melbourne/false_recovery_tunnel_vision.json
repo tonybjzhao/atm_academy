@@ -3,14 +3,14 @@
   "title": "False Recovery",
   "sectorId": "melbourne_approach",
   "sectorPersonality": "weather_disruption",
-  "durationSeconds": 280,
+  "durationSeconds": 300,
   "difficulty": 4,
   "radarRangeNm": 42,
   "maxControllerLoad": 5,
   "weatherMode": "low_visibility",
   "lowVisibilitySpacingMultiplier": 1.2,
   "lowVisibilityRunwayOccupancyMultiplier": 1.25,
-  "workloadPressureMultiplier": 1.35,
+  "workloadPressureMultiplier": 1.30,
   "runwayOccupancySeconds": 55,
   "trafficDescription": "A weather deviation creates an early conflict, then traffic appears stable before a second arrival stream compresses near the merge point.",
   "objectives": [
@@ -144,7 +144,7 @@
     {
       "id": "vja612",
       "callsign": "VJA612",
-      "spawnAtSeconds": 12,
+      "spawnAtSeconds": 22,
       "position": { "xNm": 24, "yNm": 22 },
       "altitudeFt": 9000,
       "headingDeg": 230,
@@ -157,7 +157,7 @@
     {
       "id": "rex438",
       "callsign": "REX438",
-      "spawnAtSeconds": 78,
+      "spawnAtSeconds": 108,
       "position": { "xNm": 32, "yNm": -2 },
       "altitudeFt": 8000,
       "headingDeg": 270,
@@ -170,7 +170,7 @@
     {
       "id": "jst771",
       "callsign": "JST771",
-      "spawnAtSeconds": 96,
+      "spawnAtSeconds": 146,
       "position": { "xNm": -34, "yNm": 2 },
       "altitudeFt": 8500,
       "headingDeg": 88,
@@ -183,7 +183,7 @@
     {
       "id": "qfa901",
       "callsign": "QFA901",
-      "spawnAtSeconds": 132,
+      "spawnAtSeconds": 194,
       "isDeparture": true,
       "departureFlowId": "mlb_dep_09",
       "procedureId": "SID_EAST09",

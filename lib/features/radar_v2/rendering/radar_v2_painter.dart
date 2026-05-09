@@ -13,6 +13,7 @@ class RadarV2Painter extends CustomPainter {
   final double rangeNm;
   final String? selectedAircraftId;
   final String? recentlyCommandedAircraftId;
+  final String? recentlyAcknowledgedAircraftId;
   final bool alertPulse;
   final bool sweepEnabled;
   final double sweepAngleRad;
@@ -24,6 +25,7 @@ class RadarV2Painter extends CustomPainter {
     this.rangeNm = 40,
     this.selectedAircraftId,
     this.recentlyCommandedAircraftId,
+    this.recentlyAcknowledgedAircraftId,
     this.alertPulse = false,
     this.sweepEnabled = true,
     this.sweepAngleRad = 0,
@@ -75,18 +77,34 @@ class RadarV2Painter extends CustomPainter {
       _drawConflict(canvas, center, scale, conflict);
     }
 
+    final renderAircraft = <AircraftState>[];
     for (final aircraft in snapshot.aircraft) {
       if (!aircraft.active) continue;
-      final renderAircraft = _interpolatedAircraft(aircraft);
+      renderAircraft.add(_interpolatedAircraft(aircraft));
+    }
+
+    final labelOffsets = _resolveLabelOffsets(center, scale, renderAircraft);
+
+    renderAircraft.sort((a, b) {
+      final aUrgency = _urgencyForAircraft(a.id).index;
+      final bUrgency = _urgencyForAircraft(b.id).index;
+      final selectedBonusA = selectedAircraftId == a.id ? 10 : 0;
+      final selectedBonusB = selectedAircraftId == b.id ? 10 : 0;
+      return (aUrgency + selectedBonusA).compareTo(bUrgency + selectedBonusB);
+    });
+
+    for (final aircraft in renderAircraft) {
       _drawAircraft(
         canvas,
         center,
         scale,
-        renderAircraft,
+        aircraft,
         urgency: _urgencyForAircraft(aircraft.id),
         selected: selectedAircraftId == aircraft.id,
         recentlyCommanded: recentlyCommandedAircraftId == aircraft.id,
-        sweepPulse: sweepEnabled ? _sweepPulseFor(renderAircraft) : 0,
+        recentlyAcknowledged: recentlyAcknowledgedAircraftId == aircraft.id,
+        labelOffset: labelOffsets[aircraft.id] ?? const Offset(8, -18),
+        sweepPulse: sweepEnabled ? _sweepPulseFor(aircraft) : 0,
       );
     }
   }
@@ -96,6 +114,8 @@ class RadarV2Painter extends CustomPainter {
       {required _ConflictUrgency urgency,
       required bool selected,
       required bool recentlyCommanded,
+      required bool recentlyAcknowledged,
+      required Offset labelOffset,
       required double sweepPulse}) {
     final position = _toCanvas(center, scale, aircraft.xNm, aircraft.yNm);
     final headingRad = aircraft.headingDeg * math.pi / 180;
@@ -128,6 +148,23 @@ class RadarV2Painter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: 88);
 
+    if (urgency != _ConflictUrgency.normal) {
+      final severity = switch (urgency) {
+        _ConflictUrgency.predicted => 0.35,
+        _ConflictUrgency.urgent => 0.55,
+        _ConflictUrgency.loss => 0.75,
+        _ConflictUrgency.normal => 0.0,
+      };
+      canvas.drawCircle(
+        position,
+        14 + (urgency.index * 2),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.1
+          ..color = aircraftColor.withValues(alpha: severity),
+      );
+    }
+
     canvas.drawLine(position, vectorEnd, vectorPaint);
     canvas.drawLine(
       position.translate(7, -12),
@@ -137,13 +174,17 @@ class RadarV2Painter extends CustomPainter {
         ..strokeWidth = 1
         ..color = aircraftColor.withValues(alpha: 0.45),
     );
-    if (selected || recentlyCommanded) {
+    if (selected || recentlyCommanded || recentlyAcknowledged) {
       canvas.drawCircle(
         position,
         selected ? 22 : 18,
         Paint()
           ..style = PaintingStyle.fill
-          ..color = (selected ? aircraftColor : const Color(0xFF62D2FF))
+          ..color = (selected
+                  ? aircraftColor
+                  : recentlyAcknowledged
+                      ? const Color(0xFF46F5A7)
+                      : const Color(0xFF62D2FF))
               .withValues(alpha: selected ? 0.12 : 0.08),
       );
       _drawIntentVector(canvas, position, aircraft, selected ? 54 : 42);
@@ -177,7 +218,17 @@ class RadarV2Painter extends CustomPainter {
           ..color = const Color(0xFF62D2FF),
       );
     }
-    labelPainter.paint(canvas, position.translate(8, -18));
+    if (recentlyAcknowledged) {
+      canvas.drawCircle(
+        position,
+        20,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.3
+          ..color = const Color(0xFF46F5A7),
+      );
+    }
+    labelPainter.paint(canvas, position.translate(labelOffset.dx, labelOffset.dy));
   }
 
   void _drawTrail(
@@ -192,17 +243,77 @@ class RadarV2Painter extends CustomPainter {
       final from =
           _toCanvas(center, scale, points[i - 1].xNm, points[i - 1].yNm);
       final to = _toCanvas(center, scale, points[i].xNm, points[i].yNm);
-      final alpha = (0.12 + i / points.length * 0.42).clamp(0.12, 0.54);
+      final t = i / points.length;
+      final alpha = (0.06 + t * 0.5).clamp(0.06, 0.56);
+      final width = 0.8 + t * 1.4;
       canvas.drawLine(
         from,
         to,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.3
+          ..strokeWidth = width
           ..strokeCap = StrokeCap.round
           ..color = const Color(0xFF46F5A7).withValues(alpha: alpha),
       );
     }
+  }
+
+  Map<String, Offset> _resolveLabelOffsets(
+    Offset center,
+    double scale,
+    List<AircraftState> aircraft,
+  ) {
+    final placements = <String, Offset>{};
+    final occupiedRects = <Rect>[];
+
+    for (final item in aircraft) {
+      final position = _toCanvas(center, scale, item.xNm, item.yNm);
+      final headingRad = item.headingDeg * math.pi / 180;
+      final headingOffset = Offset(
+        math.sin(headingRad) * 10,
+        -math.cos(headingRad) * 10,
+      );
+      final base = Offset(
+        headingOffset.dx >= 0 ? 10 : -92,
+        headingOffset.dy <= 0 ? -22 : 8,
+      );
+      final candidates = <Offset>[
+        base,
+        base.translate(0, 14),
+        base.translate(0, -14),
+        Offset(base.dx < 0 ? 10 : -92, base.dy),
+        Offset(base.dx < 0 ? 10 : -92, base.dy + 14),
+      ];
+
+      Offset picked = candidates.first;
+      for (final candidate in candidates) {
+        final rect = Rect.fromLTWH(
+          position.dx + candidate.dx,
+          position.dy + candidate.dy,
+          88,
+          24,
+        ).inflate(3);
+        final overlaps = occupiedRects.any((existing) => existing.overlaps(rect));
+        if (!overlaps) {
+          picked = candidate;
+          occupiedRects.add(rect);
+          break;
+        }
+      }
+
+      final pickedRect = Rect.fromLTWH(
+        position.dx + picked.dx,
+        position.dy + picked.dy,
+        88,
+        24,
+      ).inflate(3);
+      if (!occupiedRects.any((existing) => existing.overlaps(pickedRect))) {
+        occupiedRects.add(pickedRect);
+      }
+      placements[item.id] = picked;
+    }
+
+    return placements;
   }
 
   String _datablockText(AircraftState aircraft) {
@@ -814,6 +925,8 @@ class RadarV2Painter extends CustomPainter {
         oldDelegate.selectedAircraftId != selectedAircraftId ||
         oldDelegate.recentlyCommandedAircraftId !=
             recentlyCommandedAircraftId ||
+        oldDelegate.recentlyAcknowledgedAircraftId !=
+          recentlyAcknowledgedAircraftId ||
         oldDelegate.alertPulse != alertPulse ||
         oldDelegate.sweepEnabled != sweepEnabled ||
         oldDelegate.sweepAngleRad != sweepAngleRad;
