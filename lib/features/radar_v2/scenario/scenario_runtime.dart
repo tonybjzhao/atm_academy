@@ -9,6 +9,9 @@ import '../core/cognitive_load/cognitive_load_engine.dart';
 import '../core/cognitive_load/cognitive_load_state.dart';
 import '../core/mental_model/cognitive_cascade_engine.dart';
 import '../core/mental_model/cognitive_cascade_state.dart';
+import '../core/mental_model/controller_archetype.dart';
+import '../core/mental_model/controller_archetype_engine.dart';
+import '../core/mental_model/controller_archetype_state.dart';
 import '../core/mental_model/controller_expectation_state.dart';
 import '../core/mental_model/expectation_tracker.dart';
 import '../core/mental_model/meta_cognition_engine.dart';
@@ -74,6 +77,7 @@ class ScenarioRuntime {
     final CognitiveCascadeEngine _cognitiveCascadeEngine =
       CognitiveCascadeEngine();
     late final MetaCognitionEngine _metaCognitionEngine;
+  late final ControllerArchetypeEngine _controllerArchetypeEngine;
   final WorkingMemoryEngine _workingMemoryEngine = WorkingMemoryEngine();
   final List<AttentionFocusState> _attentionHistory = <AttentionFocusState>[];
   String? _selectedAircraftIdForAttention;
@@ -94,6 +98,8 @@ class ScenarioRuntime {
     CognitiveCascadeState _lastCognitiveCascadeState =
       CognitiveCascadeState.idle;
     MetaCognitionState _lastMetaCognitionState = MetaCognitionState.idle;
+  ControllerArchetypeState _lastControllerArchetypeState =
+      ControllerArchetypeState.idle;
   WorkingMemoryState _lastWorkingMemoryState = WorkingMemoryState.idle;
   WorkingMemoryState _previousWorkingMemoryState = WorkingMemoryState.idle;
   TunnelVisionState _lastTunnelVisionState = TunnelVisionState.none;
@@ -120,6 +126,20 @@ class ScenarioRuntime {
     final normalizedDifficulty = ((definition.difficulty - 1) / 4).clamp(0.0, 1.0);
     final experienceLevel = (1.0 - normalizedDifficulty).clamp(0.1, 0.95);
     _metaCognitionEngine = MetaCognitionEngine(experienceLevel: experienceLevel);
+    _controllerArchetypeEngine = ControllerArchetypeEngine.fromLabel(
+      _archetypeLabelForDifficulty(normalizedDifficulty),
+    );
+  }
+
+  static ControllerArchetypeLabel _archetypeLabelForDifficulty(
+    double normalizedDifficulty,
+  ) {
+    // Seed a default archetype from difficulty so different scenarios
+    // exercise different trait profiles without requiring user configuration.
+    if (normalizedDifficulty < 0.25) return ControllerArchetypeLabel.calmStabilizer;
+    if (normalizedDifficulty < 0.50) return ControllerArchetypeLabel.scanDisciplinedVeteran;
+    if (normalizedDifficulty < 0.75) return ControllerArchetypeLabel.reactiveFirefighter;
+    return ControllerArchetypeLabel.highCapacityButFragile;
   }
 
   static List<ArrivalFlow> _effectiveArrivalFlows(ScenarioDefinition def) {
@@ -261,6 +281,14 @@ class ScenarioRuntime {
       current: _lastWorkingMemoryState,
     );
     _previousWorkingMemoryState = _lastWorkingMemoryState;
+    _lastControllerArchetypeState = _controllerArchetypeEngine.evaluate(
+      snapshot: _snapshotForMentalModel(baseSnapshot, cognitiveLoad),
+      attention: _lastAttentionFocusState,
+      workingMemory: _lastWorkingMemoryState,
+      predictive: _lastPredictiveMentalModelState,
+      cascade: _lastCognitiveCascadeState,
+      metaCognition: _lastMetaCognitionState,
+    );
 
     // Feed analytics tracker
     _analyticsTracker.recordTick(ReplayWorkloadFrame(
@@ -322,6 +350,7 @@ class ScenarioRuntime {
       workingMemoryState: _lastWorkingMemoryState,
       workingMemoryReportLines:
           List<String>.from(_lastWorkingMemoryState.reportLines),
+      controllerArchetypeState: _lastControllerArchetypeState,
     );
   }
 

@@ -1,5 +1,6 @@
 import '../models/simulation_snapshot.dart';
 import '../scoring/radar_v2_score.dart';
+import '../core/mental_model/controller_archetype_engine.dart';
 
 class RadarTrainingResult {
   final String scenarioTitle;
@@ -33,6 +34,7 @@ class RadarTrainingResult {
   final List<String> unnoticedOverload;
   final List<String> successfulSelfRecovery;
   final List<String> confidenceCalibrationQuality;
+  final List<String> archetypeDebrief;
   final String topMistake;
   final String bestRecovery;
 
@@ -68,6 +70,7 @@ class RadarTrainingResult {
     required this.unnoticedOverload,
     required this.successfulSelfRecovery,
     required this.confidenceCalibrationQuality,
+    required this.archetypeDebrief,
     required this.topMistake,
     required this.bestRecovery,
   });
@@ -139,6 +142,7 @@ class RadarTrainingResultBuilder {
       unnoticedOverload: buildUnnoticedOverload(snapshot),
       successfulSelfRecovery: buildSuccessfulSelfRecovery(snapshot),
       confidenceCalibrationQuality: buildConfidenceCalibrationQuality(snapshot),
+      archetypeDebrief: buildArchetypeDebrief(snapshot),
       topMistake: buildTopMistake(score, snapshot),
       bestRecovery: buildBestRecovery(score, snapshot, replayExplanation),
     );
@@ -212,6 +216,29 @@ class RadarTrainingResultBuilder {
       'Latest self-estimated scan quality: '
           '${snapshot.metaCognitionState.latestAssessment.estimatedScanQuality.toStringAsFixed(2)}.',
     ];
+  }
+
+  static List<String> buildArchetypeDebrief(SimulationSnapshot snapshot) {
+    final state = snapshot.controllerArchetypeState;
+    // Build debrief via the engine using the persisted accumulator counts.
+    final engine = ControllerArchetypeEngine(
+      traits: state.traits,
+      archetypeLabel: state.archetypeLabel,
+    );
+    // Re-inject accumulated counters so the builder has real data.
+    for (var i = 0; i < state.fixationContributionTicks; i++) {
+      engine.injectFixationTick();
+    }
+    for (var i = 0; i < state.memoryFailureContributionTicks; i++) {
+      engine.injectMemoryFailureTick();
+    }
+    for (var i = 0; i < state.cascadeAmplificationTicks; i++) {
+      engine.injectCascadeAmplificationTick();
+    }
+    for (var i = 0; i < state.recoveryDelayTicks; i++) {
+      engine.injectRecoveryDelayTick();
+    }
+    return engine.buildDebriefLines();
   }
 
   static List<String> buildCognitiveCascadeChains(SimulationSnapshot snapshot) {

@@ -234,6 +234,13 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               for (final line in result.confidenceCalibrationQuality)
                 _EvaluationChip(text: line),
             ],
+            if (result.archetypeDebrief.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const _SectionTitle('Controller Archetype Profile'),
+              const SizedBox(height: 8),
+              for (final line in result.archetypeDebrief)
+                _EvaluationChip(text: line),
+            ],
             if (moments.isNotEmpty) ...[
               const SizedBox(height: 18),
               const _SectionTitle('Replay Timeline'),
