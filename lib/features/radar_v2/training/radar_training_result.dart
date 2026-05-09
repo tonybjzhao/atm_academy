@@ -734,7 +734,7 @@ class RadarTrainingResultBuilder {
         score.anticipationScore >= 72) {
       notes.add('Good anticipation during workload transitions.');
     }
-    if (score.commandEfficiency >= 82 && score.commandCount <= 8) {
+    if (score.isEfficiencyExcellent || score.isEfficiencyGood) {
       notes.add('Traffic prioritization improved under pressure.');
     }
     if (snapshot.expectationState.driftScore >= 0.24) {

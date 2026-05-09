@@ -49,6 +49,31 @@ class RadarV2ScoreSnapshot {
     if (score >= 60) return 'C';
     return 'D';
   }
+
+  /// Composite efficiency score used for UX labels and debrief gating.
+  /// Balances command quality with spacing/throughput/weather execution and
+  /// applies safety/context penalties so low overall outcomes cannot look
+  /// "excellent" from a single dimension.
+  double get compositeEfficiencyScore {
+    final weightedCore = (commandEfficiency * 0.40) +
+        (spacingStability * 0.25) +
+        (throughputEfficiency * 0.20) +
+        (weatherManagement * 0.15);
+    final safetyPenalty = (separationLossCount * 18) +
+        (lateResolutionCount * 4) +
+        (ignoredCriticalAlertCount * 8) +
+        (commandBurstCount * 3);
+    final total = weightedCore - safetyPenalty;
+    return total.clamp(0, 100).toDouble();
+  }
+
+  bool get isEfficiencyExcellent => compositeEfficiencyScore >= 85 && score >= 80;
+
+  bool get isEfficiencyGood =>
+      !isEfficiencyExcellent && compositeEfficiencyScore >= 70 && score >= 65;
+
+  bool get isEfficiencyBusy =>
+      !isEfficiencyExcellent && !isEfficiencyGood && compositeEfficiencyScore >= 50;
 }
 
 class RadarV2ScoreTracker {

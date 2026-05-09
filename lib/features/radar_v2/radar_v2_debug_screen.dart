@@ -3034,7 +3034,7 @@ class _ScenarioResultPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             l10n.radarTrainingCompletionEfficiency(
-              _efficiencyLabel(l10n, score.commandCount),
+              _efficiencyLabel(l10n, score),
             ),
             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
@@ -3078,10 +3078,10 @@ class _ScenarioResultPanel extends StatelessWidget {
     );
   }
 
-  String _efficiencyLabel(AppLocalizations l10n, int commands) {
-    if (commands <= 4) return l10n.radarTrainingEfficiencyExcellent;
-    if (commands <= 8) return l10n.radarTrainingEfficiencyGood;
-    if (commands <= 12) return l10n.radarTrainingEfficiencyBusy;
+  String _efficiencyLabel(AppLocalizations l10n, RadarV2ScoreSnapshot score) {
+    if (score.isEfficiencyExcellent) return l10n.radarTrainingEfficiencyExcellent;
+    if (score.isEfficiencyGood) return l10n.radarTrainingEfficiencyGood;
+    if (score.isEfficiencyBusy) return l10n.radarTrainingEfficiencyBusy;
     return l10n.radarTrainingEfficiencyOverControlled;
   }
 
