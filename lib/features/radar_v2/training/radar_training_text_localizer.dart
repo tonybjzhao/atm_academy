@@ -201,8 +201,10 @@ class RadarTrainingTextLocalizer {
       'Arrival spacing compressed':
           'radarTrainingPenaltyArrivalSpacingCompressed',
       'Controller workload high': 'radarTrainingPenaltyControllerWorkloadHigh',
-      'Runway occupancy pressure': 'radarTrainingPenaltyRunwayOccupancyPressure',
-      'Fuel pressure from prolonged hold': 'radarTrainingPenaltyFuelPressureHold',
+      'Runway occupancy pressure':
+          'radarTrainingPenaltyRunwayOccupancyPressure',
+      'Fuel pressure from prolonged hold':
+          'radarTrainingPenaltyFuelPressureHold',
       'Fuel pressure from excessive vectoring':
           'radarTrainingPenaltyFuelPressureVectoring',
       'Arrival delay pressure': 'radarTrainingPenaltyArrivalDelayPressure',
@@ -217,6 +219,10 @@ class RadarTrainingTextLocalizer {
       'Excessive command load': 'radarTrainingPenaltyExcessiveCommandLoad',
       'Distraction event': 'radarTrainingPenaltyDistractionEvent',
     };
+
+    if (text.startsWith('radarTraining')) {
+      return _lookupSimple(l10n, text);
+    }
 
     final method = directMap[text];
     if (method != null) {
@@ -464,6 +470,40 @@ class RadarTrainingTextLocalizer {
         return l10n.radarTrainingLabelConfidenceCollapse;
       case 'radarTrainingLabelSelfAssessmentDivergence':
         return l10n.radarTrainingLabelSelfAssessmentDivergence;
+      case 'radarTrainingPenaltySaturationCascading':
+        return l10n.radarTrainingPenaltySaturationCascading;
+      case 'radarTrainingPenaltySeparationLoss':
+        return l10n.radarTrainingPenaltySeparationLoss;
+      case 'radarTrainingPenaltyLateResolution':
+        return l10n.radarTrainingPenaltyLateResolution;
+      case 'radarTrainingPenaltyWeatherPenetration':
+        return l10n.radarTrainingPenaltyWeatherPenetration;
+      case 'radarTrainingPenaltyArrivalSpacingCompressed':
+        return l10n.radarTrainingPenaltyArrivalSpacingCompressed;
+      case 'radarTrainingPenaltyControllerWorkloadHigh':
+        return l10n.radarTrainingPenaltyControllerWorkloadHigh;
+      case 'radarTrainingPenaltyRunwayOccupancyPressure':
+        return l10n.radarTrainingPenaltyRunwayOccupancyPressure;
+      case 'radarTrainingPenaltyFuelPressureHold':
+        return l10n.radarTrainingPenaltyFuelPressureHold;
+      case 'radarTrainingPenaltyFuelPressureVectoring':
+        return l10n.radarTrainingPenaltyFuelPressureVectoring;
+      case 'radarTrainingPenaltyArrivalDelayPressure':
+        return l10n.radarTrainingPenaltyArrivalDelayPressure;
+      case 'radarTrainingPenaltyCommandBurst':
+        return l10n.radarTrainingPenaltyCommandBurst;
+      case 'radarTrainingPenaltyCriticalAlertIgnored':
+        return l10n.radarTrainingPenaltyCriticalAlertIgnored;
+      case 'radarTrainingPenaltyIgnoredAttentionCue':
+        return l10n.radarTrainingPenaltyIgnoredAttentionCue;
+      case 'radarTrainingPenaltyUnnecessaryAltitude':
+        return l10n.radarTrainingPenaltyUnnecessaryAltitude;
+      case 'radarTrainingPenaltyDistraction':
+        return l10n.radarTrainingPenaltyDistraction;
+      case 'radarTrainingPenaltyExcessiveCommandLoad':
+        return l10n.radarTrainingPenaltyExcessiveCommandLoad;
+      case 'radarTrainingPenaltyDistractionEvent':
+        return l10n.radarTrainingPenaltyDistractionEvent;
       default:
         return key;
     }

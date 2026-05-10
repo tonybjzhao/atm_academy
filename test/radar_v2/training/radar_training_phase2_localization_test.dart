@@ -124,8 +124,7 @@ void main() {
       );
     });
 
-    testWidgets('new cascade explanation keys are accessible',
-        (tester) async {
+    testWidgets('new cascade explanation keys are accessible', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('en'),
@@ -136,13 +135,15 @@ void main() {
               final l10n = AppLocalizations.of(context)!;
 
               // Verify all new keys are accessible
-              expect(l10n.radarTrainingCascadeEvidenceInterrupted('test', 'factor'),
+              expect(
+                  l10n.radarTrainingCascadeEvidenceInterrupted(
+                      'test', 'factor'),
                   isNotEmpty);
               expect(
                   l10n.radarTrainingCascadeEvidenceContributed('a', 'b', 'c'),
                   isNotEmpty);
-              expect(l10n.radarTrainingCascadeEvidenceRecoveryWeakens,
-                  isNotEmpty);
+              expect(
+                  l10n.radarTrainingCascadeEvidenceRecoveryWeakens, isNotEmpty);
               expect(l10n.radarTrainingCascadeLateResolution, isNotEmpty);
               expect(l10n.radarTrainingCascadeWorkloadCompetition, isNotEmpty);
               expect(l10n.radarTrainingCascadeConflictSeparationPressure,
@@ -159,6 +160,39 @@ void main() {
               expect(l10n.radarTrainingCascadeFactorRecoveryInterruption,
                   isNotEmpty);
               expect(l10n.radarTrainingCascadeFactorWeakTiming, isNotEmpty);
+
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+    });
+
+    testWidgets('penalty localization keys are displayed as text',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+
+              expect(
+                RadarTrainingTextLocalizer.line(
+                  l10n,
+                  'radarTrainingPenaltySaturationCascading',
+                ),
+                l10n.radarTrainingPenaltySaturationCascading,
+              );
+              expect(
+                RadarTrainingTextLocalizer.line(
+                  l10n,
+                  'Saturation: cascading risk',
+                ),
+                l10n.radarTrainingPenaltySaturationCascading,
+              );
 
               return const SizedBox.shrink();
             },

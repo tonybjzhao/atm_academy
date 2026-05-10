@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -11,7 +13,7 @@ import 'radar_training_result.dart';
 import 'radar_training_text_localizer.dart';
 
 class RadarTrainingResultScreen extends StatefulWidget {
-  final RadarTrainingResult result;
+  final RadarTrainingResult? result;
   final VoidCallback? onRestart;
 
   const RadarTrainingResultScreen({
@@ -32,11 +34,20 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   CognitiveCascadePropagationData? _cascadeData;
   Object? _initError;
 
-  RadarTrainingResult get result => widget.result;
+  RadarTrainingResult? get result => widget.result;
 
   @override
   void initState() {
     super.initState();
+    developer.log(
+      'ScenarioResultScreen received result=${widget.result != null} scenarioId=${widget.result?.scenarioId ?? 'none'} score=${widget.result?.score.score}',
+      name: 'RadarTrainingResult',
+    );
+    final result = widget.result;
+    if (result == null) {
+      _initError = null;
+      return;
+    }
     try {
       _timelineData = const CognitiveTimelineBuilder().build(result);
       _cascadeData = const CognitiveCascadePropagationBuilder().build(result);
@@ -51,6 +62,10 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final result = widget.result;
+    if (result == null) {
+      return _ResultFallbackScreen(localizations: l10n);
+    }
     if (_initError != null) {
       return Scaffold(
         backgroundColor: AppTheme.background,
@@ -65,17 +80,20 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, color: AppTheme.danger, size: 48),
+                  const Icon(Icons.error_outline,
+                      color: AppTheme.danger, size: 48),
                   const SizedBox(height: 16),
                   Text(
                     l10n.radarTrainingResultLoadFailed,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+                    style: const TextStyle(
+                        color: AppTheme.textPrimary, fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     l10n.radarTrainingResultLoadFailedHelp,
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -90,8 +108,8 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
         ),
       );
     }
-    final timelineData = _timelineData!;
-    final cascadeData = _cascadeData!;
+    final timelineData = _timelineData;
+    final cascadeData = _cascadeData;
     final moments = result.replayMoments;
     final selectedMoment = moments.isEmpty
         ? null
@@ -103,122 +121,134 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
         backgroundColor: AppTheme.surface,
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _ResultHeader(result: result),
-            const SizedBox(height: 14),
-            _ScoreReveal(score: result.score.score),
-            const SizedBox(height: 14),
-            _Metrics(result: result),
-            const SizedBox(height: 18),
-            _SectionTitle(l10n.radarTrainingMainDebrief),
-            const SizedBox(height: 8),
-            for (final insight in result.debriefSalience.primaryInsights)
-              _DebriefInsightCard(
-                insight: insight,
-                localizations: l10n,
-                onTap: () => _jumpToInsight(insight),
-              ),
-            if (result.debriefSalience.primaryInsights.isEmpty)
-              _ExplanationCard(
-                text: l10n.radarTrainingStableNoMajorDebrief,
-              ),
-            const SizedBox(height: 12),
-            _MoreDetails(
-              result: result,
-              localizations: l10n,
-              onInsightTap: _jumpToInsight,
-            ),
-            const SizedBox(height: 18),
-            _Panel(
-              child: CognitiveCascadePropagationView(
-                data: cascadeData,
-                selectedElapsed: _selectedElapsed,
-                localizations: l10n,
-                onJump: _jumpToElapsed,
-              ),
-            ),
-            const SizedBox(height: 18),
-            _Panel(
-              child: CognitiveTimelineVisualizer(
-                data: timelineData,
-                selectedElapsed: _selectedElapsed,
-                localizations: l10n,
-                onJump: _jumpToElapsed,
-              ),
-            ),
-            if (moments.isNotEmpty) ...[
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.of(context).viewPadding.bottom,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ResultHeader(result: result),
+              const SizedBox(height: 14),
+              _ScoreReveal(score: result.score.score),
+              const SizedBox(height: 14),
+              _Metrics(result: result),
               const SizedBox(height: 18),
-              _SectionTitle(l10n.radarTrainingReplayTimeline),
+              _SectionTitle(l10n.radarTrainingMainDebrief),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _momentIndex > 0
-                        ? () => _jumpToMoment(_momentIndex - 1)
-                        : null,
-                    icon: const Icon(Icons.chevron_left),
-                    label: Text(l10n.btnPrevious),
+              for (final insight in result.debriefSalience.primaryInsights)
+                _DebriefInsightCard(
+                  insight: insight,
+                  localizations: l10n,
+                  onTap: () => _jumpToInsight(insight),
+                ),
+              if (result.debriefSalience.primaryInsights.isEmpty)
+                _ExplanationCard(
+                  text: l10n.radarTrainingStableNoMajorDebrief,
+                ),
+              const SizedBox(height: 12),
+              _MoreDetails(
+                result: result,
+                localizations: l10n,
+                onInsightTap: _jumpToInsight,
+              ),
+              const SizedBox(height: 18),
+              if (cascadeData != null)
+                _Panel(
+                  child: CognitiveCascadePropagationView(
+                    data: cascadeData,
+                    selectedElapsed: _selectedElapsed,
+                    localizations: l10n,
+                    onJump: _jumpToElapsed,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.radarTrainingMoment(_momentIndex + 1, moments.length),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                ),
+              if (cascadeData != null && timelineData != null)
+                const SizedBox(height: 18),
+              if (timelineData != null)
+                _Panel(
+                  child: CognitiveTimelineVisualizer(
+                    data: timelineData,
+                    selectedElapsed: _selectedElapsed,
+                    localizations: l10n,
+                    onJump: _jumpToElapsed,
+                  ),
+                ),
+              if (moments.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                _SectionTitle(l10n.radarTrainingReplayTimeline),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _momentIndex > 0
+                          ? () => _jumpToMoment(_momentIndex - 1)
+                          : null,
+                      icon: const Icon(Icons.chevron_left),
+                      label: Text(l10n.btnPrevious),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.radarTrainingMoment(
+                            _momentIndex + 1, moments.length),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: _momentIndex < moments.length - 1
+                          ? () => _jumpToMoment(_momentIndex + 1)
+                          : null,
+                      icon: const Icon(Icons.chevron_right),
+                      label: Text(l10n.btnNext),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Slider(
+                  value: _momentIndex.toDouble(),
+                  min: 0,
+                  max: (moments.length - 1).toDouble(),
+                  divisions: moments.length > 1 ? moments.length - 1 : null,
+                  onChanged: (value) {
+                    _jumpToMoment(value.round());
+                  },
+                ),
+                if (selectedMoment != null)
+                  _ReplayMomentCard(moment: selectedMoment),
+              ],
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).popUntil(
+                        (route) => route.isFirst,
+                      ),
+                      icon: const Icon(Icons.list_alt),
+                      label: Text(l10n.radarTrainingScenarioList),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: _momentIndex < moments.length - 1
-                        ? () => _jumpToMoment(_momentIndex + 1)
-                        : null,
-                    icon: const Icon(Icons.chevron_right),
-                    label: Text(l10n.btnNext),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: widget.onRestart,
+                      icon: const Icon(Icons.restart_alt),
+                      label: Text(l10n.scenarioRetry),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Slider(
-                value: _momentIndex.toDouble(),
-                min: 0,
-                max: (moments.length - 1).toDouble(),
-                divisions: moments.length > 1 ? moments.length - 1 : null,
-                onChanged: (value) {
-                  _jumpToMoment(value.round());
-                },
-              ),
-              if (selectedMoment != null)
-                _ReplayMomentCard(moment: selectedMoment),
             ],
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).popUntil(
-                      (route) => route.isFirst,
-                    ),
-                    icon: const Icon(Icons.list_alt),
-                    label: Text(l10n.radarTrainingScenarioList),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: widget.onRestart,
-                    icon: const Icon(Icons.restart_alt),
-                    label: Text(l10n.scenarioRetry),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -230,7 +260,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   }
 
   void _jumpToMoment(int index) {
-    final moments = result.replayMoments;
+    final moments = result?.replayMoments ?? const <ReplayMoment>[];
     if (moments.isEmpty) return;
     final clamped = index.clamp(0, moments.length - 1);
     setState(() {
@@ -246,7 +276,7 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
         : elapsed > max
             ? max
             : elapsed;
-    final moments = result.replayMoments;
+    final moments = result?.replayMoments ?? const <ReplayMoment>[];
     var nearestIndex = _momentIndex;
     if (moments.isNotEmpty) {
       var bestDelta = (moments.first.elapsed - clamped).abs();
@@ -266,16 +296,50 @@ class _RadarTrainingResultScreenState extends State<RadarTrainingResultScreen> {
   }
 
   Duration? _nearestInsightMoment(DebriefInsight insight) {
-    final moments = result.replayMoments.where((moment) {
-      final text = '${moment.label} ${moment.type}'.toLowerCase();
-      return insight.title
-              .toLowerCase()
-              .split(RegExp(r'\s+'))
-              .where((word) => word.length > 3)
-              .any(text.contains) ||
-          insight.body.toLowerCase().contains(moment.type.toLowerCase());
-    });
+    final moments = result?.replayMoments.where((moment) {
+          final text = '${moment.label} ${moment.type}'.toLowerCase();
+          return insight.title
+                  .toLowerCase()
+                  .split(RegExp(r'\s+'))
+                  .where((word) => word.length > 3)
+                  .any(text.contains) ||
+              insight.body.toLowerCase().contains(moment.type.toLowerCase());
+        }) ??
+        const Iterable<ReplayMoment>.empty();
     return moments.isEmpty ? null : moments.first.elapsed;
+  }
+}
+
+class _ResultFallbackScreen extends StatelessWidget {
+  final AppLocalizations localizations;
+
+  const _ResultFallbackScreen({required this.localizations});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      appBar: AppBar(
+        title: Text(localizations.scenarioResult),
+        backgroundColor: AppTheme.surface,
+      ),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'No result data available. Please retry scenario.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 15,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -370,15 +434,24 @@ class _Metrics extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       children: [
-        _Metric(label: l10n.radarTrainingMetricLosses, value: '${result.separationLosses}'),
-        _Metric(label: l10n.radarTrainingMetricGoArounds, value: '${result.goArounds}'),
-        _Metric(label: l10n.radarTrainingMetricCommands, value: '${result.commandCount}'),
         _Metric(
-            label: l10n.radarTrainingMetricOverload, value: '${result.overloadDuration.inSeconds}s'),
+            label: l10n.radarTrainingMetricLosses,
+            value: '${result.separationLosses}'),
+        _Metric(
+            label: l10n.radarTrainingMetricGoArounds,
+            value: '${result.goArounds}'),
+        _Metric(
+            label: l10n.radarTrainingMetricCommands,
+            value: '${result.commandCount}'),
+        _Metric(
+            label: l10n.radarTrainingMetricOverload,
+            value: '${result.overloadDuration.inSeconds}s'),
         _Metric(
             label: l10n.radarTrainingMetricIgnoredCritical,
             value: '${result.ignoredCriticalAlerts}'),
-        _Metric(label: l10n.radarTrainingMetricTunnelVision, value: '${result.tunnelVisionEvents}'),
+        _Metric(
+            label: l10n.radarTrainingMetricTunnelVision,
+            value: '${result.tunnelVisionEvents}'),
         _Metric(
             label: l10n.radarTrainingMetricExpectationDrift,
             value: '${result.expectationDriftEvents}'),
@@ -499,7 +572,8 @@ class _DebriefInsightCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      RadarTrainingTextLocalizer.line(localizations, insight.body),
+                      RadarTrainingTextLocalizer.line(
+                          localizations, insight.body),
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 13,
@@ -583,14 +657,16 @@ class _MoreDetails extends StatelessWidget {
             _InsightCard(
               icon: Icons.error_outline,
               title: localizations.radarTrainingTopMistake,
-              body: RadarTrainingTextLocalizer.line(localizations, result.topMistake),
+              body: RadarTrainingTextLocalizer.line(
+                  localizations, result.topMistake),
               accent: AppTheme.warning,
             ),
             const SizedBox(height: 8),
             _InsightCard(
               icon: Icons.healing,
               title: localizations.radarTrainingBestRecovery,
-              body: RadarTrainingTextLocalizer.line(localizations, result.bestRecovery),
+              body: RadarTrainingTextLocalizer.line(
+                  localizations, result.bestRecovery),
               accent: AppTheme.primary,
             ),
             if (extraInsights.isNotEmpty) ...[
@@ -606,7 +682,8 @@ class _MoreDetails extends StatelessWidget {
             ],
             if (result.environmentalEcology.reportLines.isNotEmpty) ...[
               const SizedBox(height: 12),
-              _SectionTitle(localizations.radarTrainingOperationalPressureEcology),
+              _SectionTitle(
+                  localizations.radarTrainingOperationalPressureEcology),
               const SizedBox(height: 8),
               for (final line in result.environmentalEcology.reportLines)
                 _EvaluationChip(

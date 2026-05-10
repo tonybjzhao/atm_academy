@@ -245,22 +245,30 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   Future<void> _openTrainingResult() async {
     final snapshot = _snapshot;
     if (snapshot == null) return;
-    final result = RadarTrainingResultBuilder.build(
+    developer.log(
+      'View Results tapped scenario=$_scenarioName elapsed=${snapshot.elapsed.inSeconds}s score=${_scoreTracker.snapshot.score}',
+      name: 'RadarTrainingResult',
+    );
+    final resultSnapshot = RadarTrainingResultBuilder.build(
       scenarioTitle: widget.trainingScenarioTitle ?? _scenarioName,
       scenarioId: widget.trainingScenarioId ?? _scenarioName,
       score: _scoreTracker.snapshot,
       snapshot: snapshot,
     );
+    developer.log(
+      'Final result snapshot created scenarioId=${resultSnapshot.scenarioId} score=${resultSnapshot.score.score} losses=${resultSnapshot.separationLosses} moments=${resultSnapshot.replayMoments.length}',
+      name: 'RadarTrainingResult',
+    );
     await const RadarTrainingProgressStore().saveResult(
-      scenarioId: result.scenarioId,
-      score: result.score.score,
-      grade: result.score.grade,
+      scenarioId: resultSnapshot.scenarioId,
+      score: resultSnapshot.score.score,
+      grade: resultSnapshot.score.grade,
     );
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RadarTrainingResultScreen(
-          result: result,
+          result: resultSnapshot,
           onRestart: () {
             Navigator.of(context).pop();
             _restartScenario();
