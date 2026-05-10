@@ -92,6 +92,22 @@ void main() {
       }
     });
 
+    test('challenge scenario assets are parseable and discoverable', () {
+      const loader = ScenarioLoader();
+
+      expect(RadarTrainingCatalog.challengeScenarios, hasLength(4));
+      expect(RadarTrainingCatalog.scenarios, hasLength(3));
+
+      for (final scenario in RadarTrainingCatalog.challengeScenarios) {
+        final source = File(scenario.assetPath).readAsStringSync();
+        final definition = loader.parse(source);
+
+        expect(definition.id, contains('challenge'));
+        expect(definition.attentionAwarenessSupport, isNotNull);
+        expect(definition.attentionSubtleConflictDelayBudgetSeconds, isNotNull);
+      }
+    });
+
     test('Melbourne Storm Arrival Rush scenario loads with ecology inputs', () {
       const loader = ScenarioLoader();
       final scenario =

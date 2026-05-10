@@ -1,0 +1,151 @@
+{
+  "id": "melbourne_crossing_arrivals_001_challenge",
+  "title": "Crossing Arrivals Challenge",
+  "sectorId": "melbourne_approach",
+  "sectorPersonality": "arrival_rush",
+  "durationSeconds": 240,
+  "difficulty": 3,
+  "radarRangeNm": 42,
+  "maxControllerLoad": 5,
+  "weatherMode": "normal",
+  "lowVisibilitySpacingMultiplier": 1.0,
+  "lowVisibilityRunwayOccupancyMultiplier": 1.0,
+  "workloadPressureMultiplier": 1.14,
+  "attentionAwarenessSupport": 0.78,
+  "attentionSubtleConflictDelayBudgetSeconds": 14,
+  "runwayOccupancySeconds": 45,
+  "trafficDescription": "A heavy-leading arrival is followed by converging same-level traffic near the sector centre, forcing wake-sensitive merge timing.",
+  "objectives": [
+    "Resolve the crossing conflict before it becomes urgent",
+    "Keep all aircraft inside safe separation",
+    "Avoid over-controlling the lower arrival"
+  ],
+  "expectedTechniques": [
+    "Use early heading vectors",
+    "Preserve wake-sensitive merge spacing behind the heavy leader",
+    "Use small speed reductions if the geometry tightens",
+    "Reserve altitude changes for late recoveries"
+  ],
+  "waypoints": [
+    { "id": "MLB_WEST", "xNm": -18, "yNm": 4 },
+    { "id": "MLB_EAST", "xNm": 18, "yNm": -4 },
+    { "id": "MLB_BASE", "xNm": 0, "yNm": 0 },
+    { "id": "MLB_SOUTH", "xNm": -4, "yNm": -18 },
+    { "id": "MLB_MISSED", "xNm": -12, "yNm": 2 },
+    { "id": "MLB_FINAL", "xNm": 4, "yNm": 8 },
+    { "id": "SID_EAST", "xNm": 20, "yNm": 4 },
+    { "id": "RWY27", "xNm": -3, "yNm": 16 },
+    { "id": "RWY34", "xNm": 5, "yNm": 14 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_WEST27",
+      "name": "WEST ONE STAR",
+      "type": "star",
+      "waypoints": ["MLB_WEST", "MLB_BASE", "RWY27"],
+      "mergeWaypointId": "MLB_BASE"
+    },
+    {
+      "id": "STAR_EAST27",
+      "name": "EAST TWO STAR",
+      "type": "star",
+      "waypoints": ["MLB_EAST", "MLB_BASE", "RWY27"],
+      "mergeWaypointId": "MLB_BASE"
+    },
+    {
+      "id": "SID_MLB27E",
+      "name": "MELBOURNE TWO DEPARTURE",
+      "type": "sid",
+      "waypoints": ["RWY27", "MLB_BASE", "SID_EAST"]
+    }
+  ],
+  "weatherZones": [
+    { "id": "WX1", "xNm": 8, "yNm": 6, "radiusNm": 5, "severity": 2 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "mlb_rwy27_flow",
+      "runwayId": "RWY27",
+      "mergeWaypointId": "MLB_BASE",
+      "finalFixWaypointId": "MLB_FINAL",
+      "thresholdWaypointId": "RWY27",
+      "procedureId": "STAR_WEST27",
+      "goAroundMergeWaypointId": "MLB_MISSED",
+      "goAroundRoute": ["MLB_MISSED", "MLB_BASE", "RWY27"],
+      "spacingTargetNm": 7,
+      "stabilizedAltitudeFt": 3000
+    },
+    {
+      "id": "mlb_rwy34_flow",
+      "runwayId": "RWY34",
+      "mergeWaypointId": "MLB_FINAL",
+      "finalFixWaypointId": "MLB_FINAL",
+      "thresholdWaypointId": "RWY34",
+      "goAroundMergeWaypointId": "MLB_BASE",
+      "goAroundRoute": ["MLB_BASE", "MLB_FINAL", "RWY34"],
+      "spacingTargetNm": 6,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "mlb_dep_27",
+      "runwayId": "RWY27",
+      "sidProcedureId": "SID_MLB27E",
+      "releaseIntervalSeconds": 58,
+      "crossingRunwayIds": ["RWY34"],
+      "initialClimbFt": 5000
+    }
+  ],
+  "holdPatterns": [
+    {
+      "id": "MLB_BASE_HOLD",
+      "fixWaypointId": "MLB_BASE",
+      "inboundHeadingDeg": 270,
+      "legSeconds": 45,
+      "stackAltitudeFt": 8000
+    }
+  ],
+  "altitudeRestrictions": [
+    { "waypointId": "MLB_BASE", "altitudeFt": 6000, "type": "atOrBelow" },
+    { "waypointId": "MLB_FINAL", "altitudeFt": 3000, "type": "at" }
+  ],
+  "densityScale": 1.0,
+  "speedOptions": [1, 2, 4],
+  "aircraft": [
+    {
+      "id": "qfa214",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": -28, "yNm": 10 },
+      "altitudeFt": 9000,
+      "headingDeg": 105,
+      "groundSpeedKt": 270,
+      "performanceType": "heavy_jet",
+      "procedureId": "STAR_WEST27",
+      "runwayId": "RWY27",
+      "route": ["MLB_WEST", "MLB_BASE", "RWY27"]
+    },
+    {
+      "id": "vja612",
+      "callsign": "VJA612",
+      "spawnAtSeconds": 14,
+      "position": { "xNm": 26, "yNm": -8 },
+      "altitudeFt": 9000,
+      "headingDeg": 285,
+      "groundSpeedKt": 265,
+      "performanceType": "jet",
+      "procedureId": "STAR_EAST27",
+      "runwayId": "RWY27",
+      "route": ["MLB_EAST", "MLB_BASE", "RWY27"]
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}

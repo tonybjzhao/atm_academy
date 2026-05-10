@@ -1,0 +1,155 @@
+{
+  "id": "melbourne_false_recovery_tunnel_vision_001_challenge",
+  "title": "False Recovery Challenge",
+  "sectorId": "melbourne_approach",
+  "sectorPersonality": "weather_disruption",
+  "durationSeconds": 300,
+  "difficulty": 5,
+  "radarRangeNm": 42,
+  "maxControllerLoad": 5,
+  "weatherMode": "low_visibility",
+  "lowVisibilitySpacingMultiplier": 1.2,
+  "lowVisibilityRunwayOccupancyMultiplier": 1.25,
+  "workloadPressureMultiplier": 1.38,
+  "attentionAwarenessSupport": 0.56,
+  "attentionSubtleConflictDelayBudgetSeconds": 22,
+  "runwayOccupancySeconds": 55,
+  "trafficDescription": "A weather deviation creates an early conflict, then traffic appears stable before a second arrival stream compresses near the merge point.",
+  "objectives": [
+    "Resolve the early conflict without fixating on it",
+    "Keep scanning during the false recovery period",
+    "Protect final spacing as the second stream compresses"
+  ],
+  "expectedTechniques": [
+    "Use one decisive vector for the first crossing pair",
+    "Return to a broad scan after the first conflict improves",
+    "Slow or vector the trailing arrival before the merge point"
+  ],
+  "waypoints": [
+    { "id": "MLB_WEST", "xNm": -20, "yNm": 0 },
+    { "id": "MLB_EAST", "xNm": 22, "yNm": 0 },
+    { "id": "MLB_NORTH", "xNm": 2, "yNm": 26 },
+    { "id": "MLB_BASE", "xNm": 2, "yNm": 4 },
+    { "id": "MLB_FINAL", "xNm": 12, "yNm": 2 },
+    { "id": "MLB_MISSED", "xNm": 0, "yNm": 10 },
+    { "id": "RWY09", "xNm": 28, "yNm": 2 },
+    { "id": "SID_EAST", "xNm": 35, "yNm": 8 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_WEST09",
+      "name": "WEST FLOW STAR",
+      "type": "star",
+      "waypoints": ["MLB_WEST", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_FINAL"
+    },
+    {
+      "id": "STAR_NORTH09",
+      "name": "NORTH MERGE STAR",
+      "type": "star",
+      "waypoints": ["MLB_NORTH", "MLB_BASE", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_BASE"
+    },
+    {
+      "id": "STAR_EAST09",
+      "name": "EAST RECOVERY STAR",
+      "type": "star",
+      "waypoints": ["MLB_EAST", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_FINAL"
+    },
+    {
+      "id": "SID_EAST09",
+      "name": "EAST TWO SID",
+      "type": "sid",
+      "waypoints": ["RWY09", "MLB_FINAL", "SID_EAST"]
+    }
+  ],
+  "weatherZones": [
+    { "id": "WX_RECOVERY", "xNm": -2, "yNm": 8, "radiusNm": 6.5, "severity": 3 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "mlb_rwy09_false_recovery_flow",
+      "runwayId": "RWY09",
+      "mergeWaypointId": "MLB_FINAL",
+      "finalFixWaypointId": "MLB_FINAL",
+      "thresholdWaypointId": "RWY09",
+      "procedureId": "STAR_WEST09",
+      "goAroundMergeWaypointId": "MLB_MISSED",
+      "goAroundRoute": ["MLB_MISSED", "MLB_BASE", "MLB_FINAL", "RWY09"],
+      "spacingTargetNm": 7,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "mlb_dep_09",
+      "runwayId": "RWY09",
+      "sidProcedureId": "SID_EAST09",
+      "releaseIntervalSeconds": 58,
+      "crossingRunwayIds": [],
+      "initialClimbFt": 5000
+    }
+  ],
+  "holdPatterns": [
+    {
+      "id": "MLB_BASE_HOLD",
+      "fixWaypointId": "MLB_BASE",
+      "inboundHeadingDeg": 180,
+      "legSeconds": 45,
+      "stackAltitudeFt": 8000
+    }
+  ],
+  "altitudeRestrictions": [
+    { "waypointId": "MLB_BASE", "altitudeFt": 6000, "type": "atOrBelow" },
+    { "waypointId": "MLB_FINAL", "altitudeFt": 3000, "type": "at" }
+  ],
+  "attentionManagementEvents": [
+    {
+      "id": "low_priority_request_1",
+      "type": "distraction",
+      "scheduledAtSeconds": 82,
+      "durationSeconds": 18,
+      "description": "Low-priority aircraft requests a route shortcut during recovery."
+    },
+    {
+      "id": "weather_chain_escalation",
+      "type": "weather_escalation",
+      "scheduledAtSeconds": 128,
+      "severityIncrease": 1,
+      "description": "Weather deviation compresses the final approach stream."
+    },
+    {
+      "id": "simultaneous_alerts_1",
+      "type": "simultaneous_alerts",
+      "scheduledAtSeconds": 166,
+      "durationSeconds": 20,
+      "description": "Multiple alerts compete for attention near the merge point."
+    }
+  ],
+  "densityScale": 1.08,
+  "speedOptions": [1, 2, 4],
+  "aircraft": [
+    {
+      "id": "qfa214",
+      "callsign": "QFA214",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": -30, "yNm": 0 },
+      "altitudeFt": 9000,
+      "headingDeg": 90,
+      "groundSpeedKt": 275,
+      "performanceType": "heavy_jet",
+      "procedureId": "STAR_WEST09",
+      "runwayId": "RWY09",
+      "route": ["MLB_WEST", "MLB_FINAL", "RWY09"]
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}

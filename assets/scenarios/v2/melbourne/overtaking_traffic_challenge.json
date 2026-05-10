@@ -1,0 +1,137 @@
+{
+  "id": "melbourne_overtaking_traffic_001_challenge",
+  "title": "Overtaking Traffic Challenge",
+  "sectorId": "melbourne_approach",
+  "sectorPersonality": "busy_terminal",
+  "durationSeconds": 240,
+  "difficulty": 4,
+  "radarRangeNm": 42,
+  "maxControllerLoad": 5,
+  "weatherMode": "low_visibility",
+  "lowVisibilitySpacingMultiplier": 1.25,
+  "lowVisibilityRunwayOccupancyMultiplier": 1.35,
+  "workloadPressureMultiplier": 1.26,
+  "attentionAwarenessSupport": 0.68,
+  "attentionSubtleConflictDelayBudgetSeconds": 18,
+  "runwayOccupancySeconds": 50,
+  "trafficDescription": "A faster jet catches a slower aircraft on the same track while another arrival descends toward the flow.",
+  "objectives": [
+    "Prevent the overtake from becoming a separation loss",
+    "Keep the crossing arrival away from the merge point",
+    "Solve with minimal commands"
+  ],
+  "expectedTechniques": [
+    "Reduce the faster aircraft or vector it briefly",
+    "Use altitude only if speed/heading is too late",
+    "Watch closure rate, not just current distance"
+  ],
+  "waypoints": [
+    { "id": "MLB_WEST", "xNm": -20, "yNm": -2 },
+    { "id": "MLB_FINAL", "xNm": 20, "yNm": -2 },
+    { "id": "RWY09", "xNm": 28, "yNm": -2 },
+    { "id": "RWY09_MISSED", "xNm": 12, "yNm": 4 },
+    { "id": "SID_COAST", "xNm": 34, "yNm": 8 },
+    { "id": "MLB_NORTH", "xNm": 8, "yNm": 20 },
+    { "id": "MLB_BASE", "xNm": 8, "yNm": 2 }
+  ],
+  "routeProcedures": [
+    {
+      "id": "STAR_WEST09",
+      "name": "WEST COAST STAR",
+      "type": "star",
+      "waypoints": ["MLB_WEST", "MLB_FINAL", "RWY09"],
+      "mergeWaypointId": "MLB_WEST"
+    },
+    {
+      "id": "STAR_NORTH09",
+      "name": "NORTH STREAM STAR",
+      "type": "star",
+      "waypoints": ["MLB_NORTH", "MLB_BASE", "RWY09"],
+      "mergeWaypointId": "MLB_BASE"
+    },
+    {
+      "id": "SID_COAST09",
+      "name": "COAST TWO SID",
+      "type": "sid",
+      "waypoints": ["RWY09", "MLB_BASE", "SID_COAST"]
+    }
+  ],
+  "weatherZones": [
+    { "id": "WX2", "xNm": -4, "yNm": 8, "radiusNm": 4.5, "severity": 1 }
+  ],
+  "arrivalFlows": [
+    {
+      "id": "mlb_rwy09_flow",
+      "runwayId": "RWY09",
+      "mergeWaypointId": "MLB_WEST",
+      "finalFixWaypointId": "MLB_FINAL",
+      "thresholdWaypointId": "RWY09",
+      "procedureId": "STAR_WEST09",
+      "goAroundMergeWaypointId": "RWY09_MISSED",
+      "goAroundRoute": ["RWY09_MISSED", "MLB_BASE", "RWY09"],
+      "spacingTargetNm": 7,
+      "stabilizedAltitudeFt": 3000
+    }
+  ],
+  "departureFlows": [
+    {
+      "id": "mlb_dep_09",
+      "runwayId": "RWY09",
+      "sidProcedureId": "SID_COAST09",
+      "releaseIntervalSeconds": 60,
+      "crossingRunwayIds": [],
+      "initialClimbFt": 6000
+    }
+  ],
+  "holdPatterns": [
+    {
+      "id": "MLB_WEST_HOLD",
+      "fixWaypointId": "MLB_WEST",
+      "inboundHeadingDeg": 90,
+      "legSeconds": 50,
+      "stackAltitudeFt": 8000
+    }
+  ],
+  "altitudeRestrictions": [
+    { "waypointId": "MLB_BASE", "altitudeFt": 5000, "type": "atOrBelow" },
+    { "waypointId": "MLB_FINAL", "altitudeFt": 3000, "type": "at" }
+  ],
+  "densityScale": 1.12,
+  "speedOptions": [1, 2, 4],
+  "aircraft": [
+    {
+      "id": "qfa302",
+      "callsign": "QFA302",
+      "spawnAtSeconds": 0,
+      "position": { "xNm": -30, "yNm": -2 },
+      "altitudeFt": 8000,
+      "headingDeg": 90,
+      "groundSpeedKt": 230,
+      "performanceType": "regional",
+      "procedureId": "STAR_WEST09",
+      "runwayId": "RWY09",
+      "route": ["MLB_WEST", "MLB_FINAL", "RWY09"]
+    },
+    {
+      "id": "jst771",
+      "callsign": "JST771",
+      "spawnAtSeconds": 28,
+      "position": { "xNm": -35, "yNm": -2 },
+      "altitudeFt": 8000,
+      "headingDeg": 90,
+      "groundSpeedKt": 330,
+      "performanceType": "jet",
+      "procedureId": "STAR_WEST09",
+      "runwayId": "RWY09",
+      "route": ["MLB_WEST", "MLB_FINAL", "RWY09"]
+    }
+  ],
+  "winConditions": [
+    { "type": "allAircraftSpawned" },
+    { "type": "maxSeparationLosses", "value": 0 }
+  ],
+  "failConditions": [
+    { "type": "separationLoss" },
+    { "type": "timeout" }
+  ]
+}

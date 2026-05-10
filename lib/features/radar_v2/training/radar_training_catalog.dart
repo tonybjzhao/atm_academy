@@ -84,8 +84,125 @@ class RadarTrainingCatalog {
     ),
   ];
 
+  // Optional challenge variants; intentionally not shown in the default
+  // beginner-focused beta scenario list.
+  static const List<RadarTrainingScenario> challengeScenarios = [
+    RadarTrainingScenario(
+      id: 'beginner_crossing_conflict_challenge',
+      title: 'Crossing Arrivals Challenge',
+      difficulty: RadarTrainingDifficulty.approach,
+      estimatedTime: Duration(minutes: 4),
+      learningGoal: 'Higher attention pressure under familiar geometry',
+      objective:
+          'Resolve the same crossing pattern with tighter attention tolerance and quicker subtle-conflict detection penalties.',
+      trafficSituation:
+          'Identical crossing-arrivals layout with reduced awareness support and faster tunnel-risk emergence.',
+      expectedTechnique:
+          'Use the same early vector logic, but maintain broader scan discipline throughout recovery.',
+      riskFactors: [
+        'Subtle conflicts are deferred less forgivingly',
+        'Attention drift escalates faster under load',
+        'Command bursts increase surprise risk sooner',
+      ],
+      successCriteria: [
+        'No separation loss',
+        'Keep scan imbalance low during merge pressure',
+        'Recover without tunnel-vision escalation',
+      ],
+      assetPath:
+          'assets/scenarios/v2/melbourne/crossing_arrivals_challenge.json',
+      scenarioName: 'Crossing Arrivals Challenge',
+    ),
+    RadarTrainingScenario(
+      id: 'overtaking_traffic_challenge',
+      title: 'Overtaking Traffic Challenge',
+      difficulty: RadarTrainingDifficulty.supervisor,
+      estimatedTime: Duration(minutes: 4),
+      learningGoal: 'Closure-rate control under stronger attention decay',
+      objective:
+          'Prevent overtake-driven loss while handling crossing pressure with reduced awareness support.',
+      trafficSituation:
+          'Same overtake geometry with higher workload pressure and lower peripheral awareness tolerance.',
+      expectedTechnique:
+          'Anticipate closure early, then rebalance attention before secondary threats emerge.',
+      riskFactors: [
+        'Closure threats become salient later under fixation',
+        'Secondary streams are easier to neglect',
+        'Late recovery requires larger corrective vectors',
+      ],
+      successCriteria: [
+        'No separation loss',
+        'No sustained scan blind periods',
+        'Keep command timing proactive, not reactive',
+      ],
+      assetPath:
+          'assets/scenarios/v2/melbourne/overtaking_traffic_challenge.json',
+      scenarioName: 'Overtaking Traffic Challenge',
+    ),
+    RadarTrainingScenario(
+      id: 'false_recovery_tunnel_vision_challenge',
+      title: 'False Recovery Challenge',
+      difficulty: RadarTrainingDifficulty.supervisor,
+      estimatedTime: Duration(minutes: 5),
+      learningGoal: 'Resist fixation during deceptive stability windows',
+      objective:
+          'Sustain broad scan discipline through false recovery under stronger cognitive pressure.',
+      trafficSituation:
+          'The same false-recovery sequence with lower awareness support and longer subtle-conflict delay penalties.',
+      expectedTechnique:
+          'Resolve early threat, then immediately redistribute scan across quieter aircraft.',
+      riskFactors: [
+        'False calm invites premature task closure',
+        'Interruptions amplify fixation probability',
+        'Late rediscovery cascades into runway pressure',
+      ],
+      successCriteria: [
+        'No separation loss',
+        'Limit delayed-awareness moments',
+        'Avoid critical fixation state',
+      ],
+      assetPath:
+          'assets/scenarios/v2/melbourne/false_recovery_tunnel_vision_challenge.json',
+      scenarioName: 'False Recovery Challenge',
+    ),
+    RadarTrainingScenario(
+      id: 'melbourne_storm_arrival_rush_challenge',
+      title: 'Melbourne Storm Arrival Rush Challenge',
+      difficulty: RadarTrainingDifficulty.supervisor,
+      estimatedTime: Duration(minutes: 6),
+      learningGoal:
+          'Advanced multi-stressor management with minimal awareness support',
+      objective:
+          'Hold spacing and runway flow through the storm compression with challenge-level attention pressure.',
+      trafficSituation:
+          'Same storm topology and traffic ecology, but with sharper attention competition and lower confidence retention.',
+      expectedTechnique:
+          'Prioritize hidden threats early, then continuously rebalance scan under storm and runway pressure.',
+      riskFactors: [
+        'Salient-weather fixation can mask quieter conflicts',
+        'Surprise risk rises quickly during synchronized stressors',
+        'Late rediscovery shrinks recovery geometry',
+        'Runway pressure compounds during overload windows',
+      ],
+      successCriteria: [
+        'No separation loss',
+        'Maintain stable arrival spacing through reroutes',
+        'Avoid ignored critical alert chains',
+        'Recover workload before collapse threshold',
+      ],
+      assetPath:
+          'assets/scenarios/v2/melbourne/storm_arrival_rush_challenge.json',
+      scenarioName: 'Melbourne Storm Arrival Rush Challenge',
+    ),
+  ];
+
+  static const List<RadarTrainingScenario> allScenarios = [
+    ...scenarios,
+    ...challengeScenarios,
+  ];
+
   static RadarTrainingScenario byId(String id) {
-    return scenarios.firstWhere((scenario) => scenario.id == id);
+    return allScenarios.firstWhere((scenario) => scenario.id == id);
   }
 
   static RadarTrainingScenario byIdLocalized(
@@ -101,6 +218,11 @@ class RadarTrainingCatalog {
 
   static Map<String, String> get scenarioAssets => {
         for (final scenario in scenarios)
+          scenario.scenarioName: scenario.assetPath,
+      };
+
+  static Map<String, String> get allScenarioAssets => {
+        for (final scenario in allScenarios)
           scenario.scenarioName: scenario.assetPath,
       };
 
