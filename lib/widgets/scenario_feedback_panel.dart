@@ -88,13 +88,15 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     if (result.reactionTimeSec <= 0) {
       parts.add(l10n.scenarioWhatHappenedNoCommand);
     } else {
-      parts.add(
-          l10n.scenarioWhatHappenedFirstCommand(result.reactionTimeSec.toStringAsFixed(1)));
+      parts.add(l10n.scenarioWhatHappenedFirstCommand(
+          result.reactionTimeSec.toStringAsFixed(1)));
       if (result.goodCommands > 0) {
-        parts.add(l10n.scenarioWhatHappenedEffectiveCommands(result.goodCommands));
+        parts.add(
+            l10n.scenarioWhatHappenedEffectiveCommands(result.goodCommands));
       }
       if (result.badCommands > 0) {
-        parts.add(l10n.scenarioWhatHappenedIneffectiveCommands(result.badCommands));
+        parts.add(
+            l10n.scenarioWhatHappenedIneffectiveCommands(result.badCommands));
       }
     }
     return parts.join(' ');
@@ -112,9 +114,11 @@ class ScenarioFeedbackPanel extends StatelessWidget {
       lines.add('${l10n.scorePenaltyNoCommand}: -30');
     } else {
       if (result.reactionTimeSec > 12) {
-        lines.add('${l10n.scenarioPenaltyLateCommand(result.reactionTimeSec.toStringAsFixed(0))}: -20');
+        lines.add(
+            '${l10n.scenarioPenaltyLateCommand(result.reactionTimeSec.toStringAsFixed(0))}: -20');
       } else if (result.reactionTimeSec > 8) {
-        lines.add('${l10n.scenarioPenaltyLateCommand(result.reactionTimeSec.toStringAsFixed(0))}: -10');
+        lines.add(
+            '${l10n.scenarioPenaltyLateCommand(result.reactionTimeSec.toStringAsFixed(0))}: -10');
       }
       if (!result.selectedAircraftCorrect) {
         lines.add('${l10n.scorePenaltyWrongAircraft}: -20');
@@ -124,7 +128,8 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     if (result.badCommands > 0) {
       lines.add('${l10n.scorePenaltyIneffective}: -${result.badCommands * 25}');
     }
-    final overControl = result.neutralCommands > 1 ? result.neutralCommands - 1 : 0;
+    final overControl =
+        result.neutralCommands > 1 ? result.neutralCommands - 1 : 0;
     if (overControl > 0) {
       lines.add('${l10n.scorePenaltyUnnecessary}: -${overControl * 10}');
     }
@@ -140,7 +145,9 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     if (result.reactionTimeSec > 0 && result.selectedAircraftCorrect) {
       lines.add('${l10n.scoreBonusCorrectAircraft}: +10');
     }
-    if (result.reactionTimeSec > 0 && result.goodCommands > 0 && result.reactionTimeSec < 5) {
+    if (result.reactionTimeSec > 0 &&
+        result.goodCommands > 0 &&
+        result.reactionTimeSec < 5) {
       lines.add('${l10n.scoreBonusEarlyAction}: +10');
     }
     return lines.isEmpty ? <String>[l10n.scenarioNoBonuses] : lines;
@@ -152,13 +159,13 @@ class ScenarioFeedbackPanel extends StatelessWidget {
     final color = _ratingColor();
     final localizedPenalties = _localizedPenalties(l10n);
     final localizedBonuses = _localizedBonuses(l10n);
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
 
     return Container(
       color: AppTheme.background.withValues(alpha: 0.94),
       child: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-              24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+          padding: EdgeInsets.fromLTRB(24, 24, 24, bottomInset + 40),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
