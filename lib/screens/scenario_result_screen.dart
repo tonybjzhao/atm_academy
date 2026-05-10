@@ -43,6 +43,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   late final ValueNotifier<double> _progress; // 0→1
   late final AnimationController _replayCtr;
   late DetailedScenarioResult _localizedResult;
+  Locale? _localizedLocale;
 
   bool _playing = false;
   int _speedMultiplier = 1;
@@ -54,17 +55,14 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   @override
   void initState() {
     super.initState();
-    
-    // Localize penalty and bonus titles based on current locale
-    final l10n = AppLocalizations.of(context);
-    _localizedResult = l10n != null ? widget.result.localized(l10n) : widget.result;
-    
+    _localizedResult = widget.result;
+
     _progress = ValueNotifier(0.0);
     _replayCtr = AnimationController(
       vsync: this,
       duration: Duration(
         milliseconds:
-            (_localizedResult.totalDurationSeconds * 1000 / _speedMultiplier)
+            (widget.result.totalDurationSeconds * 1000 / _speedMultiplier)
                 .round(),
       ),
     )
@@ -75,6 +73,25 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _play();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final locale = Localizations.localeOf(context);
+    if (_localizedLocale == locale) return;
+
+    final l10n = AppLocalizations.of(context);
+    _localizedResult =
+        l10n != null ? widget.result.localized(l10n) : widget.result;
+    _localizedLocale = locale;
+
+    _replayCtr.duration = Duration(
+      milliseconds:
+          (_localizedResult.totalDurationSeconds * 1000 / _speedMultiplier)
+              .round(),
+    );
   }
 
   void _onTick() {
