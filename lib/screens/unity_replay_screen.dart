@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:math';
 import 'package:flutter/material.dart';
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/replay_data.dart';
+import '../services/score_localizer.dart';
 import '../services/pilot_radio_audio_service.dart';
 import '../services/radio_audio_settings_service.dart';
 
@@ -523,11 +525,12 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                         data.hadLOS ? AppTheme.danger : AppTheme.warning),
                     _MetricRow(
                         l10n.scenarioMinHorizSep,
-                        '${data.minHorizDist.toStringAsFixed(0)} px  (threshold ${data.thresholdHorizontalPx.toStringAsFixed(0)} px)',
+                        '${data.minHorizDist.toStringAsFixed(0)} px  '
+                        '(${l10n.scenarioThresholdPx(data.thresholdHorizontalPx.round())})',
                         data.hadLOS ? AppTheme.danger : AppTheme.textSecondary),
                     _MetricRow(
                         l10n.scenarioMinVertSep,
-                        '${data.thresholdVerticalFt} ft threshold',
+                        l10n.scenarioThresholdFt(data.thresholdVerticalFt),
                         AppTheme.textSecondary),
                     _MetricRow(
                         l10n.replayActionLabel,
@@ -548,6 +551,9 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                         color: AppTheme.danger,
                         title: l10n.scenarioPenalties,
                         items: data.penaltyBreakdown,
+                        emptyItem: l10n.scenarioNoPenalties,
+                        itemLocalizer: (value) =>
+                            _localizedBreakdownItem(l10n, value),
                       ),
                     const SizedBox(height: 8),
                     if (data.bonusBreakdown.isNotEmpty &&
@@ -557,6 +563,9 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
                         color: AppTheme.primary,
                         title: l10n.scenarioBonuses,
                         items: data.bonusBreakdown,
+                        emptyItem: l10n.scenarioNoBonuses,
+                        itemLocalizer: (value) =>
+                            _localizedBreakdownItem(l10n, value),
                       ),
 
                     const SizedBox(height: 10),
@@ -615,6 +624,49 @@ class _FlutterReplayViewState extends State<_FlutterReplayView>
         ),
       ),
     );
+  }
+
+  String _localizedBreakdownItem(AppLocalizations l10n, String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return text;
+    if (text == 'None') return l10n.scenarioNoBonuses;
+
+    final match = RegExp(r'^(.+?):\s*([+−-]\d+)$').firstMatch(text);
+    final label = match?.group(1)?.trim() ?? text;
+    final points = match?.group(2);
+    final localizer = ScoreLocalizer(l10n);
+    var localized = localizer.localizeBonusTitle(label);
+    if (localized == label) {
+      localized = localizer.localizePenaltyTitle(label);
+    }
+    if (localized == label) {
+      localized = _directReplayBreakdownFallback(l10n, label);
+    }
+    if (localized == label && _looksUnlocalized(text)) {
+      developer.log(
+        'Missing replay breakdown localization for "$text" locale=${l10n.localeName}',
+        name: 'LocalizationAudit',
+      );
+    }
+    return points == null ? localized : '$localized: $points';
+  }
+
+  String _directReplayBreakdownFallback(AppLocalizations l10n, String label) {
+    switch (label) {
+      case 'Safe separation maintained':
+        return l10n.scoreBonusSeparationMaintained;
+      case 'Correct aircraft selected':
+        return l10n.scoreBonusCorrectAircraft;
+      case 'Early effective action':
+        return l10n.scoreBonusEarlyAction;
+      default:
+        return label;
+    }
+  }
+
+  bool _looksUnlocalized(String text) {
+    return text.startsWith('radarTraining') ||
+        RegExp(r'[A-Za-z]{4,}').hasMatch(text);
   }
 }
 
@@ -918,11 +970,15 @@ class _BreakdownSection extends StatelessWidget {
   final Color color;
   final String title;
   final List<String> items;
+  final String emptyItem;
+  final String Function(String value) itemLocalizer;
   const _BreakdownSection({
     required this.icon,
     required this.color,
     required this.title,
     required this.items,
+    required this.emptyItem,
+    required this.itemLocalizer,
   });
 
   @override
@@ -956,7 +1012,7 @@ class _BreakdownSection extends StatelessWidget {
                   children: [
                     Text('• ', style: TextStyle(color: color, fontSize: 11)),
                     Expanded(
-                        child: Text(s,
+                        child: Text(s == 'None' ? emptyItem : itemLocalizer(s),
                             style: TextStyle(
                                 color: color, fontSize: 11, height: 1.4))),
                   ],

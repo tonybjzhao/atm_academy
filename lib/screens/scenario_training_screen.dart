@@ -28,7 +28,7 @@ class ScenarioTrainingScreen extends StatefulWidget {
 }
 
 class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // ── Sweep ─────────────────────────────────────────────────────────────────
   late final AnimationController _sweepCtrl;
   double _sweepAngle = 0;
@@ -108,10 +108,10 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scenarioIndex = widget.scenarioIndex;
     _initScenario();
-    _audioSettings.ensureLoaded();
-    _radioAudio.initialize();
+    _initializeAudio();
 
     _sweepCtrl = AnimationController(
       vsync: this,
@@ -142,10 +142,34 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
     _startTimers();
   }
 
+  Future<void> _initializeAudio() async {
+    await _audioSettings.ensureLoaded();
+    await _radioAudio.initialize();
+    developer.log(
+      'AUDIO_PROBE_SCENARIO audio init warnings=${_audioSettings.settings.value.warningsEnabled} volume=${_audioSettings.settings.value.voiceVolume}',
+      name: 'ScenarioTrainingScreen',
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      developer.log('AUDIO_PROBE_SCENARIO lifecycle resumed restore audio',
+          name: 'ScenarioTrainingScreen');
+      unawaited(_initializeAudio());
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      developer.log('AUDIO_PROBE_SCENARIO lifecycle paused keep settings',
+          name: 'ScenarioTrainingScreen');
+      unawaited(_radioAudio.clearQueue(stopCurrent: true));
+    }
+  }
+
   Future<void> _endScenario({required bool timedOut}) async {
     if (_screenState != _ScreenState.playing) return;
     _stopTimers();
     final result = _engine.finalize(_timeLeft);
+    _playScenarioCompletionCue(!result.hadLOS && result.separationMaintained);
 
     // Build replay data snapshot for optional 3D replay
     final cmdType = _engine.firstCommandType;
@@ -243,6 +267,7 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _running = false;
     _audioClock.stop();
     _radioAudio.clearQueue(stopCurrent: true);
@@ -264,8 +289,32 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
 
   void _playImmediateCommandCue() {
     // Immediate cue bypasses queue/TTS so command taps are always audible.
-    _radioAudio.playImmediateCue(RadioWarningType.conflict);
-    developer.log('AUDIO_PROBE_SCENARIO command cue fired',
+    unawaited(_radioAudio.playImmediateCue(
+      RadioWarningType.conflict,
+      reason: 'scenario_command_tap',
+    ));
+    developer.log(
+        'AUDIO_PROBE_SCENARIO command cue fired enabled=${_audioSettings.settings.value.warningsEnabled}',
+        name: 'ScenarioTrainingScreen');
+  }
+
+  void _playAircraftSelectCue() {
+    unawaited(_radioAudio.playImmediateCue(
+      RadioWarningType.runwayPressure,
+      reason: 'scenario_aircraft_select',
+    ));
+    developer.log(
+        'AUDIO_PROBE_SCENARIO aircraft select cue fired enabled=${_audioSettings.settings.value.warningsEnabled}',
+        name: 'ScenarioTrainingScreen');
+  }
+
+  void _playScenarioCompletionCue(bool success) {
+    unawaited(_radioAudio.playImmediateCue(
+      success ? RadioWarningType.runwayPressure : RadioWarningType.overloadPeak,
+      reason: success ? 'scenario_success' : 'scenario_fail',
+    ));
+    developer.log(
+        'AUDIO_PROBE_SCENARIO completion cue success=$success enabled=${_audioSettings.settings.value.warningsEnabled}',
         name: 'ScenarioTrainingScreen');
   }
 
@@ -632,6 +681,9 @@ class _ScenarioTrainingScreenState extends State<ScenarioTrainingScreen>
                       _selectedCallsign = hit;
                       if (hit != null) _everSelected = true;
                     });
+                    if (hit != null) {
+                      _playAircraftSelectCue();
+                    }
                   },
                   child: CustomPaint(
                     painter: RadarPainter(

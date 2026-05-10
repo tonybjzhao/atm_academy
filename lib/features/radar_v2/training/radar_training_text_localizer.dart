@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import '../../../l10n/app_localizations.dart';
 
 class RadarTrainingTextLocalizer {
@@ -221,12 +223,26 @@ class RadarTrainingTextLocalizer {
     };
 
     if (text.startsWith('radarTraining')) {
-      return _lookupSimple(l10n, text);
+      final localized = _lookupSimple(l10n, text);
+      if (localized == text) {
+        developer.log(
+          'Missing localization key "$text" for locale=${l10n.localeName}',
+          name: 'LocalizationAudit',
+        );
+      }
+      return localized;
     }
 
     final method = directMap[text];
     if (method != null) {
-      return _lookupSimple(l10n, method);
+      final localized = _lookupSimple(l10n, method);
+      if (localized == method) {
+        developer.log(
+          'Missing localization key "$method" for locale=${l10n.localeName}',
+          name: 'LocalizationAudit',
+        );
+      }
+      return localized;
     }
 
     if (l10n.localeName != 'en' && RegExp(r'[A-Za-z]').hasMatch(text)) {

@@ -60,6 +60,8 @@ class PilotRadioAudioService {
   final AudioPlayer _warningPlayer = AudioPlayer(playerId: 'radio_warning_sfx');
   final AudioPlayer _immediateCuePlayer =
       AudioPlayer(playerId: 'radio_immediate_cue');
+  final AudioPlayer _immediateCuePlayerAlt =
+      AudioPlayer(playerId: 'radio_immediate_cue_alt');
   final ListQueue<_QueuedRadioItem> _queue = ListQueue<_QueuedRadioItem>();
   final ValueNotifier<String?> subtitle = ValueNotifier<String?>(null);
 
@@ -72,11 +74,16 @@ class PilotRadioAudioService {
   bool _initialized = false;
   bool _ttsAvailable = false;
   bool _isPlaying = false;
+  bool _useAltImmediateCuePlayer = false;
   DateTime _lastPlaybackAt = DateTime.fromMillisecondsSinceEpoch(0);
   Timer? _queueTimer;
+  AudioContext? _audioContext;
 
   Future<void> initialize() async {
-    if (_initialized) return;
+    if (_initialized) {
+      await _restoreAudioSession();
+      return;
+    }
     await _settings.ensureLoaded();
 
     try {
@@ -108,21 +115,57 @@ class PilotRadioAudioService {
         isSpeakerphoneOn: true,
       ),
     );
-    await _warningPlayer.setAudioContext(context);
-    await _immediateCuePlayer.setAudioContext(context);
-    await _warningPlayer.setReleaseMode(ReleaseMode.stop);
-    await _warningPlayer.setPlayerMode(PlayerMode.mediaPlayer);
-    await _immediateCuePlayer.setReleaseMode(ReleaseMode.stop);
-    await _immediateCuePlayer.setPlayerMode(PlayerMode.lowLatency);
-    await _warningPlayer
-        .setVolume(_warningVolumeFrom(_settings.settings.value));
-    await _immediateCuePlayer.setVolume(1.0);
+    _audioContext = context;
+    await _configurePlayers();
+    await _preloadCueAssets();
 
     _settings.settings.addListener(_onSettingsChanged);
     _initialized = true;
     debugPrint(
-      'AUDIO_PROBE_RADIO init done tts=$_ttsAvailable volume=${_settings.settings.value.voiceVolume}',
+      'AUDIO_PROBE_RADIO init done tts=$_ttsAvailable warnings=${_settings.settings.value.warningsEnabled} volume=${_settings.settings.value.voiceVolume}',
     );
+  }
+
+  Future<void> _restoreAudioSession() async {
+    try {
+      await _configurePlayers();
+      debugPrint(
+        'AUDIO_PROBE_RADIO session restored warnings=${_settings.settings.value.warningsEnabled} volume=${_settings.settings.value.voiceVolume}',
+      );
+    } catch (e) {
+      debugPrint('AUDIO_PROBE_RADIO session restore failed error=$e');
+    }
+  }
+
+  Future<void> _configurePlayers() async {
+    final context = _audioContext;
+    if (context != null) {
+      await _warningPlayer.setAudioContext(context);
+      await _immediateCuePlayer.setAudioContext(context);
+      await _immediateCuePlayerAlt.setAudioContext(context);
+    }
+    await _warningPlayer.setReleaseMode(ReleaseMode.stop);
+    await _warningPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+    await _immediateCuePlayer.setReleaseMode(ReleaseMode.stop);
+    await _immediateCuePlayer.setPlayerMode(PlayerMode.lowLatency);
+    await _immediateCuePlayerAlt.setReleaseMode(ReleaseMode.stop);
+    await _immediateCuePlayerAlt.setPlayerMode(PlayerMode.lowLatency);
+    await _warningPlayer
+        .setVolume(_warningVolumeFrom(_settings.settings.value));
+    await _immediateCuePlayer.setVolume(1.0);
+    await _immediateCuePlayerAlt.setVolume(1.0);
+  }
+
+  Future<void> _preloadCueAssets() async {
+    for (final asset in _warningAsset.values.toSet()) {
+      try {
+        await _warningPlayer.setSource(AssetSource(asset));
+        debugPrint('AUDIO_PROBE_RADIO preload ok asset=$asset');
+      } catch (e) {
+        debugPrint('AUDIO_PROBE_RADIO preload failed asset=$asset error=$e');
+      }
+    }
+    await _warningPlayer.stop();
   }
 
   void _onSettingsChanged() {
@@ -132,6 +175,7 @@ class PilotRadioAudioService {
     }
     _warningPlayer.setVolume(_warningVolumeFrom(s));
     _immediateCuePlayer.setVolume(1.0);
+    _immediateCuePlayerAlt.setVolume(1.0);
     if (!s.warningsEnabled) {
       unawaited(clearQueue(stopCurrent: true));
     }
@@ -145,8 +189,12 @@ class PilotRadioAudioService {
   Future<bool> playImmediateCue(
     RadioWarningType type, {
     bool respectSettings = true,
+    String reason = 'unspecified',
   }) async {
     await initialize();
+    debugPrint(
+      'AUDIO_PROBE_RADIO playImmediateCue called type=$type reason=$reason enabled=${_settings.settings.value.warningsEnabled} volume=${_settings.settings.value.voiceVolume}',
+    );
     if (respectSettings && !_settings.settings.value.warningsEnabled) {
       debugPrint('AUDIO_PROBE_RADIO cue skipped audio muted');
       return false;
@@ -154,14 +202,19 @@ class PilotRadioAudioService {
     final asset = _warningAsset[type];
     if (asset == null) {
       SystemSound.play(SystemSoundType.alert);
+      await HapticFeedback.lightImpact();
       return true;
     }
     try {
-      await _immediateCuePlayer.stop().timeout(
-            const Duration(milliseconds: 350),
+      final player = _useAltImmediateCuePlayer
+          ? _immediateCuePlayerAlt
+          : _immediateCuePlayer;
+      _useAltImmediateCuePlayer = !_useAltImmediateCuePlayer;
+      await player.stop().timeout(
+            const Duration(milliseconds: 160),
             onTimeout: () {},
           );
-      await _immediateCuePlayer
+      await player
           .play(
             AssetSource(asset),
             volume: 1.0,
@@ -170,9 +223,12 @@ class PilotRadioAudioService {
       debugPrint('AUDIO_PROBE_RADIO cue ok asset=$asset');
       return true;
     } catch (e) {
-      debugPrint('AUDIO_PROBE_RADIO cue failed asset=$asset error=$e');
+      debugPrint(
+        'AUDIO_PROBE_RADIO Android playback error cue failed asset=$asset reason=$reason error=$e',
+      );
       try {
         SystemSound.play(SystemSoundType.alert);
+        await HapticFeedback.lightImpact();
       } catch (_) {
         // Ignore fallback failure.
       }
@@ -309,6 +365,8 @@ class PilotRadioAudioService {
     await _warningPlayer.dispose();
     await _immediateCuePlayer.stop();
     await _immediateCuePlayer.dispose();
+    await _immediateCuePlayerAlt.stop();
+    await _immediateCuePlayerAlt.dispose();
     subtitle.dispose();
   }
 
