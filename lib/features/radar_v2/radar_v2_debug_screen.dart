@@ -67,7 +67,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
   SimulationSnapshot? _snapshot;
   final List<SimulationSnapshot> _replayHistory = <SimulationSnapshot>[];
   RadarV2ScoreTracker _scoreTracker = RadarV2ScoreTracker();
-    final CommandWorkflowTracker _commandWorkflow = CommandWorkflowTracker();
+  final CommandWorkflowTracker _commandWorkflow = CommandWorkflowTracker();
   final WorkloadAudioController _audioController = WorkloadAudioController();
   final PilotRadioAudioService _radioAudio = PilotRadioAudioService.instance;
   late final AudioPlayer _cuePlayer = AudioPlayer(playerId: 'radar_cues');
@@ -347,6 +347,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
     setState(() => _selectedAircraftId = selected?.id);
   }
 
+  void _clearSelectedAircraft() {
+    _runtime?.updateAttentionFocus(selectedAircraftId: null);
+    if (mounted) {
+      setState(() => _selectedAircraftId = null);
+    }
+  }
+
   Future<void> _openQuickCommandRadial(
     LongPressStartDetails details,
     Size size,
@@ -409,7 +416,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               AssignSpeed(
                 aircraftId: selected.id,
                 issuedAt: _snapshot?.elapsed ?? Duration.zero,
-                speedKt: (selected.groundSpeedKt - 20).clamp(120, 480).toDouble(),
+                speedKt:
+                    (selected.groundSpeedKt - 20).clamp(120, 480).toDouble(),
               ),
             ];
             _issueCommandChain(
@@ -602,7 +610,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
       _enqueuePilotAck(command, snapshot);
     }
     runtime.recordCommandTimestamp(snapshot.elapsed,
-      aircraftId: stamped.aircraftId);
+        aircraftId: stamped.aircraftId);
     _scoreTracker.recordCommand(stamped, snapshot);
     _commandHighlightTimer?.cancel();
     setState(() {
@@ -1290,6 +1298,12 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                           : LayoutBuilder(
                               builder: (context, constraints) {
                                 final size = constraints.biggest;
+                                final selectedAircraft =
+                                    _selectedAircraftId == null
+                                        ? null
+                                        : snapshot.aircraftById(
+                                            _selectedAircraftId!,
+                                          );
                                 return Stack(
                                   children: [
                                     RepaintBoundary(
@@ -1302,8 +1316,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                         onTapUp: (details) =>
                                             _selectAircraft(details, size),
                                         onLongPressStart: (details) =>
-                                          _openQuickCommandRadial(
-                                            details, size),
+                                            _openQuickCommandRadial(
+                                                details, size),
                                         child: CustomPaint(
                                           painter: RadarV2Painter(
                                             snapshot: snapshot,
@@ -1313,8 +1327,8 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                               size,
                                               _runtime!.definition.radarRangeNm,
                                             ).visibleRangeNm,
-                                            sectorRangeNm:
-                                                _runtime!.definition.radarRangeNm,
+                                            sectorRangeNm: _runtime!
+                                                .definition.radarRangeNm,
                                             viewCenterNm: _radarViewCenterNm,
                                             selectedAircraftId:
                                                 _selectedAircraftId,
@@ -1491,6 +1505,57 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                             snapshot: snapshot),
                                       ),
                                     ],
+                                    if (selectedAircraft != null) ...[
+                                      Positioned.fill(
+                                        child: GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: _clearSelectedAircraft,
+                                          child: Container(
+                                            color: const Color(0x33000000),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        left: 12,
+                                        right: 12,
+                                        bottom: 12,
+                                        child: SafeArea(
+                                          top: false,
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              maxHeight: size.height *
+                                                  (size.height >= size.width
+                                                      ? 0.55
+                                                      : 0.72),
+                                            ),
+                                            child: _SelectedAircraftPanel(
+                                              aircraft: selectedAircraft,
+                                              waypointIds: snapshot
+                                                  .waypoints.keys
+                                                  .toList(growable: false),
+                                              onClose: _clearSelectedAircraft,
+                                              onHeading: _commandHeading,
+                                              onAltitude: _commandAltitude,
+                                              onSpeed: _commandSpeed,
+                                              onDirect: _commandDirect,
+                                              onHold: _commandHold,
+                                              onIssueChain: _issueCommandChain,
+                                              workflowEntries: _commandWorkflow
+                                                  .entriesForAircraft(
+                                                selectedAircraft.id,
+                                              ),
+                                              activeRestrictions: _commandWorkflow
+                                                  .activeRestrictionsForAircraft(
+                                                selectedAircraft.id,
+                                              ),
+                                              recentlyAcknowledged:
+                                                  _recentlyAcknowledgedAircraftId ==
+                                                      selectedAircraft.id,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 );
                               },
@@ -1510,9 +1575,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               scenarioStarted: _scenarioStarted,
               resultShown: _resultShown,
               reviewingReplay: _reviewingReplay,
-              selectedAircraft: _selectedAircraftId == null
-                  ? null
-                  : snapshot.aircraftById(_selectedAircraftId!),
+              selectedAircraft: null,
               scenarioName: _scenarioName,
               scenarioDisplayTitle:
                   widget.trainingScenarioTitle ?? _scenarioName,
@@ -1541,18 +1604,13 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
               onHeading: _commandHeading,
               onAltitude: _commandAltitude,
               onSpeed: _commandSpeed,
-                onDirect: _commandDirect,
+              onDirect: _commandDirect,
               onHold: _commandHold,
-                onIssueChain: _issueCommandChain,
-                waypointIds: snapshot.waypoints.keys.toList(growable: false),
-                commandWorkflowEntries: _selectedAircraftId == null
-                  ? const []
-                  : _commandWorkflow.entriesForAircraft(_selectedAircraftId!),
-                activeWorkflowEntries: _selectedAircraftId == null
-                  ? const []
-                  : _commandWorkflow
-                    .activeRestrictionsForAircraft(_selectedAircraftId!),
-                replayCommandInsights:
+              onIssueChain: _issueCommandChain,
+              waypointIds: snapshot.waypoints.keys.toList(growable: false),
+              commandWorkflowEntries: const [],
+              activeWorkflowEntries: const [],
+              replayCommandInsights:
                   _commandWorkflow.replayInsights(snapshot.events),
               reviewEventLabel: _reviewEventLabel,
               recentlyAcknowledgedAircraftId: _recentlyAcknowledgedAircraftId,
@@ -1883,6 +1941,7 @@ class _DebugControls extends StatelessWidget {
                 onSpeed: onSpeed,
                 onDirect: onDirect,
                 onHold: onHold,
+                onClose: () {},
                 onIssueChain: onIssueChain,
                 workflowEntries: commandWorkflowEntries,
                 activeRestrictions: activeWorkflowEntries,
@@ -3079,7 +3138,8 @@ class _ScenarioResultPanel extends StatelessWidget {
   }
 
   String _efficiencyLabel(AppLocalizations l10n, RadarV2ScoreSnapshot score) {
-    if (score.isEfficiencyExcellent) return l10n.radarTrainingEfficiencyExcellent;
+    if (score.isEfficiencyExcellent)
+      return l10n.radarTrainingEfficiencyExcellent;
     if (score.isEfficiencyGood) return l10n.radarTrainingEfficiencyGood;
     if (score.isEfficiencyBusy) return l10n.radarTrainingEfficiencyBusy;
     return l10n.radarTrainingEfficiencyOverControlled;
@@ -3099,7 +3159,8 @@ class _ScenarioResultPanel extends StatelessWidget {
       'Scenario duration reached' => l10n.radarTrainingWinReasonDurationReached,
       'No excessive separation losses' =>
         l10n.radarTrainingWinReasonNoExcessiveLosses,
-      'All aircraft exited safely' => l10n.radarTrainingWinReasonAllExitedSafely,
+      'All aircraft exited safely' =>
+        l10n.radarTrainingWinReasonAllExitedSafely,
       'Separation loss detected' => l10n.radarTrainingFailReasonSeparationLoss,
       'Scenario timed out before all traffic spawned' =>
         l10n.radarTrainingFailReasonTimeout,
@@ -3116,6 +3177,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
   final void Function(AircraftState aircraft, int deltaKt) onSpeed;
   final void Function(AircraftState aircraft, String waypointId) onDirect;
   final void Function(AircraftState aircraft) onHold;
+  final VoidCallback onClose;
   final void Function(
     AircraftState aircraft,
     List<ControllerCommand> commands,
@@ -3133,6 +3195,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
     required this.onSpeed,
     required this.onDirect,
     required this.onHold,
+    required this.onClose,
     required this.onIssueChain,
     required this.workflowEntries,
     required this.activeRestrictions,
@@ -3152,20 +3215,35 @@ class _SelectedAircraftPanel extends StatelessWidget {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '${aircraft.callsign}  '
-              'HDG ${aircraft.headingDeg.round().toString().padLeft(3, '0')}  '
-              'ALT ${aircraft.altitudeFt ~/ 100}  '
-              'SPD ${aircraft.groundSpeedKt.round()}',
-              style: const TextStyle(
-                color: AppTheme.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${aircraft.callsign}  '
+                  'HDG ${aircraft.headingDeg.round().toString().padLeft(3, '0')}  '
+                  'ALT ${aircraft.altitudeFt ~/ 100}  '
+                  'SPD ${aircraft.groundSpeedKt.round()}',
+                  style: const TextStyle(
+                    color: AppTheme.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
+              TextButton.icon(
+                onPressed: onClose,
+                icon: const Icon(Icons.arrow_back, size: 16),
+                label: const Text('Back to Radar'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondary,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
           if (recentlyAcknowledged) ...[
             const SizedBox(height: 6),
@@ -3202,240 +3280,311 @@ class _SelectedAircraftPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final preset in const [-30, -20, -10, 10, 20, 30])
-                _PresetPill(
-                  label: preset > 0 ? 'HDG +$preset' : 'HDG $preset',
-                  onTap: () => onHeading(aircraft, preset),
-                ),
-              for (final preset in const [-40, -20, 20, 40])
-                _PresetPill(
-                  label: preset > 0 ? 'SPD +$preset' : 'SPD $preset',
-                  onTap: () => onSpeed(aircraft, preset),
-                ),
-              for (final preset in const [-2000, -1000, 1000, 2000])
-                _PresetPill(
-                  label: preset > 0 ? 'ALT +${preset ~/ 100}' : 'ALT ${preset ~/ 100}',
-                  onTap: () => onAltitude(aircraft, preset),
-                ),
-              for (final target in const [90, 180, 270, 360])
-                _PresetPill(
-                  label: 'VECTOR ${target.toString().padLeft(3, '0')}',
-                  onTap: () => onHeading(
-                    aircraft,
-                    _deltaToHeading(aircraft.headingDeg, target.toDouble()),
-                  ),
-                ),
-              if (waypointIds.isNotEmpty)
-                _PresetPill(
-                  label: 'DIRECT ${waypointIds.first}',
-                  onTap: () => onDirect(aircraft, waypointIds.first),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _CommandGroup(
-                  label: 'HDG',
-                  children: [
-                    _CommandButton(
-                      icon: Icons.rotate_left,
-                      label: 'L',
-                      onPressed: () => onHeading(aircraft, -10),
-                    ),
-                    _CommandButton(
-                      icon: Icons.rotate_right,
-                      label: 'R',
-                      onPressed: () => onHeading(aircraft, 10),
-                    ),
-                  ],
-                ),
-                _CommandGroup(
-                  label: 'ALT',
-                  children: [
-                    _CommandButton(
-                      icon: Icons.arrow_upward,
-                      label: '+ALT',
-                      onPressed: () => onAltitude(aircraft, 1000),
-                    ),
-                    _CommandButton(
-                      icon: Icons.arrow_downward,
-                      label: '-ALT',
-                      onPressed: () => onAltitude(aircraft, -1000),
-                    ),
-                  ],
-                ),
-                _CommandGroup(
-                  label: 'SPD',
-                  children: [
-                    _CommandButton(
-                      icon: Icons.add,
-                      label: '+SPD',
-                      onPressed: () => onSpeed(aircraft, 20),
-                    ),
-                    _CommandButton(
-                      icon: Icons.remove,
-                      label: '-SPD',
-                      onPressed: () => onSpeed(aircraft, -20),
-                    ),
-                  ],
-                ),
-                _CommandGroup(
-                  label: 'FLOW',
-                  children: [
-                    _CommandButton(
-                      icon:
-                          aircraft.intent.hold ? Icons.play_arrow : Icons.loop,
-                      label: aircraft.intent.hold ? 'EXIT HOLD' : 'HOLD',
-                      onPressed: () => onHold(aircraft),
-                    ),
-                    if (waypointIds.isNotEmpty)
-                      _CommandButton(
-                        icon: Icons.call_split,
-                        label: 'DIRECT',
-                        onPressed: () => onDirect(aircraft, waypointIds.first),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ChainButton(
-                label: 'HDG+SPD',
-                onPressed: () {
-                  onIssueChain(
-                    aircraft,
-                    [
-                      AssignHeading(
-                        aircraftId: aircraft.id,
-                        issuedAt: Duration.zero,
-                        headingDeg: aircraft.headingDeg + 20,
-                      ),
-                      AssignSpeed(
-                        aircraftId: aircraft.id,
-                        issuedAt: Duration.zero,
-                        speedKt: aircraft.groundSpeedKt - 20,
-                      ),
-                    ],
-                    '${aircraft.callsign} HDG+SPD',
-                  );
-                },
-              ),
-              _ChainButton(
-                label: 'VECTOR+ALT',
-                onPressed: () {
-                  onIssueChain(
-                    aircraft,
-                    [
-                      AssignHeading(
-                        aircraftId: aircraft.id,
-                        issuedAt: Duration.zero,
-                        headingDeg: aircraft.headingDeg + 20,
-                      ),
-                      AssignAltitude(
-                        aircraftId: aircraft.id,
-                        issuedAt: Duration.zero,
-                        altitudeFt: aircraft.altitudeFt - 1000,
-                      ),
-                    ],
-                    '${aircraft.callsign} VECTOR+ALT',
-                  );
-                },
-              ),
-              if (waypointIds.isNotEmpty)
-                _ChainButton(
-                  label: 'DES+DIRECT',
-                  onPressed: () {
-                    onIssueChain(
-                      aircraft,
-                      [
-                        AssignAltitude(
-                          aircraftId: aircraft.id,
-                          issuedAt: Duration.zero,
-                          altitudeFt: aircraft.altitudeFt - 1000,
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _CommandGroup(
+                          label: 'HDG',
+                          children: [
+                            _CommandButton(
+                              icon: Icons.rotate_left,
+                              label: 'L',
+                              onPressed: () => onHeading(aircraft, -10),
+                            ),
+                            _CommandButton(
+                              icon: Icons.rotate_right,
+                              label: 'R',
+                              onPressed: () => onHeading(aircraft, 10),
+                            ),
+                          ],
                         ),
-                        DirectToWaypoint(
-                          aircraftId: aircraft.id,
-                          issuedAt: Duration.zero,
-                          waypointId: waypointIds.first,
+                        _CommandGroup(
+                          label: 'ALT',
+                          children: [
+                            _CommandButton(
+                              icon: Icons.arrow_upward,
+                              label: '+ALT',
+                              onPressed: () => onAltitude(aircraft, 1000),
+                            ),
+                            _CommandButton(
+                              icon: Icons.arrow_downward,
+                              label: '-ALT',
+                              onPressed: () => onAltitude(aircraft, -1000),
+                            ),
+                          ],
+                        ),
+                        _CommandGroup(
+                          label: 'SPD',
+                          children: [
+                            _CommandButton(
+                              icon: Icons.add,
+                              label: '+SPD',
+                              onPressed: () => onSpeed(aircraft, 20),
+                            ),
+                            _CommandButton(
+                              icon: Icons.remove,
+                              label: '-SPD',
+                              onPressed: () => onSpeed(aircraft, -20),
+                            ),
+                          ],
                         ),
                       ],
-                      '${aircraft.callsign} DES+DIRECT ${waypointIds.first}',
-                    );
-                  },
-                ),
-            ],
-          ),
-          if (activeRestrictions.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'ACTIVE RESTRICTIONS',
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final entry in activeRestrictions.take(4))
-                  _WorkflowChip(entry: entry),
-              ],
-            ),
-          ],
-          if (workflowEntries.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'RECENT COMMANDS',
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            for (final entry in workflowEntries.take(5))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Expanded(
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      childrenPadding: EdgeInsets.zero,
+                      dense: true,
+                      iconColor: AppTheme.primary,
+                      collapsedIconColor: AppTheme.textSecondary,
+                      title: const Text(
+                        'More commands',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final preset in const [
+                                -30,
+                                -20,
+                                -10,
+                                10,
+                                20,
+                                30
+                              ])
+                                _PresetPill(
+                                  label: preset > 0
+                                      ? 'HDG +$preset'
+                                      : 'HDG $preset',
+                                  onTap: () => onHeading(aircraft, preset),
+                                ),
+                              for (final preset in const [-40, -20, 20, 40])
+                                _PresetPill(
+                                  label: preset > 0
+                                      ? 'SPD +$preset'
+                                      : 'SPD $preset',
+                                  onTap: () => onSpeed(aircraft, preset),
+                                ),
+                              for (final preset in const [
+                                -2000,
+                                -1000,
+                                1000,
+                                2000
+                              ])
+                                _PresetPill(
+                                  label: preset > 0
+                                      ? 'ALT +${preset ~/ 100}'
+                                      : 'ALT ${preset ~/ 100}',
+                                  onTap: () => onAltitude(aircraft, preset),
+                                ),
+                              for (final target in const [90, 180, 270, 360])
+                                _PresetPill(
+                                  label:
+                                      'VECTOR ${target.toString().padLeft(3, '0')}',
+                                  onTap: () => onHeading(
+                                    aircraft,
+                                    _deltaToHeading(
+                                      aircraft.headingDeg,
+                                      target.toDouble(),
+                                    ),
+                                  ),
+                                ),
+                              if (waypointIds.isNotEmpty)
+                                _PresetPill(
+                                  label: 'DIRECT ${waypointIds.first}',
+                                  onTap: () =>
+                                      onDirect(aircraft, waypointIds.first),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _CommandGroup(
+                                label: 'FLOW',
+                                children: [
+                                  _CommandButton(
+                                    icon: aircraft.intent.hold
+                                        ? Icons.play_arrow
+                                        : Icons.loop,
+                                    label: aircraft.intent.hold
+                                        ? 'EXIT HOLD'
+                                        : 'HOLD',
+                                    onPressed: () => onHold(aircraft),
+                                  ),
+                                  if (waypointIds.isNotEmpty)
+                                    _CommandButton(
+                                      icon: Icons.call_split,
+                                      label: 'DIRECT',
+                                      onPressed: () =>
+                                          onDirect(aircraft, waypointIds.first),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _ChainButton(
+                              label: 'HDG+SPD',
+                              onPressed: () {
+                                onIssueChain(
+                                  aircraft,
+                                  [
+                                    AssignHeading(
+                                      aircraftId: aircraft.id,
+                                      issuedAt: Duration.zero,
+                                      headingDeg: aircraft.headingDeg + 20,
+                                    ),
+                                    AssignSpeed(
+                                      aircraftId: aircraft.id,
+                                      issuedAt: Duration.zero,
+                                      speedKt: aircraft.groundSpeedKt - 20,
+                                    ),
+                                  ],
+                                  '${aircraft.callsign} HDG+SPD',
+                                );
+                              },
+                            ),
+                            _ChainButton(
+                              label: 'VECTOR+ALT',
+                              onPressed: () {
+                                onIssueChain(
+                                  aircraft,
+                                  [
+                                    AssignHeading(
+                                      aircraftId: aircraft.id,
+                                      issuedAt: Duration.zero,
+                                      headingDeg: aircraft.headingDeg + 20,
+                                    ),
+                                    AssignAltitude(
+                                      aircraftId: aircraft.id,
+                                      issuedAt: Duration.zero,
+                                      altitudeFt: aircraft.altitudeFt - 1000,
+                                    ),
+                                  ],
+                                  '${aircraft.callsign} VECTOR+ALT',
+                                );
+                              },
+                            ),
+                            if (waypointIds.isNotEmpty)
+                              _ChainButton(
+                                label: 'DES+DIRECT',
+                                onPressed: () {
+                                  onIssueChain(
+                                    aircraft,
+                                    [
+                                      AssignAltitude(
+                                        aircraftId: aircraft.id,
+                                        issuedAt: Duration.zero,
+                                        altitudeFt: aircraft.altitudeFt - 1000,
+                                      ),
+                                      DirectToWaypoint(
+                                        aircraftId: aircraft.id,
+                                        issuedAt: Duration.zero,
+                                        waypointId: waypointIds.first,
+                                      ),
+                                    ],
+                                    '${aircraft.callsign} DES+DIRECT ${waypointIds.first}',
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (activeRestrictions.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
                       child: Text(
-                        '${entry.commandType.toUpperCase()} ${entry.label}',
+                        'ACTIVE RESTRICTIONS',
                         style: const TextStyle(
                           color: AppTheme.textSecondary,
-                          fontSize: 11,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    _WorkflowChip(entry: entry),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final entry in activeRestrictions.take(4))
+                            _WorkflowChip(entry: entry),
+                        ],
+                      ),
+                    ),
                   ],
-                ),
+                  if (workflowEntries.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'RECENT COMMANDS',
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    for (final entry in workflowEntries.take(5))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${entry.commandType.toUpperCase()} ${entry.label}',
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 11,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            _WorkflowChip(entry: entry),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
               ),
-          ],
+            ),
+          ),
         ],
       ),
     );
@@ -3451,7 +3600,8 @@ class _SelectedAircraftPanel extends StatelessWidget {
     final parts = <String>[];
     final intent = aircraft.intent;
     if (intent.assignedHeadingDeg != null) {
-      parts.add('HDG ${intent.assignedHeadingDeg!.round().toString().padLeft(3, '0')}');
+      parts.add(
+          'HDG ${intent.assignedHeadingDeg!.round().toString().padLeft(3, '0')}');
     }
     if (intent.assignedAltitudeFt != null) {
       parts.add('ALT ${intent.assignedAltitudeFt! ~/ 100}');
@@ -3527,12 +3677,12 @@ class _WorkflowChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (entry.status) {
       CommandWorkflowStatus.sent => ('SENT', const Color(0xFF62D2FF)),
-      CommandWorkflowStatus.awaitingAcknowledgement =>
-        ('AWAIT', const Color(0xFFFFD166)),
-      CommandWorkflowStatus.acknowledged =>
-        ('ACK', const Color(0xFF46F5A7)),
-      CommandWorkflowStatus.completed =>
-        ('DONE', const Color(0xFF8BC34A)),
+      CommandWorkflowStatus.awaitingAcknowledgement => (
+          'AWAIT',
+          const Color(0xFFFFD166)
+        ),
+      CommandWorkflowStatus.acknowledged => ('ACK', const Color(0xFF46F5A7)),
+      CommandWorkflowStatus.completed => ('DONE', const Color(0xFF8BC34A)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -3566,9 +3716,8 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = insights.length > 5
-        ? insights.sublist(insights.length - 5)
-        : insights;
+    final visible =
+        insights.length > 5 ? insights.sublist(insights.length - 5) : insights;
     final wakeEvents = events.where((event) {
       return event.type == 'wakeSpacingCompression' ||
           event.type == 'wakeTurnStabilizationDelay' ||
@@ -3576,17 +3725,21 @@ class _ReplayCommandInsightPanel extends StatelessWidget {
           event.type == 'wakeTurbulenceWobble' ||
           event.type == 'wakeSequencingPressure';
     }).toList(growable: false);
-    final wakeCompressionCount =
-        wakeEvents.where((event) => event.type == 'wakeSpacingCompression').length;
+    final wakeCompressionCount = wakeEvents
+        .where((event) => event.type == 'wakeSpacingCompression')
+        .length;
     final wakeTurnDelayCount = wakeEvents
         .where((event) => event.type == 'wakeTurnStabilizationDelay')
         .length;
-    final wakeSpeedInstabilityCount =
-        wakeEvents.where((event) => event.type == 'wakeSpeedInstability').length;
-    final wakeWobbleCount =
-        wakeEvents.where((event) => event.type == 'wakeTurbulenceWobble').length;
-    final wakeSequencingCount =
-        wakeEvents.where((event) => event.type == 'wakeSequencingPressure').length;
+    final wakeSpeedInstabilityCount = wakeEvents
+        .where((event) => event.type == 'wakeSpeedInstability')
+        .length;
+    final wakeWobbleCount = wakeEvents
+        .where((event) => event.type == 'wakeTurbulenceWobble')
+        .length;
+    final wakeSequencingCount = wakeEvents
+        .where((event) => event.type == 'wakeSequencingPressure')
+        .length;
 
     return Container(
       width: double.infinity,
@@ -3849,7 +4002,8 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
   _OperationalPhase _phaseFor(AircraftState aircraft) {
     if (aircraft.intent.hold) return _OperationalPhase.hold;
     if (aircraft.intent.isDeparture) return _OperationalPhase.departure;
-    if (aircraft.intent.assignedRunwayId != null || aircraft.altitudeFt < 14000) {
+    if (aircraft.intent.assignedRunwayId != null ||
+        aircraft.altitudeFt < 14000) {
       return _OperationalPhase.arrival;
     }
     return _OperationalPhase.enroute;
@@ -3999,7 +4153,8 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
                     ? AppTheme.textSecondary
                     : AppTheme.primary,
                 fontSize: 11,
-                fontWeight: _hoveredIndex == null ? FontWeight.w500 : FontWeight.w700,
+                fontWeight:
+                    _hoveredIndex == null ? FontWeight.w500 : FontWeight.w700,
               ),
             ),
             const SizedBox(height: 10),
@@ -4009,12 +4164,14 @@ class _QuickCommandRadialMenuState extends State<_QuickCommandRadialMenu> {
                 onPanStart: (details) {
                   setState(() {
                     _dragging = true;
-                    _hoveredIndex = _indexFromLocal(details.localPosition, slices);
+                    _hoveredIndex =
+                        _indexFromLocal(details.localPosition, slices);
                   });
                 },
                 onPanUpdate: (details) {
                   setState(() {
-                    _hoveredIndex = _indexFromLocal(details.localPosition, slices);
+                    _hoveredIndex =
+                        _indexFromLocal(details.localPosition, slices);
                   });
                 },
                 onPanEnd: (_) {
@@ -4120,7 +4277,8 @@ class _RadialCommandWheelPainter extends CustomPainter {
     const outer = 132.0;
 
     final guardPath = Path()
-      ..addArc(Rect.fromCircle(center: center, radius: outer + 1), arcStart, arcSweep);
+      ..addArc(Rect.fromCircle(center: center, radius: outer + 1), arcStart,
+          arcSweep);
     canvas.drawPath(
       guardPath,
       Paint()
@@ -4161,18 +4319,16 @@ class _RadialCommandWheelPainter extends CustomPainter {
         path,
         Paint()
           ..style = PaintingStyle.fill
-          ..color = highlighted
-              ? const Color(0x4446F5A7)
-              : const Color(0x1A62D2FF),
+          ..color =
+              highlighted ? const Color(0x4446F5A7) : const Color(0x1A62D2FF),
       );
       canvas.drawPath(
         path,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = highlighted ? 1.6 : 1.0
-          ..color = highlighted
-              ? const Color(0xFF46F5A7)
-              : const Color(0x6655D6BE),
+          ..color =
+              highlighted ? const Color(0xFF46F5A7) : const Color(0x6655D6BE),
       );
     }
   }
@@ -4225,14 +4381,12 @@ class _RadialActionBadge extends StatelessWidget {
         width: 58,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
-          color: highlighted
-              ? const Color(0xAA0A2333)
-              : const Color(0xAA07131C),
+          color:
+              highlighted ? const Color(0xAA0A2333) : const Color(0xAA07131C),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: highlighted
-                ? const Color(0xFF46F5A7)
-                : const Color(0x8855D6BE),
+            color:
+                highlighted ? const Color(0xFF46F5A7) : const Color(0x8855D6BE),
           ),
         ),
         child: Column(
@@ -4249,8 +4403,7 @@ class _RadialActionBadge extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color:
-                    highlighted ? AppTheme.primary : AppTheme.textSecondary,
+                color: highlighted ? AppTheme.primary : AppTheme.textSecondary,
                 fontSize: 8,
                 fontWeight: FontWeight.w700,
               ),
