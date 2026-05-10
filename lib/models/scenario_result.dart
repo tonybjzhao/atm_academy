@@ -9,10 +9,14 @@ enum ScenarioGrade { excellent, good, needsPractice, reviewRequired }
 extension ScenarioGradeLabel on ScenarioGrade {
   String get label {
     switch (this) {
-      case ScenarioGrade.excellent:      return 'Excellent';
-      case ScenarioGrade.good:           return 'Good';
-      case ScenarioGrade.needsPractice:  return 'Needs Practice';
-      case ScenarioGrade.reviewRequired: return 'Review Required';
+      case ScenarioGrade.excellent:
+        return 'Excellent';
+      case ScenarioGrade.good:
+        return 'Good';
+      case ScenarioGrade.needsPractice:
+        return 'Needs Practice';
+      case ScenarioGrade.reviewRequired:
+        return 'Review Required';
     }
   }
 
@@ -29,8 +33,8 @@ extension ScenarioGradeLabel on ScenarioGrade {
 class DetailedScenarioResult {
   final String scenarioId;
   final String scenarioTitle;
-  final int    finalScore;
-  final int    maxScore;
+  final int finalScore;
+  final int maxScore;
   final ScenarioGrade grade;
 
   final DateTime startedAt;
@@ -105,7 +109,7 @@ extension DetailedScenarioResultLocalization on DetailedScenarioResult {
     final localizer = ScoreLocalizer(l10n);
     return DetailedScenarioResult(
       scenarioId: scenarioId,
-      scenarioTitle: scenarioTitle,
+      scenarioTitle: localizer.localizeScenarioTitle(scenarioTitle),
       finalScore: finalScore,
       maxScore: maxScore,
       grade: grade,
@@ -116,8 +120,8 @@ extension DetailedScenarioResultLocalization on DetailedScenarioResult {
       userActions: userActions,
       penalties: localizer.localizePenalties(penalties),
       bonuses: localizer.localizeBonuses(bonuses),
-      summaryText: summaryText,
-      improvementTips: improvementTips,
+      summaryText: localizer.localizeSummary(summaryText),
+      improvementTips: improvementTips.map(localizer.localizeTip).toList(),
       projectedOutcomes: projectedOutcomes,
       idealFrames: idealFrames,
       hadLOS: hadLOS,

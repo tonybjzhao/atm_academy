@@ -1428,6 +1428,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ratingExcellent => '优秀';
 
   @override
+  String get scenarioGradeGood => '良好';
+
+  @override
   String get ratingSafe => '安全';
 
   @override
@@ -1569,6 +1572,100 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scoreBonusEarlyAction => '及时有效行动';
+
+  @override
+  String get scoreBonusSeparationMaintainedExplanation => '航空器已连续 5 秒以上保持安全间隔。';
+
+  @override
+  String get scoreBonusCorrectAircraftExplanation => '你立即识别并指挥了正确的航空器。';
+
+  @override
+  String get scoreBonusEarlyActionExplanation => '你的指令在 5 秒内发出，并改善了预测航迹。';
+
+  @override
+  String scorePenaltyWrongAircraftExplanation(String pair) {
+    return '你指挥的航空器不属于冲突组合（$pair）。';
+  }
+
+  @override
+  String get scorePenaltyWrongAircraftExplanationGeneric => '你指挥的航空器不属于冲突组合。';
+
+  @override
+  String get scorePenaltyWrongAircraftRecommendation =>
+      '先识别冲突组合——它们会以红色/橙色显示。向其中一架航空器发布指令。';
+
+  @override
+  String scorePenaltyLateCommandExplanation(String time) {
+    return '你的第一条指令在场景开始 $time 后才发出，当时冲突风险已经升高。';
+  }
+
+  @override
+  String get scorePenaltyLateCommandRecommendation =>
+      '当航空器正在汇聚时，尽量在 5 秒内行动。早期指令会留下更多处置空间。';
+
+  @override
+  String get scorePenaltyIneffectiveExplanation => '你的指令没有改善预测间隔，并可能让航迹变得更不利。';
+
+  @override
+  String get scorePenaltyIneffectiveRecommendation =>
+      '行动前先检查预测航迹。朝另一架航空器转向会增加风险。';
+
+  @override
+  String get scorePenaltyUnnecessaryExplanation => '发出了额外指令，但这些指令没有帮助改善间隔。';
+
+  @override
+  String get scorePenaltyUnnecessaryRecommendation =>
+      '发布一条清晰指令后，留出时间观察效果，再决定是否继续指挥。过度控制会增加复杂度。';
+
+  @override
+  String get scorePenaltyNoCommandExplanation => '冲突形成前没有发布任何指令。';
+
+  @override
+  String get scorePenaltyNoCommandRecommendation => '即使是早期的小幅航向改变，也能建立有用间隔。';
+
+  @override
+  String get scenarioTitleCrossingSameLevel => '同高度交叉冲突';
+
+  @override
+  String get scenarioTitleHeadOnAltitude => '迎头冲突——高度解决方案';
+
+  @override
+  String scenarioSummaryGoodControl(String pair) {
+    return '管制良好。$pair 全程保持了安全间隔。';
+  }
+
+  @override
+  String scenarioSummaryLoss(String pair, String distance) {
+    return '$pair 发生间隔丢失（最近：$distance）。需要更早行动，防止冲突发展。';
+  }
+
+  @override
+  String scenarioSummaryWarning(String pair, String distance) {
+    return '$pair 进入警告区（$distance）。间隔保持住了，但情况已经很接近。';
+  }
+
+  @override
+  String get scenarioSummaryTightWindow => '冲突已解除，但间隔窗口很紧。更早行动会带来更安全的余度。';
+
+  @override
+  String get scenarioTipIssueEarlier => '更早发布指令——在发现航迹汇聚后 5 秒内行动。行动越晚，可用选项越少。';
+
+  @override
+  String get scenarioTipSelectConflictPair =>
+      '选择属于冲突组合的航空器（红色/橙色显示）。指挥错误航空器会浪费时间。';
+
+  @override
+  String get scenarioTipCheckProjectedPath =>
+      '发布指令前先检查预测航迹。让航空器朝另一架航空器转向会恶化局面。';
+
+  @override
+  String get scenarioTipAfterLoss => '发生间隔丢失后，立即发布垂直指令（爬升/下降）以重新建立安全间隔。';
+
+  @override
+  String get scenarioTipAvoidOvercontrol => '避免连续快速发布多条指令。发布一条指令后，先观察效果。';
+
+  @override
+  String get scenarioTipResolveEarlyBonus => '尝试在时间限制前半段解决冲突，可获得 +20 时间奖励。';
 
   @override
   String get scenarioLOSResult => '间隔丢失';
@@ -2455,6 +2552,111 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get radarTrainingStatusRunning => '进行中';
+
+  @override
+  String get radarTrainingStepOneTick => '单步推进一帧';
+
+  @override
+  String radarTrainingTelemetryTimeTick(int seconds, int tick) {
+    return 'T+$seconds秒 · Tick $tick';
+  }
+
+  @override
+  String radarTrainingTelemetrySummary(int aircraftCount, int alertCount,
+      int score, String pressure, int heavyActive, int heavyTotal) {
+    return '$aircraftCount 架飞机 · $alertCount 个警报 · 得分 $score · 压力 $pressure · 重型 $heavyActive/$heavyTotal';
+  }
+
+  @override
+  String get radarTrainingSweep => '扫描线';
+
+  @override
+  String get radarTrainingBackToRadar => '返回雷达';
+
+  @override
+  String get radarTrainingMoreCommands => '更多指令';
+
+  @override
+  String radarTrainingPendingIntentions(String value) {
+    return '待执行意图：$value';
+  }
+
+  @override
+  String get radarTrainingNone => '无';
+
+  @override
+  String get radarTrainingAckReceived => '已收到确认';
+
+  @override
+  String get radarTrainingAlertsHeader => '警报';
+
+  @override
+  String radarTrainingAlertCount(int count) {
+    return '$count 个警报';
+  }
+
+  @override
+  String get radarTrainingExpiredShort => '过期';
+
+  @override
+  String get radarTrainingPriorityCritical => '紧急';
+
+  @override
+  String get radarTrainingPriorityHigh => '高';
+
+  @override
+  String get radarTrainingPriorityMedium => '中';
+
+  @override
+  String get radarTrainingPriorityLow => '低';
+
+  @override
+  String get radarTrainingAlertPredictedConflict => '预测冲突';
+
+  @override
+  String get radarTrainingAlertSeparationLoss => '间隔丢失';
+
+  @override
+  String get radarTrainingAlertRunwayOccupancy => '跑道占用';
+
+  @override
+  String get radarTrainingAlertDepartureQueueSaturation => '离场队列';
+
+  @override
+  String get radarTrainingAlertWeatherEscalation => '天气升级';
+
+  @override
+  String get radarTrainingAlertGoAround => '复飞';
+
+  @override
+  String get radarTrainingAlertRunwayChange => '跑道变更';
+
+  @override
+  String get radarTrainingAlertLowFuel => '低油量';
+
+  @override
+  String get radarTrainingAlertUnstableSpacing => '间隔不稳定';
+
+  @override
+  String get radarTrainingAlertMedicalEmergency => '医疗紧急';
+
+  @override
+  String get radarTrainingAlertEngineFailure => '发动机故障';
+
+  @override
+  String get radarTrainingAlertAbnormalBehavior => '异常行为';
+
+  @override
+  String get radarTrainingLoadCalm => '平稳';
+
+  @override
+  String get radarTrainingLoadBusy => '繁忙';
+
+  @override
+  String get radarTrainingLoadOverloaded => '过载';
+
+  @override
+  String get radarTrainingLoadSaturated => '饱和';
 
   @override
   String get radarTrainingViewResults => '查看结果';

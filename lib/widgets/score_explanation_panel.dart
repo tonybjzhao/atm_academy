@@ -122,10 +122,24 @@ class _ScoreHeader extends StatelessWidget {
     }
   }
 
+  String _gradeLabel(AppLocalizations l10n) {
+    switch (result.grade) {
+      case ScenarioGrade.excellent:
+        return l10n.ratingExcellent;
+      case ScenarioGrade.good:
+        return l10n.scenarioGradeGood;
+      case ScenarioGrade.needsPractice:
+        return l10n.ratingNeedsImprovement;
+      case ScenarioGrade.reviewRequired:
+        return l10n.ratingUnsafe;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final color = _gradeColor();
+    final gradeLabel = _gradeLabel(l10n);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -160,7 +174,7 @@ class _ScoreHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(result.grade.label,
+                Text(gradeLabel,
                     style: TextStyle(
                         color: color,
                         fontSize: 16,

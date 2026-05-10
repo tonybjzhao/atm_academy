@@ -48,4 +48,31 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
+
+  testWidgets('ScenarioResultScreen debrief text is localized in Chinese',
+      (tester) async {
+    final result = ScoringEngine.mock();
+
+    await tester.pumpWidget(
+      _localizedApp(
+        locale: const Locale('zh'),
+        home: ScenarioResultScreen(result: result),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    await tester.tap(find.text('主要复盘'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('优秀'), findsNothing);
+    expect(find.textContaining('Aircraft remained separated'), findsNothing);
+    expect(find.textContaining('Select the aircraft'), findsNothing);
+    expect(find.textContaining('Good control'), findsNothing);
+    expect(find.textContaining('保持间隔'), findsWidgets);
+    expect(find.textContaining('航空器已连续'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
 }

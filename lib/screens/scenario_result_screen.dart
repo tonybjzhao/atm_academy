@@ -147,10 +147,24 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
+  String _gradeLabel(AppLocalizations l10n, ScenarioGrade grade) {
+    switch (grade) {
+      case ScenarioGrade.excellent:
+        return l10n.ratingExcellent;
+      case ScenarioGrade.good:
+        return l10n.scenarioGradeGood;
+      case ScenarioGrade.needsPractice:
+        return l10n.ratingNeedsImprovement;
+      case ScenarioGrade.reviewRequired:
+        return l10n.ratingUnsafe;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final result = _localizedResult;
+    final gradeLabel = _gradeLabel(l10n, result.grade);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -160,7 +174,7 @@ class _ScenarioResultScreenState extends State<ScenarioResultScreen>
           children: [
             Text(result.scenarioTitle, style: const TextStyle(fontSize: 14)),
             Text(
-                '${l10n.radarV2FinalScore}: ${result.finalScore} / ${result.maxScore}  ·  ${result.grade.label}',
+                '${l10n.radarV2FinalScore}: ${result.finalScore} / ${result.maxScore}  ·  $gradeLabel',
                 style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 10,

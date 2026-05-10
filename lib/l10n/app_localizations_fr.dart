@@ -1604,6 +1604,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ratingExcellent => 'Excellent';
 
   @override
+  String get scenarioGradeGood => 'Bon';
+
+  @override
   String get ratingSafe => 'Sûr';
 
   @override
@@ -1746,6 +1749,114 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get scoreBonusEarlyAction => 'Action efficace précoce';
+
+  @override
+  String get scoreBonusSeparationMaintainedExplanation =>
+      'Les aéronefs sont restés séparés pendant plus de 5 secondes consécutives.';
+
+  @override
+  String get scoreBonusCorrectAircraftExplanation =>
+      'Vous avez immédiatement identifié et commandé le bon aéronef.';
+
+  @override
+  String get scoreBonusEarlyActionExplanation =>
+      'Votre instruction a été donnée en moins de 5 s et a amélioré la trajectoire prévue.';
+
+  @override
+  String scorePenaltyWrongAircraftExplanation(String pair) {
+    return 'L\'aéronef commandé ne faisait pas partie de la paire en conflit ($pair).';
+  }
+
+  @override
+  String get scorePenaltyWrongAircraftExplanationGeneric =>
+      'L\'aéronef commandé ne faisait pas partie de la paire en conflit.';
+
+  @override
+  String get scorePenaltyWrongAircraftRecommendation =>
+      'Identifiez d\'abord la paire en conflit — elle apparaît en rouge/orange. Donnez l\'instruction à l\'un de ces aéronefs.';
+
+  @override
+  String scorePenaltyLateCommandExplanation(String time) {
+    return 'Votre première instruction est arrivée $time après le début du scénario. Le risque de conflit était déjà élevé.';
+  }
+
+  @override
+  String get scorePenaltyLateCommandRecommendation =>
+      'Agissez dans les 5 secondes lorsque les aéronefs convergent. Une action précoce donne plus de marge de manœuvre.';
+
+  @override
+  String get scorePenaltyIneffectiveExplanation =>
+      'Votre instruction n\'a pas amélioré la séparation prévue et a peut-être dégradé la trajectoire.';
+
+  @override
+  String get scorePenaltyIneffectiveRecommendation =>
+      'Vérifiez la trajectoire prévue avant d\'agir. Un virage vers l\'autre aéronef augmente le risque.';
+
+  @override
+  String get scorePenaltyUnnecessaryExplanation =>
+      'Des instructions supplémentaires qui n\'aidaient pas la séparation ont été données.';
+
+  @override
+  String get scorePenaltyUnnecessaryRecommendation =>
+      'Donnez une instruction claire et laissez-lui le temps de produire son effet avant d\'en donner une autre. Le sur-contrôle ajoute de la complexité.';
+
+  @override
+  String get scorePenaltyNoCommandExplanation =>
+      'Aucune instruction n\'a été donnée avant que le conflit ne se développe.';
+
+  @override
+  String get scorePenaltyNoCommandRecommendation =>
+      'Même un petit changement de cap précoce crée une séparation utile.';
+
+  @override
+  String get scenarioTitleCrossingSameLevel => 'Trafic croisé au même niveau';
+
+  @override
+  String get scenarioTitleHeadOnAltitude =>
+      'Trafic en face — Solution d\'altitude';
+
+  @override
+  String scenarioSummaryGoodControl(String pair) {
+    return 'Bon contrôle. $pair a maintenu une séparation sûre pendant tout le scénario.';
+  }
+
+  @override
+  String scenarioSummaryLoss(String pair, String distance) {
+    return '$pair a perdu la séparation (plus proche : $distance). Agissez plus tôt pour éviter que le conflit ne se développe.';
+  }
+
+  @override
+  String scenarioSummaryWarning(String pair, String distance) {
+    return '$pair est entré dans la zone d\'alerte ($distance). La séparation a été maintenue, mais la situation était serrée.';
+  }
+
+  @override
+  String get scenarioSummaryTightWindow =>
+      'Le conflit a été résolu, mais la fenêtre de séparation était serrée. Une action plus précoce donne une marge plus sûre.';
+
+  @override
+  String get scenarioTipIssueEarlier =>
+      'Donnez les instructions plus tôt — dans les 5 s après détection d\'une trajectoire convergente. Plus vous attendez, moins il reste d\'options.';
+
+  @override
+  String get scenarioTipSelectConflictPair =>
+      'Sélectionnez l\'aéronef qui fait partie de la paire en conflit (affichée en rouge/orange). Commander le mauvais aéronef fait perdre du temps.';
+
+  @override
+  String get scenarioTipCheckProjectedPath =>
+      'Vérifiez la trajectoire prévue avant de commander. Un virage qui pointe un aéronef vers un autre aggrave la situation.';
+
+  @override
+  String get scenarioTipAfterLoss =>
+      'Après une perte de séparation, donnez immédiatement une instruction verticale (montée/descente) pour rétablir l\'espacement sûr.';
+
+  @override
+  String get scenarioTipAvoidOvercontrol =>
+      'Évitez plusieurs instructions rapides. Donnez une instruction et observez son effet.';
+
+  @override
+  String get scenarioTipResolveEarlyBonus =>
+      'Essayez de résoudre le conflit dans la première moitié du temps limite pour obtenir un bonus de temps +20.';
 
   @override
   String get scenarioLOSResult => 'PERTE DE SÉPARATION';
@@ -2706,6 +2817,111 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radarTrainingStatusRunning => 'En cours';
+
+  @override
+  String get radarTrainingStepOneTick => 'Avancer d\'un tick';
+
+  @override
+  String radarTrainingTelemetryTimeTick(int seconds, int tick) {
+    return 'T+${seconds}s · Tick $tick';
+  }
+
+  @override
+  String radarTrainingTelemetrySummary(int aircraftCount, int alertCount,
+      int score, String pressure, int heavyActive, int heavyTotal) {
+    return '$aircraftCount aéronefs · $alertCount alertes · Score $score · Pression $pressure · Lourds $heavyActive/$heavyTotal';
+  }
+
+  @override
+  String get radarTrainingSweep => 'Balayage';
+
+  @override
+  String get radarTrainingBackToRadar => 'Retour au radar';
+
+  @override
+  String get radarTrainingMoreCommands => 'Plus de commandes';
+
+  @override
+  String radarTrainingPendingIntentions(String value) {
+    return 'Intentions en attente : $value';
+  }
+
+  @override
+  String get radarTrainingNone => 'aucune';
+
+  @override
+  String get radarTrainingAckReceived => 'ACCUSÉ REÇU';
+
+  @override
+  String get radarTrainingAlertsHeader => 'ALERTES';
+
+  @override
+  String radarTrainingAlertCount(int count) {
+    return '$count alerte(s)';
+  }
+
+  @override
+  String get radarTrainingExpiredShort => 'EXP';
+
+  @override
+  String get radarTrainingPriorityCritical => 'CRIT';
+
+  @override
+  String get radarTrainingPriorityHigh => 'HAUT';
+
+  @override
+  String get radarTrainingPriorityMedium => 'MOY';
+
+  @override
+  String get radarTrainingPriorityLow => 'BAS';
+
+  @override
+  String get radarTrainingAlertPredictedConflict => 'CONFLIT PRÉVU';
+
+  @override
+  String get radarTrainingAlertSeparationLoss => 'PERTE DE SÉPARATION';
+
+  @override
+  String get radarTrainingAlertRunwayOccupancy => 'PISTE OCCUPÉE';
+
+  @override
+  String get radarTrainingAlertDepartureQueueSaturation => 'FILE DÉPART';
+
+  @override
+  String get radarTrainingAlertWeatherEscalation => 'MÉTÉO EN HAUSSE';
+
+  @override
+  String get radarTrainingAlertGoAround => 'REMISE DE GAZ';
+
+  @override
+  String get radarTrainingAlertRunwayChange => 'CHANGEMENT DE PISTE';
+
+  @override
+  String get radarTrainingAlertLowFuel => 'CARBURANT BAS';
+
+  @override
+  String get radarTrainingAlertUnstableSpacing => 'ESPACEMENT INSTABLE';
+
+  @override
+  String get radarTrainingAlertMedicalEmergency => 'URGENCE MÉDICALE';
+
+  @override
+  String get radarTrainingAlertEngineFailure => 'PANNE MOTEUR';
+
+  @override
+  String get radarTrainingAlertAbnormalBehavior => 'COMPORTEMENT ANORMAL';
+
+  @override
+  String get radarTrainingLoadCalm => 'CALME';
+
+  @override
+  String get radarTrainingLoadBusy => 'CHARGÉ';
+
+  @override
+  String get radarTrainingLoadOverloaded => 'SURCHARGÉ';
+
+  @override
+  String get radarTrainingLoadSaturated => 'SATURÉ';
 
   @override
   String get radarTrainingViewResults => 'Voir les résultats';

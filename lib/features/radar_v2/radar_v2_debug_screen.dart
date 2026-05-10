@@ -1808,7 +1808,7 @@ class _DebugControls extends StatelessWidget {
                 ),
                 if (!betaMode)
                   IconButton(
-                    tooltip: 'Step one tick',
+                    tooltip: l10n.radarTrainingStepOneTick,
                     onPressed: onStep,
                     icon: const Icon(Icons.skip_next),
                   ),
@@ -1818,16 +1818,23 @@ class _DebugControls extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'T+${snapshot.elapsed.inSeconds}s  Tick ${snapshot.tick}',
+                  l10n.radarTrainingTelemetryTimeTick(
+                    snapshot.elapsed.inSeconds,
+                    snapshot.tick,
+                  ),
                   style: const TextStyle(
                       color: AppTheme.textPrimary, fontSize: 12),
                 ),
                 const Spacer(),
                 Text(
-                  '${snapshot.aircraft.where((item) => item.active).length} aircraft  '
-                  '$conflicts alerts  Score ${score.score}  '
-                  'Pressure ${snapshot.sectorPressureIndex.toStringAsFixed(1)}  '
-                  'Heavy $activeHeavy/$scenarioHeavy',
+                  l10n.radarTrainingTelemetrySummary(
+                    snapshot.aircraft.where((item) => item.active).length,
+                    conflicts,
+                    score.score,
+                    snapshot.sectorPressureIndex.toStringAsFixed(1),
+                    activeHeavy,
+                    scenarioHeavy,
+                  ),
                   style: const TextStyle(
                       color: AppTheme.textSecondary, fontSize: 12),
                 ),
@@ -1850,9 +1857,9 @@ class _DebugControls extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Sweep',
-                        style: TextStyle(
+                      Text(
+                        l10n.radarTrainingSweep,
+                        style: const TextStyle(
                             color: AppTheme.textSecondary, fontSize: 11),
                       ),
                       Switch(
@@ -3052,6 +3059,54 @@ class _DifficultyPips extends StatelessWidget {
   }
 }
 
+String _localizedOperationalAlertType(AppLocalizations l10n, String type) {
+  switch (type) {
+    case 'predicted_conflict':
+      return l10n.radarTrainingAlertPredictedConflict;
+    case 'separation_loss':
+      return l10n.radarTrainingAlertSeparationLoss;
+    case 'runway_occupancy':
+      return l10n.radarTrainingAlertRunwayOccupancy;
+    case 'departure_queue_saturation':
+      return l10n.radarTrainingAlertDepartureQueueSaturation;
+    case 'weather_escalation':
+      return l10n.radarTrainingAlertWeatherEscalation;
+    case 'go_around':
+      return l10n.radarTrainingAlertGoAround;
+    case 'runway_change':
+      return l10n.radarTrainingAlertRunwayChange;
+    case 'low_fuel':
+      return l10n.radarTrainingAlertLowFuel;
+    case 'unstable_spacing':
+      return l10n.radarTrainingAlertUnstableSpacing;
+    case 'medical_emergency':
+      return l10n.radarTrainingAlertMedicalEmergency;
+    case 'engine_failure':
+      return l10n.radarTrainingAlertEngineFailure;
+    case 'abnormal_behavior':
+      return l10n.radarTrainingAlertAbnormalBehavior;
+    default:
+      debugPrint('L10N_MISSING_RADAR_TRAINING alert_type=$type');
+      return type.replaceAll('_', ' ').toUpperCase();
+  }
+}
+
+String _localizedAlertPriority(AppLocalizations l10n, String priority) {
+  switch (priority) {
+    case 'critical':
+      return l10n.radarTrainingPriorityCritical;
+    case 'high':
+      return l10n.radarTrainingPriorityHigh;
+    case 'medium':
+      return l10n.radarTrainingPriorityMedium;
+    case 'low':
+      return l10n.radarTrainingPriorityLow;
+    default:
+      debugPrint('L10N_MISSING_RADAR_TRAINING alert_priority=$priority');
+      return priority.toUpperCase();
+  }
+}
+
 class _ScenarioResultPanel extends StatelessWidget {
   final RadarV2ScoreSnapshot score;
   final bool failed;
@@ -3212,6 +3267,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -3244,7 +3300,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
               TextButton.icon(
                 onPressed: onClose,
                 icon: const Icon(Icons.arrow_back, size: 16),
-                label: const Text('Back to Radar'),
+                label: Text(l10n.radarTrainingBackToRadar),
                 style: TextButton.styleFrom(
                   foregroundColor: AppTheme.textSecondary,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -3264,9 +3320,9 @@ class _SelectedAircraftPanel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: const Color(0xAA46F5A7)),
                 ),
-                child: const Text(
-                  'ACK RECEIVED',
-                  style: TextStyle(
+                child: Text(
+                  l10n.radarTrainingAckReceived,
+                  style: const TextStyle(
                     color: Color(0xFF46F5A7),
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -3280,7 +3336,7 @@ class _SelectedAircraftPanel extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              _pendingIntentText(aircraft),
+              _pendingIntentText(context, aircraft),
               style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 11,
@@ -3355,9 +3411,9 @@ class _SelectedAircraftPanel extends StatelessWidget {
                       dense: true,
                       iconColor: AppTheme.primary,
                       collapsedIconColor: AppTheme.textSecondary,
-                      title: const Text(
-                        'More commands',
-                        style: TextStyle(
+                      title: Text(
+                        l10n.radarTrainingMoreCommands,
+                        style: const TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -3604,7 +3660,8 @@ class _SelectedAircraftPanel extends StatelessWidget {
     return raw.round();
   }
 
-  String _pendingIntentText(AircraftState aircraft) {
+  String _pendingIntentText(BuildContext context, AircraftState aircraft) {
+    final l10n = AppLocalizations.of(context)!;
     final parts = <String>[];
     final intent = aircraft.intent;
     if (intent.assignedHeadingDeg != null) {
@@ -3624,9 +3681,9 @@ class _SelectedAircraftPanel extends StatelessWidget {
       parts.add('HOLD ${intent.holdPatternId ?? ''}'.trim());
     }
     if (parts.isEmpty) {
-      return 'Pending Intentions: none';
+      return l10n.radarTrainingPendingIntentions(l10n.radarTrainingNone);
     }
-    return 'Pending Intentions: ${parts.join(' | ')}';
+    return l10n.radarTrainingPendingIntentions(parts.join(' | '));
   }
 }
 
@@ -4533,6 +4590,7 @@ class _WorkloadOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final load = snapshot.cognitiveLoad;
     final alerts = snapshot.operationalAlerts.take(3).toList();
 
@@ -4543,10 +4601,10 @@ class _WorkloadOverlay extends StatelessWidget {
       CognitiveLoadLevel.saturated => const Color(0xFFF44336),
     };
     final levelLabel = switch (load.currentLevel) {
-      CognitiveLoadLevel.calm => 'CALM',
-      CognitiveLoadLevel.busy => 'BUSY',
-      CognitiveLoadLevel.overloaded => 'OVERLOADED',
-      CognitiveLoadLevel.saturated => 'SATURATED',
+      CognitiveLoadLevel.calm => l10n.radarTrainingLoadCalm,
+      CognitiveLoadLevel.busy => l10n.radarTrainingLoadBusy,
+      CognitiveLoadLevel.overloaded => l10n.radarTrainingLoadOverloaded,
+      CognitiveLoadLevel.saturated => l10n.radarTrainingLoadSaturated,
     };
 
     return IgnorePointer(
@@ -4607,7 +4665,7 @@ class _WorkloadOverlay extends StatelessWidget {
               const SizedBox(height: 4),
               // Alert count summary
               Text(
-                '${snapshot.operationalAlerts.length} alert${snapshot.operationalAlerts.length == 1 ? '' : 's'}',
+                l10n.radarTrainingAlertCount(snapshot.operationalAlerts.length),
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.5),
                   fontSize: 9,
@@ -4631,7 +4689,7 @@ class _WorkloadOverlay extends StatelessWidget {
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
-                          alert.type.replaceAll('_', ' ').toUpperCase(),
+                          _localizedOperationalAlertType(l10n, alert.type),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -5113,6 +5171,7 @@ class _AlertStackPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final alerts = snapshot.attentionFocus.suppressLowPriorityAlerts
         ? snapshot.operationalAlerts
             .where((alert) =>
@@ -5139,9 +5198,9 @@ class _AlertStackPanel extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Text(
-                  'ALERTS',
-                  style: TextStyle(
+                Text(
+                  l10n.radarTrainingAlertsHeader,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
@@ -5205,6 +5264,7 @@ class _AlertRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final color = _priorityColor(alert.priority.name);
     final age = elapsed - alert.createdAt;
     final ageStr =
@@ -5215,7 +5275,7 @@ class _AlertRow extends StatelessWidget {
     if (alert.expiresAt != null) {
       final remaining = alert.expiresAt! - elapsed;
       if (remaining.isNegative) {
-        countdownStr = 'EXP';
+        countdownStr = l10n.radarTrainingExpiredShort;
       } else {
         countdownStr = remaining.inSeconds < 60
             ? '${remaining.inSeconds}s'
@@ -5243,7 +5303,7 @@ class _AlertRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    alert.type.replaceAll('_', ' ').toUpperCase(),
+                    _localizedOperationalAlertType(l10n, alert.type),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -5257,7 +5317,7 @@ class _AlertRow extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        alert.priority.label,
+                        _localizedAlertPriority(l10n, alert.priority.name),
                         style: TextStyle(
                           color:
                               color.withOpacity(alert.acknowledged ? 0.4 : 1.0),

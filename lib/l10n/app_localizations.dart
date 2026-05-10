@@ -2866,6 +2866,12 @@ abstract class AppLocalizations {
   /// **'Excellent'**
   String get ratingExcellent;
 
+  /// No description provided for @scenarioGradeGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get scenarioGradeGood;
+
   /// No description provided for @ratingSafe.
   ///
   /// In en, this message translates to:
@@ -3147,6 +3153,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Early Effective Action'**
   String get scoreBonusEarlyAction;
+
+  /// No description provided for @scoreBonusSeparationMaintainedExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft remained separated for 5+ continuous seconds.'**
+  String get scoreBonusSeparationMaintainedExplanation;
+
+  /// No description provided for @scoreBonusCorrectAircraftExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'You immediately identified and commanded the right aircraft.'**
+  String get scoreBonusCorrectAircraftExplanation;
+
+  /// No description provided for @scoreBonusEarlyActionExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your command was issued within 5 s and improved the projected path.'**
+  String get scoreBonusEarlyActionExplanation;
+
+  /// No description provided for @scorePenaltyWrongAircraftExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'The aircraft you commanded was not part of the conflict pair ({pair}).'**
+  String scorePenaltyWrongAircraftExplanation(String pair);
+
+  /// No description provided for @scorePenaltyWrongAircraftExplanationGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'The aircraft you commanded was not part of the conflict pair.'**
+  String get scorePenaltyWrongAircraftExplanationGeneric;
+
+  /// No description provided for @scorePenaltyWrongAircraftRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Identify the conflicting pair first — they appear in red/orange. Issue commands to one of those aircraft.'**
+  String get scorePenaltyWrongAircraftRecommendation;
+
+  /// No description provided for @scorePenaltyLateCommandExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your first command came {time} into the scenario. Conflict risk was already elevated.'**
+  String scorePenaltyLateCommandExplanation(String time);
+
+  /// No description provided for @scorePenaltyLateCommandRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Act within 5 seconds when aircraft are converging. Early action gives more room to manoeuvre.'**
+  String get scorePenaltyLateCommandRecommendation;
+
+  /// No description provided for @scorePenaltyIneffectiveExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your command did not improve projected separation and may have worsened the trajectory.'**
+  String get scorePenaltyIneffectiveExplanation;
+
+  /// No description provided for @scorePenaltyIneffectiveRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the projected path before acting. A turn toward the other aircraft increases risk.'**
+  String get scorePenaltyIneffectiveRecommendation;
+
+  /// No description provided for @scorePenaltyUnnecessaryExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra commands that did not help separation were issued.'**
+  String get scorePenaltyUnnecessaryExplanation;
+
+  /// No description provided for @scorePenaltyUnnecessaryRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue one clear command and allow time for it to take effect before issuing another. Over-controlling adds complexity.'**
+  String get scorePenaltyUnnecessaryRecommendation;
+
+  /// No description provided for @scorePenaltyNoCommandExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'No command was issued before the conflict developed.'**
+  String get scorePenaltyNoCommandExplanation;
+
+  /// No description provided for @scorePenaltyNoCommandRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Even a small heading change early creates useful separation.'**
+  String get scorePenaltyNoCommandRecommendation;
+
+  /// No description provided for @scenarioTitleCrossingSameLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Crossing Traffic at Same Level'**
+  String get scenarioTitleCrossingSameLevel;
+
+  /// No description provided for @scenarioTitleHeadOnAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Head-On Traffic — Altitude Solution'**
+  String get scenarioTitleHeadOnAltitude;
+
+  /// No description provided for @scenarioSummaryGoodControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Good control. {pair} maintained safe separation throughout.'**
+  String scenarioSummaryGoodControl(String pair);
+
+  /// No description provided for @scenarioSummaryLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'{pair} lost separation (closest: {distance}). Act earlier to prevent conflict from developing.'**
+  String scenarioSummaryLoss(String pair, String distance);
+
+  /// No description provided for @scenarioSummaryWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{pair} entered the warning zone ({distance}). Separation held, but the situation was close.'**
+  String scenarioSummaryWarning(String pair, String distance);
+
+  /// No description provided for @scenarioSummaryTightWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict resolved but separation window was tight. Earlier action gives a safer margin.'**
+  String get scenarioSummaryTightWindow;
+
+  /// No description provided for @scenarioTipIssueEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue commands earlier — within 5 s of detecting a converging track. The later you act, the fewer options remain.'**
+  String get scenarioTipIssueEarlier;
+
+  /// No description provided for @scenarioTipSelectConflictPair.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the aircraft that is part of the conflict pair (shown in red/orange). Commanding the wrong aircraft wastes time.'**
+  String get scenarioTipSelectConflictPair;
+
+  /// No description provided for @scenarioTipCheckProjectedPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the projected path before commanding. A turn that points an aircraft toward another will worsen the situation.'**
+  String get scenarioTipCheckProjectedPath;
+
+  /// No description provided for @scenarioTipAfterLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'After a loss of separation, issue a vertical (climb/descend) command immediately to rebuild safe spacing.'**
+  String get scenarioTipAfterLoss;
+
+  /// No description provided for @scenarioTipAvoidOvercontrol.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid multiple rapid commands. Issue one command and wait to observe the effect.'**
+  String get scenarioTipAvoidOvercontrol;
+
+  /// No description provided for @scenarioTipResolveEarlyBonus.
+  ///
+  /// In en, this message translates to:
+  /// **'Try to resolve the conflict in the first half of the time limit for a +20 time bonus.'**
+  String get scenarioTipResolveEarlyBonus;
 
   /// No description provided for @scenarioLOSResult.
   ///
@@ -4762,6 +4924,199 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Running'**
   String get radarTrainingStatusRunning;
+
+  /// No description provided for @radarTrainingStepOneTick.
+  ///
+  /// In en, this message translates to:
+  /// **'Step one tick'**
+  String get radarTrainingStepOneTick;
+
+  /// No description provided for @radarTrainingTelemetryTimeTick.
+  ///
+  /// In en, this message translates to:
+  /// **'T+{seconds}s · Tick {tick}'**
+  String radarTrainingTelemetryTimeTick(int seconds, int tick);
+
+  /// No description provided for @radarTrainingTelemetrySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{aircraftCount} aircraft · {alertCount} alerts · Score {score} · Pressure {pressure} · Heavy {heavyActive}/{heavyTotal}'**
+  String radarTrainingTelemetrySummary(int aircraftCount, int alertCount,
+      int score, String pressure, int heavyActive, int heavyTotal);
+
+  /// No description provided for @radarTrainingSweep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweep'**
+  String get radarTrainingSweep;
+
+  /// No description provided for @radarTrainingBackToRadar.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Radar'**
+  String get radarTrainingBackToRadar;
+
+  /// No description provided for @radarTrainingMoreCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'More commands'**
+  String get radarTrainingMoreCommands;
+
+  /// No description provided for @radarTrainingPendingIntentions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Intentions: {value}'**
+  String radarTrainingPendingIntentions(String value);
+
+  /// No description provided for @radarTrainingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get radarTrainingNone;
+
+  /// No description provided for @radarTrainingAckReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'ACK RECEIVED'**
+  String get radarTrainingAckReceived;
+
+  /// No description provided for @radarTrainingAlertsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'ALERTS'**
+  String get radarTrainingAlertsHeader;
+
+  /// No description provided for @radarTrainingAlertCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} alert(s)'**
+  String radarTrainingAlertCount(int count);
+
+  /// No description provided for @radarTrainingExpiredShort.
+  ///
+  /// In en, this message translates to:
+  /// **'EXP'**
+  String get radarTrainingExpiredShort;
+
+  /// No description provided for @radarTrainingPriorityCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'CRIT'**
+  String get radarTrainingPriorityCritical;
+
+  /// No description provided for @radarTrainingPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'HIGH'**
+  String get radarTrainingPriorityHigh;
+
+  /// No description provided for @radarTrainingPriorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'MED'**
+  String get radarTrainingPriorityMedium;
+
+  /// No description provided for @radarTrainingPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'LOW'**
+  String get radarTrainingPriorityLow;
+
+  /// No description provided for @radarTrainingAlertPredictedConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'PREDICTED CONFLICT'**
+  String get radarTrainingAlertPredictedConflict;
+
+  /// No description provided for @radarTrainingAlertSeparationLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'SEPARATION LOSS'**
+  String get radarTrainingAlertSeparationLoss;
+
+  /// No description provided for @radarTrainingAlertRunwayOccupancy.
+  ///
+  /// In en, this message translates to:
+  /// **'RUNWAY OCCUPANCY'**
+  String get radarTrainingAlertRunwayOccupancy;
+
+  /// No description provided for @radarTrainingAlertDepartureQueueSaturation.
+  ///
+  /// In en, this message translates to:
+  /// **'DEPARTURE QUEUE'**
+  String get radarTrainingAlertDepartureQueueSaturation;
+
+  /// No description provided for @radarTrainingAlertWeatherEscalation.
+  ///
+  /// In en, this message translates to:
+  /// **'WEATHER ESCALATION'**
+  String get radarTrainingAlertWeatherEscalation;
+
+  /// No description provided for @radarTrainingAlertGoAround.
+  ///
+  /// In en, this message translates to:
+  /// **'GO-AROUND'**
+  String get radarTrainingAlertGoAround;
+
+  /// No description provided for @radarTrainingAlertRunwayChange.
+  ///
+  /// In en, this message translates to:
+  /// **'RUNWAY CHANGE'**
+  String get radarTrainingAlertRunwayChange;
+
+  /// No description provided for @radarTrainingAlertLowFuel.
+  ///
+  /// In en, this message translates to:
+  /// **'LOW FUEL'**
+  String get radarTrainingAlertLowFuel;
+
+  /// No description provided for @radarTrainingAlertUnstableSpacing.
+  ///
+  /// In en, this message translates to:
+  /// **'UNSTABLE SPACING'**
+  String get radarTrainingAlertUnstableSpacing;
+
+  /// No description provided for @radarTrainingAlertMedicalEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'MEDICAL EMERGENCY'**
+  String get radarTrainingAlertMedicalEmergency;
+
+  /// No description provided for @radarTrainingAlertEngineFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'ENGINE FAILURE'**
+  String get radarTrainingAlertEngineFailure;
+
+  /// No description provided for @radarTrainingAlertAbnormalBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'ABNORMAL BEHAVIOR'**
+  String get radarTrainingAlertAbnormalBehavior;
+
+  /// No description provided for @radarTrainingLoadCalm.
+  ///
+  /// In en, this message translates to:
+  /// **'CALM'**
+  String get radarTrainingLoadCalm;
+
+  /// No description provided for @radarTrainingLoadBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'BUSY'**
+  String get radarTrainingLoadBusy;
+
+  /// No description provided for @radarTrainingLoadOverloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'OVERLOADED'**
+  String get radarTrainingLoadOverloaded;
+
+  /// No description provided for @radarTrainingLoadSaturated.
+  ///
+  /// In en, this message translates to:
+  /// **'SATURATED'**
+  String get radarTrainingLoadSaturated;
 
   /// No description provided for @radarTrainingViewResults.
   ///
