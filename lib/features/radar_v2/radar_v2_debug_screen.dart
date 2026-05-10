@@ -1377,8 +1377,7 @@ class _RadarV2DebugScreenState extends State<RadarV2DebugScreen>
                                     ),
                                     Positioned(
                                       top: 8,
-                                      left: 196,
-                                      right: 212,
+                                      right: 8,
                                       child: _OperationalAtmosphereStrip(
                                         snapshot: snapshot,
                                         sectorId: runtime.definition.sectorId,
@@ -1826,17 +1825,20 @@ class _DebugControls extends StatelessWidget {
                       color: AppTheme.textPrimary, fontSize: 12),
                 ),
                 const Spacer(),
-                Text(
-                  l10n.radarTrainingTelemetrySummary(
-                    snapshot.aircraft.where((item) => item.active).length,
-                    conflicts,
-                    score.score,
-                    snapshot.sectorPressureIndex.toStringAsFixed(1),
-                    activeHeavy,
-                    scenarioHeavy,
+                Flexible(
+                  child: Text(
+                    l10n.radarTrainingTelemetrySummary(
+                      snapshot.aircraft.where((item) => item.active).length,
+                      conflicts,
+                      score.score,
+                      snapshot.sectorPressureIndex.toStringAsFixed(1),
+                      activeHeavy,
+                      scenarioHeavy,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 12),
                   ),
-                  style: const TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 12),
                 ),
               ],
             ),
@@ -4754,15 +4756,18 @@ class _OperationalAtmosphereStrip extends StatelessWidget {
           children: [
             const Icon(Icons.radar, size: 13, color: AppTheme.primary),
             const SizedBox(width: 6),
-            Text(
-              sectorId.toUpperCase(),
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
+              Flexible(
+                child: Text(
+                  sectorId.toUpperCase(),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
               ),
-            ),
             const SizedBox(width: 10),
             Text(
               '$hh:$mm:${ss}Z',

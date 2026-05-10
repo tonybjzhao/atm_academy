@@ -12,6 +12,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+  package_info_plus: ^8.0.0
   shared_preferences: ^2.2.0
   flutter_tts: ^3.8.5
   audioplayers: ^6.1.0

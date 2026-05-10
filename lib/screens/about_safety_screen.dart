@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 
-class AboutSafetyScreen extends StatelessWidget {
+class AboutSafetyScreen extends StatefulWidget {
   const AboutSafetyScreen({super.key});
+
+  @override
+  State<AboutSafetyScreen> createState() => _AboutSafetyScreenState();
+}
+
+class _AboutSafetyScreenState extends State<AboutSafetyScreen> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _version = info.version);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final aboutContent = _version.isEmpty
+        ? l10n.aboutAppSectionContent
+        : l10n.aboutAppSectionContent.replaceFirst('1.0.0', _version);
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: Text(l10n.aboutScreenTitle)),
@@ -34,7 +53,7 @@ class AboutSafetyScreen extends StatelessWidget {
               icon: Icons.info_outline,
               color: AppTheme.secondary,
               title: l10n.aboutAppSectionTitle,
-              content: l10n.aboutAppSectionContent,
+              content: aboutContent,
             ),
             const SizedBox(height: 16),
             _section(
